@@ -105,6 +105,8 @@ add_spatial_relations <- function(x,
                                   symmetric = FALSE) {
 
   stopifnot(inherits(x, "Data"))
+
+  x <- .pa_clone_data(x)
   x <- .pa_ensure_pu_index(x)
   n_pu <- nrow(x$data$pu)
 
@@ -290,6 +292,8 @@ add_spatial_boundary <- function(x,
                                  edge_factor = 1) {
 
   stopifnot(inherits(x, "Data"))
+
+  x <- .pa_clone_data(x)
   x <- .pa_ensure_pu_index(x)
 
   edge_factor <- as.numeric(edge_factor)[1]
@@ -560,6 +564,8 @@ add_spatial_rook <- function(x,
                              weight = 1) {
 
   stopifnot(inherits(x, "Data"))
+
+  x <- .pa_clone_data(x)
   x <- .pa_ensure_pu_index(x)
   if (!.pa_has_sf()) stop("add_spatial_rook requires the 'sf' package.", call. = FALSE)
 
@@ -619,6 +625,8 @@ add_spatial_queen <- function(x,
                               weight = 1) {
 
   stopifnot(inherits(x, "Data"))
+
+  x <- .pa_clone_data(x)
   x <- .pa_ensure_pu_index(x)
   if (!.pa_has_sf()) stop("add_spatial_queen requires the 'sf' package.", call. = FALSE)
 
@@ -694,6 +702,8 @@ add_spatial_knn <- function(x,
                             eps = 1e-9) {
 
   stopifnot(inherits(x, "Data"))
+
+  x <- .pa_clone_data(x)
   x <- .pa_ensure_pu_index(x)
   weight_fn <- match.arg(weight_fn)
   k <- as.integer(k)
@@ -778,6 +788,8 @@ add_spatial_distance <- function(x,
                                  eps = 1e-9) {
 
   stopifnot(inherits(x, "Data"))
+
+  x <- .pa_clone_data(x)
   x <- .pa_ensure_pu_index(x)
   weight_fn <- match.arg(weight_fn)
   dmax <- as.numeric(dmax)

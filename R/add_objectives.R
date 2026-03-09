@@ -86,6 +86,7 @@ add_objective_min_cost <- function(
   )
 
   # single-objective (legacy) behavior
+  x <- .pa_clone_data(x)
   x$data$model_args$model_type <- "minimizeCosts"
   x$data$model_args$objective_id <- "min_cost"
   x$data$model_args$objective_args <- args
@@ -155,6 +156,7 @@ add_objective_max_benefit <- function(x, benefit_col = "benefit", alias = NULL) 
   )
 
   # single-objective (legacy) behavior
+  x <- .pa_clone_data(x)
   x$data$model_args$model_type <- "maximizeBenefits"
   x$data$model_args$objective_id <- "max_benefit"
   x$data$model_args$objective_args <- args
@@ -215,6 +217,7 @@ add_objective_max_profit <- function(x, profit_col = "profit", alias = NULL) {
   )
 
   # single-objective (legacy) behavior
+  x <- .pa_clone_data(x)
   x$data$model_args$model_type <- "maximizeProfit"
   x$data$model_args$objective_id <- "max_profit"
   x$data$model_args$objective_args <- args
@@ -288,6 +291,7 @@ add_objective_max_net_profit <- function(
   )
 
   # single-objective (legacy) behavior
+  x <- .pa_clone_data(x)
   x$data$model_args$model_type <- "maximizeNetProfit"
   x$data$model_args$objective_id <- "max_net_profit"
   x$data$model_args$objective_args <- args
@@ -364,6 +368,7 @@ add_objective_min_fragmentation <- function(
   )
 
   # single-objective (legacy) behavior
+  x <- .pa_clone_data(x)
   x$data$model_args$model_type <- "minimizeFragmentation"
   x$data$model_args$objective_id <- "min_fragmentation"
   x$data$model_args$objective_args <- args
@@ -429,6 +434,7 @@ add_objective_min_action_fragmentation <- function(
     actions = actions
   )
 
+  x <- .pa_clone_data(x)
   x$data$model_args$model_type <- "minimizeActionFragmentation"
   x$data$model_args$objective_id <- "min_action_fragmentation"
   x$data$model_args$objective_args <- args
@@ -483,6 +489,7 @@ add_objective_min_intervention_fragmentation <- function(
   )
 
   # single-objective (legacy) behavior
+  x <- .pa_clone_data(x)
   x$data$model_args$model_type <- "minimizeInterventionFragmentation"
   x$data$model_args$objective_id <- "min_intervention_fragmentation"
   x$data$model_args$objective_args <- args
@@ -586,6 +593,7 @@ add_objective_max_representation <- function(
   )
 
   # single-objective (legacy) behavior
+  x <- .pa_clone_data(x)
   x$data$model_args$model_type <- "maximizeRepresentation"
   x$data$model_args$objective_id <- "max_representation"
   x$data$model_args$objective_args <- args

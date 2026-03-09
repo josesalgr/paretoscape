@@ -149,6 +149,8 @@ add_effects <- function(
   )
   assertthat::assert_that(!is.null(x$data$dist_actions), msg = "No actions found. Run add_actions() first.")
 
+  x <- .pa_clone_data(x)
+
   pu    <- x$data$pu
   feats <- x$data$features
   df    <- x$data$dist_features

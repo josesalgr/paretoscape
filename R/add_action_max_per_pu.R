@@ -102,6 +102,7 @@ add_action_max_per_pu <- function(
   assertthat::assert_that("id" %in% names(acts_df), msg = "x$data$actions must have column 'id'.")
 
   # normalize types
+  x <- .pa_clone_data(x)
   pu_ids_all <- as.integer(pu_df$id)
   act_ids_all <- as.character(acts_df$id)
 

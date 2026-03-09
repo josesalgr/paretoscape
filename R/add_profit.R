@@ -84,6 +84,7 @@ add_profit <- function(
   assertthat::assert_that(!is.null(x$data$dist_actions), msg = "No actions found. Run add_actions() first.")
   assertthat::assert_that(!is.null(x$data$actions), msg = "No action catalog found. Run add_actions() first.")
 
+  x <- .pa_clone_data(x)
   pu   <- x$data$pu
   da   <- x$data$dist_actions
   acts <- x$data$actions

@@ -3751,3 +3751,32 @@ available_to_solve <- function(package = ""){
 
   x
 }
+
+
+.pa_deepcopy_data <- function(d) {
+  unserialize(serialize(d, NULL))
+}
+
+.pa_clone_data <- function(x, drop_model = TRUE) {
+  stopifnot(inherits(x, "Data"))
+
+  # crear un NUEVO proto heredando de x
+  y <- pproto(NULL, x)
+
+  # ahora sí, sustituir data por una copia profunda
+  y$data <- .pa_deepcopy_data(x$data)
+
+  if (isTRUE(drop_model)) {
+    y$data$model_ptr   <- NULL
+    y$data$model_index <- NULL
+    y$data$model_list  <- NULL
+    y$data$has_model   <- FALSE
+
+    if (is.null(y$data$meta) || !is.list(y$data$meta)) {
+      y$data$meta <- list()
+    }
+    y$data$meta$model_dirty <- TRUE
+  }
+
+  y
+}

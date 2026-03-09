@@ -76,6 +76,8 @@ NULL
 #' @export
 add_conservation_targets_absolute <- function(x, targets, overwrite = FALSE, label = NULL) {
   stopifnot(inherits(x, "Data"))
+
+  x <- .pa_clone_data(x)
   dt <- .pa_parse_targets(x, targets)
 
   out <- data.frame(
@@ -113,6 +115,8 @@ add_conservation_targets_absolute <- function(x, targets, overwrite = FALSE, lab
 #' @export
 add_conservation_targets_relative <- function(x, targets, overwrite = FALSE, label = NULL) {
   stopifnot(inherits(x, "Data"))
+
+  x <- .pa_clone_data(x)
   dt <- .pa_parse_targets(x, targets)
 
   rel <- as.numeric(dt$target_raw)
@@ -162,6 +166,8 @@ add_conservation_targets_relative <- function(x, targets, overwrite = FALSE, lab
 #' @export
 add_recovery_targets_absolute <- function(x, targets, overwrite = FALSE, label = NULL) {
   stopifnot(inherits(x, "Data"))
+
+  x <- .pa_clone_data(x)
   dt <- .pa_parse_targets(x, targets)
 
   out <- data.frame(
@@ -208,6 +214,8 @@ add_recovery_targets_relative <- function(x,
                                           label = NULL) {
   stopifnot(inherits(x, "Data"))
   relative_basis <- match.arg(relative_basis)
+
+  x <- .pa_clone_data(x)
   dt <- .pa_parse_targets(x, targets)
 
   rel <- as.numeric(dt$target_raw)
@@ -267,6 +275,8 @@ add_recovery_targets_relative <- function(x,
 #' @export
 add_mixed_targets_total_absolute <- function(x, targets, overwrite = FALSE, label = NULL) {
   stopifnot(inherits(x, "Data"))
+
+  x <- .pa_clone_data(x)
   dt <- .pa_parse_targets(x, targets)
 
   out <- data.frame(
@@ -307,6 +317,8 @@ add_mixed_targets_total_absolute <- function(x, targets, overwrite = FALSE, labe
 #' @export
 add_mixed_targets_total_relative <- function(x, targets, overwrite = FALSE, label = NULL) {
   stopifnot(inherits(x, "Data"))
+
+  x <- .pa_clone_data(x)
   dt <- .pa_parse_targets(x, targets)
 
   rel <- as.numeric(dt$target_raw)

@@ -303,6 +303,7 @@ add_actions <- function(
   }
 
   # enforce PU ids integer (consistent with inputData())
+  x <- .pa_clone_data(x)
   x$data$pu$id <- .as_int_id(x$data$pu$id, "x$data$pu$id")
 
   pu_ids <- x$data$pu$id

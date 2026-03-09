@@ -127,6 +127,7 @@ add_area_max_constraint <- function(x,
   stopifnot(inherits(x, "Data"))
   assertthat::assert_that(assertthat::is.number(area_max), is.finite(area_max), area_max >= 0)
 
+  x <- .pa_clone_data(x)
   x <- .pa_ensure_model_snapshot(x)
 
   ml <- x$data$model_list
