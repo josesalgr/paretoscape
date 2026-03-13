@@ -8,38 +8,22 @@ add_objective_max_representation(
   x,
   amount_col = "amount",
   features = NULL,
-  internal = FALSE,
   alias = NULL
 )
 }
 \arguments{
-\item{x}{A \code{Data} object created with \code{\link[=inputData]{inputData()}} or \code{\link[=inputDataSpatial]{inputDataSpatial()}}.}
+\item{x}{A \code{Data} object.}
 
-\item{amount_col}{Character. Column name in \code{dist_features} containing non-negative amounts.}
+\item{amount_col}{Character. Column in \code{dist_features} containing amounts.}
 
-\item{features}{Optional subset of feature ids to include in the objective.
-Can be:
-\itemize{
-\item integer/numeric feature ids (matching \code{x$data$features$id}), or
-\item character feature ids (matching \code{x$data$features$id} if those are character), or
-\item internal feature indices (1..n_features) if \code{internal = TRUE}.
-}}
+\item{features}{Optional subset of features to include. Values may match
+\code{features$id} and, if present, \code{features$name}.}
 
-\item{internal}{Logical. If \code{TRUE}, interpret \code{features} as internal feature indices.}
-
-\item{alias}{Character scalar or \code{NULL}. Optional identifier to register this objective
-as an atomic objective for multi-objective workflows.}
+\item{alias}{Optional identifier for multi-objective workflows.}
 }
 \value{
 Updated \code{Data} object.
 }
 \description{
-Specify an objective that maximizes total representation across features,
-using the z variables associated with (pu, feature) rows in \code{dist_features}.
-
-This is a data-only setter: it stores the objective specification inside the \code{Data}
-object so it can be materialized later when the optimization model is built.
-
-If \code{alias} is provided, the objective is also registered in \code{x$data$objectives}
-as an atomic objective for multi-objective workflows.
+Specify an objective that maximizes total representation across a subset of features.
 }

@@ -4,30 +4,74 @@
 \alias{set_method_epsilon_constraint}
 \title{Configure epsilon-constraint multi-objective method}
 \usage{
-set_method_epsilon_constraint(x, primary, eps, aliases = NULL)
+set_method_epsilon_constraint(
+  x,
+  primary,
+  eps = NULL,
+  aliases = NULL,
+  mode = c("manual", "auto"),
+  n_points = 10,
+  include_extremes = TRUE,
+  lexicographic = TRUE,
+  lexicographic_tol = 1e-08
+)
 }
 \arguments{
 \item{x}{A Data or MOProblem.}
 
 \item{primary}{character(1). Alias of the primary objective to optimize.}
 
-\item{eps}{Either:
+\item{eps}{Optional epsilon specification. Either:
 \itemize{
-\item named numeric vector: eps for constrained objectives (single run), or
-\item named list of numeric vectors: grid per objective (multiple runs).
-Names must be objective aliases (usually all except \code{primary}).
-}}
+\item a named numeric vector: epsilon values for constrained objectives (single run), or
+\item a named list of numeric vectors: epsilon grid per constrained objective.
+}
+Names must be objective aliases other than \code{primary}.}
 
 \item{aliases}{Optional character vector of objective aliases to consider.
-Default: all registered objectives in x (MOProblem) / in x$data$model_registry (Data-side).}
+Default: all registered objectives.}
 
-\item{normalize}{Logical. Reserved (future). Stored in method config.}
+\item{mode}{One of \code{"manual"} or \code{"auto"}.}
 
-\item{keep_primary_eps}{Logical. If TRUE and eps contains primary, keep it (not typical).}
+\item{n_points}{Optional integer. Number of epsilon points to generate automatically
+per constrained objective when \code{eps = NULL}.}
+
+\item{include_extremes}{Logical. Only used in automatic mode. If \code{TRUE},
+include epsilon values at the extreme points. If \code{FALSE}, generate only
+interior epsilon values.}
+
+\item{lexicographic}{Logical. Only used in automatic mode. If \code{TRUE},
+compute extreme points lexicographically:
+first optimize one objective, then optimize the other while constraining
+the first one to remain within \code{lexicographic_tol}.}
+
+\item{lexicographic_tol}{Numeric scalar \eqn{\ge 0}. Tolerance used when
+fixing the first-stage optimum during lexicographic extreme-point computation.}
 }
 \value{
-MOProblem with method configured.
+MOProblem with epsilon-constraint method configured.
 }
 \description{
-Configure epsilon-constraint multi-objective method
+Configure an epsilon-constraint multi-objective method.
+
+The function supports two modes:
+
+\strong{Manual mode}
+\itemize{
+\item Provide \code{eps} as either:
+\itemize{
+\item a named numeric vector for a single run, or
+\item a named list of numeric vectors for a grid of runs.
+}
+}
+
+\strong{Automatic mode}
+\itemize{
+\item Omit \code{eps} and provide \code{n_points}.
+\item The epsilon grid will be constructed during \code{solve()} from
+extreme/payoff information.
+\item If \code{lexicographic = TRUE}, the extreme points are computed
+lexicographically using a second-stage optimization with tolerance
+\code{lexicographic_tol}.
+}
 }

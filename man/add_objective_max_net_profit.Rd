@@ -9,48 +9,28 @@ add_objective_max_net_profit(
   profit_col = "profit",
   include_pu_cost = TRUE,
   include_action_cost = TRUE,
+  actions = NULL,
   alias = NULL
 )
 }
 \arguments{
-\item{x}{A \code{Data} object created with \code{\link{inputData}} or \code{\link{inputDataSpatial}}.}
+\item{x}{A \code{Data} object.}
 
-\item{profit_col}{Character. Column name in \code{x$data$dist_profit} containing numeric profits.
-Default \code{"profit"}.}
+\item{profit_col}{Character. Profit column in \code{x$data$dist_profit}.}
 
 \item{include_pu_cost}{Logical. If \code{TRUE}, subtract planning-unit costs.}
 
 \item{include_action_cost}{Logical. If \code{TRUE}, subtract action costs.}
 
-\item{alias}{Character scalar or \code{NULL}. Optional identifier to register this objective
-as an atomic objective for multi-objective workflows.}
+\item{actions}{Optional subset of actions to include in the profit and action-cost terms.
+Values may match \code{actions$id} and, if present, \code{actions$action_set}.}
+
+\item{alias}{Optional identifier for multi-objective workflows.}
 }
 \value{
-The updated \code{Data} object.
+Updated \code{Data} object.
 }
 \description{
-Specify an objective that maximizes net profit, defined as total profit from selected
-\code{(pu, action)} pairs minus total costs:
-\deqn{\sum \mathrm{profit}\,x \;-\; \left(\sum \mathrm{pu\_cost}\,w + \sum \mathrm{action\_cost}\,x\right).}
-
-Profit is taken from \code{x$data$dist_profit} (created with \code{\link{add_profit}}).
-Planning-unit costs are taken from \code{x$data$pu}; action costs are taken from
-\code{x$data$dist_actions}.
-
-This function is \strong{data-only}: it stores the objective specification inside the
-\code{Data} object so it can be materialized later when the optimization model is built.
-
-If \code{alias} is provided, the objective is also registered in \code{x$data$objectives}
-as an atomic objective for multi-objective workflows.
-}
-\details{
-The function updates \code{x$data$model_args} with:
-\describe{
-\item{\code{model_type}}{\code{"maximizeNetProfit"}}
-\item{\code{objective_id}}{\code{"max_net_profit"}}
-\item{\code{objective_args}}{a list with \code{profit_col}, \code{include_pu_cost}, and \code{include_action_cost}}
-}
-
-If another objective setter is called afterwards, it overwrites the active single-objective
-specification in \code{x$data$model_args}.
+Specify an objective that maximizes net profit, optionally restricting the
+profit and action-cost components to a subset of actions.
 }

@@ -8,18 +8,21 @@ add_objective_min_cost(
   x,
   include_pu_cost = TRUE,
   include_action_cost = TRUE,
+  actions = NULL,
   alias = NULL
 )
 }
 \arguments{
-\item{x}{A \code{Data} object created with \code{\link{inputData}} or \code{\link{inputDataSpatial}}.}
+\item{x}{A \code{Data} object.}
 
-\item{include_pu_cost}{Logical. If \code{TRUE}, include planning-unit costs in the objective.}
+\item{include_pu_cost}{Logical. If \code{TRUE}, include planning-unit costs.}
 
-\item{include_action_cost}{Logical. If \code{TRUE}, include action costs in the objective.}
+\item{include_action_cost}{Logical. If \code{TRUE}, include action costs.}
 
-\item{alias}{Character scalar or \code{NULL}. Optional identifier to register this objective
-as an atomic objective for multi-objective workflows.}
+\item{actions}{Optional subset of actions to include in the action-cost component.
+Values may match \code{actions$id} and, if present, \code{actions$action_set}.}
+
+\item{alias}{Optional identifier for multi-objective workflows.}
 
 \item{objective_id}{Character. Stable objective identifier (e.g., \code{"min_cost"}).}
 
@@ -32,7 +35,7 @@ as an atomic objective for multi-objective workflows.}
 \value{
 The updated \code{Data} object.
 
-The updated \code{Data} object.
+Updated \code{Data} object.
 }
 \description{
 Internal helper used by objective setter functions to optionally register an objective
@@ -49,36 +52,8 @@ active single-objective specification stored in \code{x$data$model_args} (set by
 objective setter) is used.
 
 Specify an objective that minimizes total costs associated with the solution.
-Costs may include planning-unit costs and/or action costs depending on the flags provided.
-
-This function is \strong{data-only}: it stores the objective specification inside the
-\code{Data} object so it can be materialized later when the optimization model is built
-(typically when calling \code{solve()}).
-
-If \code{alias} is provided, the objective is also registered in \code{x$data$objectives}
-as an atomic objective for multi-objective workflows, while preserving the legacy
-single-objective behavior (the most recently set objective remains the active one in
-\code{x$data$model_args}).
-}
-\details{
-The function updates \code{x$data$model_args} with:
-\describe{
-\item{\code{model_type}}{\code{"minimizeCosts"}}
-\item{\code{objective_id}}{\code{"min_cost"}}
-\item{\code{objective_args}}{a list with \code{include_pu_cost} and \code{include_action_cost}}
-}
-
-The model builder must interpret these fields to set the objective coefficients.
-}
-\examples{
-\dontrun{
-x <- inputDataSpatial(pu = pu_sf, cost = "cost", features = feat_sf, pu_id_col = "id") |>
-  add_actions(actions_df) |>
-  add_objective_min_cost()
-
-# Register as atomic objective for multi-objective workflows
-x <- x |> add_objective_min_cost(alias = "cost")
-}
-
+Costs may include planning-unit costs and/or action costs. When \code{actions} is provided,
+the action-cost component is restricted to that subset of actions, while planning-unit
+costs remain global.
 }
 \keyword{internal}

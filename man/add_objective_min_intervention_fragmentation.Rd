@@ -12,26 +12,18 @@ add_objective_min_intervention_fragmentation(
 )
 }
 \arguments{
-\item{x}{A \code{Data} object created with \code{\link{inputData}} or \code{\link{inputDataSpatial}}.}
+\item{x}{A \code{Data} object.}
 
-\item{relation_name}{Character. Name of the spatial relation in \code{x$data$spatial_relations}.}
+\item{relation_name}{Character. Name of the spatial relation.}
 
-\item{weight_multiplier}{Numeric \eqn{\ge 0}. Multiplier applied to all relation weights. Default \code{1}.}
+\item{weight_multiplier}{Numeric >= 0. Multiplier applied to relation weights.}
 
-\item{alias}{Character scalar or \code{NULL}. Optional identifier to register this objective
-as an atomic objective for multi-objective workflows.}
+\item{alias}{Optional identifier for multi-objective workflows.}
 }
 \value{
-The updated \code{Data} object.
+Updated \code{Data} object.
 }
 \description{
-Specify an objective that minimizes fragmentation at the intervention level over a spatial relation.
-This objective is intended for models where interventions represent a coarser grouping of actions,
-and spatial cohesion is evaluated at that grouping level.
-
-This function is \strong{data-only}: it stores the objective specification inside the
-\code{Data} object so it can be materialized later when the optimization model is built.
-
-If \code{alias} is provided, the objective is also registered in \code{x$data$objectives}
-as an atomic objective for multi-objective workflows.
+Specify an objective that minimizes fragmentation at the intervention level
+over a spatial relation.
 }

@@ -31,310 +31,201 @@
 #'
 #' @description
 #' Specify an objective that minimizes total costs associated with the solution.
-#' Costs may include planning-unit costs and/or action costs depending on the flags provided.
+#' Costs may include planning-unit costs and/or action costs. When `actions` is provided,
+#' the action-cost component is restricted to that subset of actions, while planning-unit
+#' costs remain global.
 #'
-#' This function is \strong{data-only}: it stores the objective specification inside the
-#' \code{Data} object so it can be materialized later when the optimization model is built
-#' (typically when calling \code{solve()}).
+#' @param x A `Data` object.
+#' @param include_pu_cost Logical. If `TRUE`, include planning-unit costs.
+#' @param include_action_cost Logical. If `TRUE`, include action costs.
+#' @param actions Optional subset of actions to include in the action-cost component.
+#'   Values may match `actions$id` and, if present, `actions$action_set`.
+#' @param alias Optional identifier for multi-objective workflows.
 #'
-#' If \code{alias} is provided, the objective is also registered in \code{x$data$objectives}
-#' as an atomic objective for multi-objective workflows, while preserving the legacy
-#' single-objective behavior (the most recently set objective remains the active one in
-#' \code{x$data$model_args}).
-#'
-#' @details
-#' The function updates \code{x$data$model_args} with:
-#' \describe{
-#'   \item{\code{model_type}}{\code{"minimizeCosts"}}
-#'   \item{\code{objective_id}}{\code{"min_cost"}}
-#'   \item{\code{objective_args}}{a list with \code{include_pu_cost} and \code{include_action_cost}}
-#' }
-#'
-#' The model builder must interpret these fields to set the objective coefficients.
-#'
-#' @param x A \code{Data} object created with \code{\link{inputData}} or \code{\link{inputDataSpatial}}.
-#' @param include_pu_cost Logical. If \code{TRUE}, include planning-unit costs in the objective.
-#' @param include_action_cost Logical. If \code{TRUE}, include action costs in the objective.
-#' @param alias Character scalar or \code{NULL}. Optional identifier to register this objective
-#'   as an atomic objective for multi-objective workflows.
-#'
-#' @return The updated \code{Data} object.
-#'
-#' @examples
-#' \dontrun{
-#' x <- inputDataSpatial(pu = pu_sf, cost = "cost", features = feat_sf, pu_id_col = "id") |>
-#'   add_actions(actions_df) |>
-#'   add_objective_min_cost()
-#'
-#' # Register as atomic objective for multi-objective workflows
-#' x <- x |> add_objective_min_cost(alias = "cost")
-#' }
-#'
+#' @return Updated `Data` object.
 #' @export
 add_objective_min_cost <- function(
     x,
     include_pu_cost = TRUE,
     include_action_cost = TRUE,
+    actions = NULL,
     alias = NULL
 ) {
   stopifnot(inherits(x, "Data"))
-  if (is.null(x$data$model_args)) x$data$model_args <- list()
+
+  action_subset <- NULL
+  if (!is.null(actions)) {
+    action_subset <- .pa_resolve_action_subset(x, actions)
+  }
 
   args <- list(
     include_pu_cost = isTRUE(include_pu_cost),
-    include_action_cost = isTRUE(include_action_cost)
+    include_action_cost = isTRUE(include_action_cost),
+    actions = if (is.null(action_subset)) NULL else as.character(action_subset$id)
   )
 
-  # single-objective (legacy) behavior
-  x <- .pa_clone_data(x)
-  x$data$model_args$model_type <- "minimizeCosts"
-  x$data$model_args$objective_id <- "min_cost"
-  x$data$model_args$objective_args <- args
-
-  # atomic registration (MO)
-  x <- .pa_register_objective(
+  .pa_set_active_and_register_objective(
     x = x,
-    alias = alias,
-    objective_id = "min_cost",
     model_type = "minimizeCosts",
+    objective_id = "min_cost",
     objective_args = args,
-    sense = "min"
+    sense = "min",
+    alias = alias
   )
-
-  x
 }
 
 #' @title Add objective: maximize benefit
 #'
 #' @description
 #' Specify an objective that maximizes total benefit delivered by selected actions.
-#' Benefit values are taken from the benefit table produced by \code{\link{add_benefits}}
-#' (stored in \code{x$data$dist_benefit} and/or its model-ready variant).
+#' The objective can optionally be restricted to subsets of actions and/or features.
 #'
-#' This function is \strong{data-only}: it stores the objective specification inside the
-#' \code{Data} object so it can be materialized later when the optimization model is built
-#' (typically when calling \code{solve()}).
+#' @param x A `Data` object.
+#' @param benefit_col Character. Benefit column name in the model-ready effects table.
+#' @param actions Optional subset of actions to include. Values may match `actions$id`
+#'   and, if present, `actions$action_set`.
+#' @param features Optional subset of features to include. Values may match
+#'   `features$id` and, if present, `features$name`.
+#' @param alias Optional identifier for multi-objective workflows.
 #'
-#' If \code{alias} is provided, the objective is also registered in \code{x$data$objectives}
-#' as an atomic objective for multi-objective workflows.
-#'
-#' @details
-#' The function updates \code{x$data$model_args} with:
-#' \describe{
-#'   \item{\code{model_type}}{\code{"maximizeBenefits"}}
-#'   \item{\code{objective_id}}{\code{"max_benefit"}}
-#'   \item{\code{objective_args}}{a list with \code{benefit_col}}
-#' }
-#'
-#' The model builder will require benefit data to exist and will error if benefits are missing.
-#' If another objective setter is called afterwards, it overwrites the active single-objective
-#' specification in \code{x$data$model_args}.
-#'
-#' @param x A \code{Data} object created with \code{\link{inputData}} or \code{\link{inputDataSpatial}}.
-#' @param benefit_col Character. Column name in the model-ready benefit table containing numeric benefits.
-#'   Default \code{"benefit"}.
-#' @param alias Character scalar or \code{NULL}. Optional identifier to register this objective
-#'   as an atomic objective for multi-objective workflows.
-#'
-#' @return The updated \code{Data} object.
-#'
-#' @examples
-#' \dontrun{
-#' x <- inputDataSpatial(pu = pu_sf, cost = "cost", features = feat_sf, pu_id_col = "id") |>
-#'   add_actions(actions_df) |>
-#'   add_benefits(benefits_df) |>
-#'   add_objective_max_benefit(alias = "benefit")
-#' }
-#'
+#' @return Updated `Data` object.
 #' @export
-add_objective_max_benefit <- function(x, benefit_col = "benefit", alias = NULL) {
+add_objective_max_benefit <- function(
+    x,
+    benefit_col = "benefit",
+    actions = NULL,
+    features = NULL,
+    alias = NULL
+) {
   stopifnot(inherits(x, "Data"))
-  if (is.null(x$data$model_args)) x$data$model_args <- list()
+
+  action_subset <- NULL
+  feature_subset <- NULL
+
+  if (!is.null(actions)) {
+    action_subset <- .pa_resolve_action_subset(x, actions)
+  }
+  if (!is.null(features)) {
+    feature_subset <- .pa_resolve_feature_subset(x, features)
+  }
 
   args <- list(
-    benefit_col = as.character(benefit_col)[1]
+    benefit_col = as.character(benefit_col)[1],
+    actions = if (is.null(action_subset)) NULL else as.character(action_subset$id),
+    features = if (is.null(feature_subset)) NULL else feature_subset$id
   )
 
-  # single-objective (legacy) behavior
-  x <- .pa_clone_data(x)
-  x$data$model_args$model_type <- "maximizeBenefits"
-  x$data$model_args$objective_id <- "max_benefit"
-  x$data$model_args$objective_args <- args
-
-  # atomic registration (MO)
-  x <- .pa_register_objective(
+  .pa_set_active_and_register_objective(
     x = x,
-    alias = alias,
-    objective_id = "max_benefit",
     model_type = "maximizeBenefits",
+    objective_id = "max_benefit",
     objective_args = args,
-    sense = "max"
+    sense = "max",
+    alias = alias
   )
-
-  x
 }
 
 #' @title Add objective: maximize profit
 #'
 #' @description
-#' Specify an objective that maximizes economic profit from selected \code{(pu, action)} pairs.
-#' Profit values are taken from \code{x$data$dist_profit}, typically created with
-#' \code{\link{add_profit}}.
+#' Specify an objective that maximizes total profit from selected `(pu, action)` pairs.
+#' The objective can optionally be restricted to a subset of actions.
 #'
-#' This function is \strong{data-only}: it stores the objective specification inside the
-#' \code{Data} object so it can be materialized later when the optimization model is built
-#' (typically when calling \code{solve()}).
+#' @param x A `Data` object.
+#' @param profit_col Character. Profit column in `x$data$dist_profit`.
+#' @param actions Optional subset of actions to include. Values may match `actions$id`
+#'   and, if present, `actions$action_set`.
+#' @param alias Optional identifier for multi-objective workflows.
 #'
-#' If \code{alias} is provided, the objective is also registered in \code{x$data$objectives}
-#' as an atomic objective for multi-objective workflows.
-#'
-#' @details
-#' The function updates \code{x$data$model_args} with:
-#' \describe{
-#'   \item{\code{model_type}}{\code{"maximizeProfit"}}
-#'   \item{\code{objective_id}}{\code{"max_profit"}}
-#'   \item{\code{objective_args}}{a list with \code{profit_col}}
-#' }
-#'
-#' If another objective setter is called afterwards, it overwrites the active single-objective
-#' specification in \code{x$data$model_args}.
-#'
-#' @param x A \code{Data} object created with \code{\link{inputData}} or \code{\link{inputDataSpatial}}.
-#' @param profit_col Character. Column name in \code{x$data$dist_profit} containing numeric profits.
-#'   Default \code{"profit"}.
-#' @param alias Character scalar or \code{NULL}. Optional identifier to register this objective
-#'   as an atomic objective for multi-objective workflows.
-#'
-#' @return The updated \code{Data} object.
-#'
+#' @return Updated `Data` object.
 #' @export
-add_objective_max_profit <- function(x, profit_col = "profit", alias = NULL) {
+add_objective_max_profit <- function(
+    x,
+    profit_col = "profit",
+    actions = NULL,
+    alias = NULL
+) {
   stopifnot(inherits(x, "Data"))
-  if (is.null(x$data$model_args)) x$data$model_args <- list()
+
+  action_subset <- NULL
+  if (!is.null(actions)) {
+    action_subset <- .pa_resolve_action_subset(x, actions)
+  }
 
   args <- list(
-    profit_col = as.character(profit_col)[1]
+    profit_col = as.character(profit_col)[1],
+    actions = if (is.null(action_subset)) NULL else as.character(action_subset$id)
   )
 
-  # single-objective (legacy) behavior
-  x <- .pa_clone_data(x)
-  x$data$model_args$model_type <- "maximizeProfit"
-  x$data$model_args$objective_id <- "max_profit"
-  x$data$model_args$objective_args <- args
-
-  # atomic registration (MO)
-  x <- .pa_register_objective(
+  .pa_set_active_and_register_objective(
     x = x,
-    alias = alias,
-    objective_id = "max_profit",
     model_type = "maximizeProfit",
+    objective_id = "max_profit",
     objective_args = args,
-    sense = "max"
+    sense = "max",
+    alias = alias
   )
-
-  x
 }
 
 #' @title Add objective: maximize net profit
 #'
 #' @description
-#' Specify an objective that maximizes net profit, defined as total profit from selected
-#' \code{(pu, action)} pairs minus total costs:
-#' \deqn{\sum \mathrm{profit}\,x \;-\; \left(\sum \mathrm{pu\_cost}\,w + \sum \mathrm{action\_cost}\,x\right).}
+#' Specify an objective that maximizes net profit, optionally restricting the
+#' profit and action-cost components to a subset of actions.
 #'
-#' Profit is taken from \code{x$data$dist_profit} (created with \code{\link{add_profit}}).
-#' Planning-unit costs are taken from \code{x$data$pu}; action costs are taken from
-#' \code{x$data$dist_actions}.
+#' @param x A `Data` object.
+#' @param profit_col Character. Profit column in `x$data$dist_profit`.
+#' @param include_pu_cost Logical. If `TRUE`, subtract planning-unit costs.
+#' @param include_action_cost Logical. If `TRUE`, subtract action costs.
+#' @param actions Optional subset of actions to include in the profit and action-cost terms.
+#'   Values may match `actions$id` and, if present, `actions$action_set`.
+#' @param alias Optional identifier for multi-objective workflows.
 #'
-#' This function is \strong{data-only}: it stores the objective specification inside the
-#' \code{Data} object so it can be materialized later when the optimization model is built.
-#'
-#' If \code{alias} is provided, the objective is also registered in \code{x$data$objectives}
-#' as an atomic objective for multi-objective workflows.
-#'
-#' @details
-#' The function updates \code{x$data$model_args} with:
-#' \describe{
-#'   \item{\code{model_type}}{\code{"maximizeNetProfit"}}
-#'   \item{\code{objective_id}}{\code{"max_net_profit"}}
-#'   \item{\code{objective_args}}{a list with \code{profit_col}, \code{include_pu_cost}, and \code{include_action_cost}}
-#' }
-#'
-#' If another objective setter is called afterwards, it overwrites the active single-objective
-#' specification in \code{x$data$model_args}.
-#'
-#' @param x A \code{Data} object created with \code{\link{inputData}} or \code{\link{inputDataSpatial}}.
-#' @param profit_col Character. Column name in \code{x$data$dist_profit} containing numeric profits.
-#'   Default \code{"profit"}.
-#' @param include_pu_cost Logical. If \code{TRUE}, subtract planning-unit costs.
-#' @param include_action_cost Logical. If \code{TRUE}, subtract action costs.
-#' @param alias Character scalar or \code{NULL}. Optional identifier to register this objective
-#'   as an atomic objective for multi-objective workflows.
-#'
-#' @return The updated \code{Data} object.
-#'
+#' @return Updated `Data` object.
 #' @export
 add_objective_max_net_profit <- function(
     x,
     profit_col = "profit",
     include_pu_cost = TRUE,
     include_action_cost = TRUE,
+    actions = NULL,
     alias = NULL
 ) {
   stopifnot(inherits(x, "Data"))
-  if (is.null(x$data$model_args)) x$data$model_args <- list()
+
+  action_subset <- NULL
+  if (!is.null(actions)) {
+    action_subset <- .pa_resolve_action_subset(x, actions)
+  }
 
   args <- list(
     profit_col = as.character(profit_col)[1],
     include_pu_cost = isTRUE(include_pu_cost),
-    include_action_cost = isTRUE(include_action_cost)
+    include_action_cost = isTRUE(include_action_cost),
+    actions = if (is.null(action_subset)) NULL else as.character(action_subset$id)
   )
 
-  # single-objective (legacy) behavior
-  x <- .pa_clone_data(x)
-  x$data$model_args$model_type <- "maximizeNetProfit"
-  x$data$model_args$objective_id <- "max_net_profit"
-  x$data$model_args$objective_args <- args
-
-  # atomic registration (MO)
-  x <- .pa_register_objective(
+  .pa_set_active_and_register_objective(
     x = x,
-    alias = alias,
-    objective_id = "max_net_profit",
     model_type = "maximizeNetProfit",
+    objective_id = "max_net_profit",
     objective_args = args,
-    sense = "max"
+    sense = "max",
+    alias = alias
   )
-
-  x
 }
 
-#' @title Add objective: minimize fragmentation (PU cut)
+#' @title Add objective: minimize fragmentation
 #'
 #' @description
-#' Specify an objective that minimizes spatial fragmentation measured as the weighted cut
-#' between selected and non-selected planning units over a spatial relation:
-#' \deqn{\sum_{(i,j)} w_{ij}\,|z_i - z_j|.}
+#' Specify an objective that minimizes planning-unit fragmentation over a spatial relation.
 #'
-#' In the model builder, this objective is linearized using auxiliary edge variables.
-#' Relation weights \eqn{w_{ij}} are read from \code{x$data$spatial_relations[[relation_name]]}
-#' and can be scaled by \code{weight_multiplier} (BLM-like scaling).
+#' @param x A `Data` object.
+#' @param relation_name Character. Name of the spatial relation.
+#' @param weight_multiplier Numeric >= 0. Multiplier applied to relation weights.
+#' @param alias Optional identifier for multi-objective workflows.
 #'
-#' This function is \strong{data-only}: it stores the objective specification inside the
-#' \code{Data} object so it can be materialized later when the optimization model is built.
-#'
-#' If \code{alias} is provided, the objective is also registered in \code{x$data$objectives}
-#' as an atomic objective for multi-objective workflows.
-#'
-#' @param x A \code{Data} object created with \code{\link{inputData}} or \code{\link{inputDataSpatial}}.
-#' @param relation_name Character. Name of the spatial relation in \code{x$data$spatial_relations}
-#'   (e.g., \code{"boundary"}, \code{"rook"}, \code{"queen"}, \code{"knn"}). Default \code{"boundary"}.
-#' @param weight_multiplier Numeric \eqn{\ge 0}. Multiplier applied to all relation weights. Default \code{1}.
-#' @param alias Character scalar or \code{NULL}. Optional identifier to register this objective
-#'   as an atomic objective for multi-objective workflows.
-#'
-#' @return The updated \code{Data} object.
-#'
+#' @return Updated `Data` object.
 #' @export
 add_objective_min_fragmentation <- function(
     x,
@@ -346,75 +237,52 @@ add_objective_min_fragmentation <- function(
 
   relation_name <- as.character(relation_name)[1]
   weight_multiplier <- as.numeric(weight_multiplier)[1]
+
   if (!is.finite(weight_multiplier) || weight_multiplier < 0) {
     stop("weight_multiplier must be a finite number >= 0.", call. = FALSE)
   }
 
-  # soft check: relation exists (fail early)
   rels <- x$data$spatial_relations
   if (is.null(rels) || !is.list(rels) || is.null(rels[[relation_name]])) {
     stop(
       "Spatial relation '", relation_name, "' not found in x$data$spatial_relations. ",
-      "Add it first (e.g. add_spatial_boundary()/rook/queen/knn/distance).",
+      "Add it first.",
       call. = FALSE
     )
   }
-
-  if (is.null(x$data$model_args)) x$data$model_args <- list()
 
   args <- list(
     relation_name = relation_name,
     weight_multiplier = weight_multiplier
   )
 
-  # single-objective (legacy) behavior
-  x <- .pa_clone_data(x)
-  x$data$model_args$model_type <- "minimizeFragmentation"
-  x$data$model_args$objective_id <- "min_fragmentation"
-  x$data$model_args$objective_args <- args
-
-  # atomic registration (MO)
-  x <- .pa_register_objective(
+  .pa_set_active_and_register_objective(
     x = x,
-    alias = alias,
-    objective_id = "min_fragmentation",
     model_type = "minimizeFragmentation",
+    objective_id = "min_fragmentation",
     objective_args = args,
-    sense = "min"
+    sense = "min",
+    alias = alias
   )
-
-  x
 }
 
 #' @title Add objective: minimize action fragmentation
 #'
 #' @description
-#' Specify an objective that minimizes fragmentation at the action level over a spatial relation.
-#' This objective is intended for models where action allocations (rather than only PU selection)
-#' drive spatial cohesion.
+#' Specify an objective that minimizes fragmentation at the action level over
+#' a spatial relation. The objective can optionally be restricted to a subset
+#' of actions and/or weighted by action.
 #'
-#' This function is \strong{data-only}: it stores the objective specification inside the
-#' \code{Data} object so it can be materialized later when the optimization model is built.
+#' @param x A `Data` object.
+#' @param relation_name Character. Name of the spatial relation.
+#' @param weight_multiplier Numeric >= 0. Multiplier applied to relation weights.
+#' @param action_weights Optional action weights. Either a named numeric vector
+#'   (names = action ids) or a `data.frame(action, weight)`.
+#' @param actions Optional subset of actions to include. Values may match `actions$id`
+#'   and, if present, `actions$action_set`.
+#' @param alias Optional identifier for multi-objective workflows.
 #'
-#' If \code{alias} is provided, the objective is also registered in \code{x$data$objectives}
-#' as an atomic objective for multi-objective workflows.
-#'
-#' @details
-#' Action-level fragmentation can optionally weight actions differently via \code{action_weights}
-#' and can optionally restrict the objective to a subset of actions via \code{actions}.
-#' The exact linearization and interpretation are implemented in the model builder.
-#'
-#' @param x A \code{Data} object created with \code{\link{inputData}} or \code{\link{inputDataSpatial}}.
-#' @param relation_name Character. Name of the spatial relation in \code{x$data$spatial_relations}.
-#' @param weight_multiplier Numeric \eqn{\ge 0}. Multiplier applied to all relation weights. Default \code{1}.
-#' @param action_weights Optional action weights. Either a named numeric vector (names = action ids)
-#'   or a \code{data.frame(action, weight)}.
-#' @param actions Optional subset of action ids to include in the objective.
-#' @param alias Character scalar or \code{NULL}. Optional identifier to register this objective
-#'   as an atomic objective for multi-objective workflows.
-#'
-#' @return The updated \code{Data} object.
-#'
+#' @return Updated `Data` object.
 #' @export
 add_objective_min_action_fragmentation <- function(
     x,
@@ -425,54 +293,41 @@ add_objective_min_action_fragmentation <- function(
     alias = NULL
 ) {
   stopifnot(inherits(x, "Data"))
-  if (is.null(x$data$model_args)) x$data$model_args <- list()
+
+  action_subset <- NULL
+  if (!is.null(actions)) {
+    action_subset <- .pa_resolve_action_subset(x, actions)
+  }
 
   args <- list(
     relation_name = as.character(relation_name)[1],
     weight_multiplier = as.numeric(weight_multiplier)[1],
     action_weights = action_weights,
-    actions = actions
+    actions = if (is.null(action_subset)) NULL else as.character(action_subset$id)
   )
 
-  x <- .pa_clone_data(x)
-  x$data$model_args$model_type <- "minimizeActionFragmentation"
-  x$data$model_args$objective_id <- "min_action_fragmentation"
-  x$data$model_args$objective_args <- args
-
-  x <- .pa_register_objective(
+  .pa_set_active_and_register_objective(
     x = x,
-    alias = alias,
-    objective_id = "min_action_fragmentation",
     model_type = "minimizeActionFragmentation",
+    objective_id = "min_action_fragmentation",
     objective_args = args,
-    sense = "min"
+    sense = "min",
+    alias = alias
   )
-
-  x
 }
-
 
 #' @title Add objective: minimize intervention fragmentation
 #'
 #' @description
-#' Specify an objective that minimizes fragmentation at the intervention level over a spatial relation.
-#' This objective is intended for models where interventions represent a coarser grouping of actions,
-#' and spatial cohesion is evaluated at that grouping level.
+#' Specify an objective that minimizes fragmentation at the intervention level
+#' over a spatial relation.
 #'
-#' This function is \strong{data-only}: it stores the objective specification inside the
-#' \code{Data} object so it can be materialized later when the optimization model is built.
+#' @param x A `Data` object.
+#' @param relation_name Character. Name of the spatial relation.
+#' @param weight_multiplier Numeric >= 0. Multiplier applied to relation weights.
+#' @param alias Optional identifier for multi-objective workflows.
 #'
-#' If \code{alias} is provided, the objective is also registered in \code{x$data$objectives}
-#' as an atomic objective for multi-objective workflows.
-#'
-#' @param x A \code{Data} object created with \code{\link{inputData}} or \code{\link{inputDataSpatial}}.
-#' @param relation_name Character. Name of the spatial relation in \code{x$data$spatial_relations}.
-#' @param weight_multiplier Numeric \eqn{\ge 0}. Multiplier applied to all relation weights. Default \code{1}.
-#' @param alias Character scalar or \code{NULL}. Optional identifier to register this objective
-#'   as an atomic objective for multi-objective workflows.
-#'
-#' @return The updated \code{Data} object.
-#'
+#' @return Updated `Data` object.
 #' @export
 add_objective_min_intervention_fragmentation <- function(
     x,
@@ -481,54 +336,32 @@ add_objective_min_intervention_fragmentation <- function(
     alias = NULL
 ) {
   stopifnot(inherits(x, "Data"))
-  if (is.null(x$data$model_args)) x$data$model_args <- list()
 
   args <- list(
     relation_name = as.character(relation_name)[1],
     weight_multiplier = as.numeric(weight_multiplier)[1]
   )
 
-  # single-objective (legacy) behavior
-  x <- .pa_clone_data(x)
-  x$data$model_args$model_type <- "minimizeInterventionFragmentation"
-  x$data$model_args$objective_id <- "min_intervention_fragmentation"
-  x$data$model_args$objective_args <- args
-
-  # atomic registration (MO)
-  x <- .pa_register_objective(
+  .pa_set_active_and_register_objective(
     x = x,
-    alias = alias,
-    objective_id = "min_intervention_fragmentation",
     model_type = "minimizeInterventionFragmentation",
+    objective_id = "min_intervention_fragmentation",
     objective_args = args,
-    sense = "min"
+    sense = "min",
+    alias = alias
   )
-
-  x
 }
 
 #' @title Add objective: maximize representation
 #'
 #' @description
-#' Specify an objective that maximizes total representation across features,
-#' using the z variables associated with (pu, feature) rows in `dist_features`.
+#' Specify an objective that maximizes total representation across a subset of features.
 #'
-#' This is a data-only setter: it stores the objective specification inside the `Data`
-#' object so it can be materialized later when the optimization model is built.
-#'
-#' If `alias` is provided, the objective is also registered in `x$data$objectives`
-#' as an atomic objective for multi-objective workflows.
-#'
-#' @param x A `Data` object created with [inputData()] or [inputDataSpatial()].
-#' @param amount_col Character. Column name in `dist_features` containing non-negative amounts.
-#' @param features Optional subset of feature ids to include in the objective.
-#'   Can be:
-#'   - integer/numeric feature ids (matching `x$data$features$id`), or
-#'   - character feature ids (matching `x$data$features$id` if those are character), or
-#'   - internal feature indices (1..n_features) if `internal = TRUE`.
-#' @param internal Logical. If `TRUE`, interpret `features` as internal feature indices.
-#' @param alias Character scalar or `NULL`. Optional identifier to register this objective
-#'   as an atomic objective for multi-objective workflows.
+#' @param x A `Data` object.
+#' @param amount_col Character. Column in `dist_features` containing amounts.
+#' @param features Optional subset of features to include. Values may match
+#'   `features$id` and, if present, `features$name`.
+#' @param alias Optional identifier for multi-objective workflows.
 #'
 #' @return Updated `Data` object.
 #' @export
@@ -536,80 +369,94 @@ add_objective_max_representation <- function(
     x,
     amount_col = "amount",
     features = NULL,
-    internal = FALSE,
     alias = NULL
 ) {
   stopifnot(inherits(x, "Data"))
-  if (is.null(x$data$model_args)) x$data$model_args <- list()
 
-  amount_col <- as.character(amount_col)[1]
-  if (is.na(amount_col) || !nzchar(amount_col)) {
-    stop("`amount_col` must be a non-empty string.", call. = FALSE)
-  }
-
-  # ---- normalize/validate feature subset
-  feat_ids <- NULL
-
+  feature_subset <- NULL
   if (!is.null(features)) {
-    if (!is.logical(internal) || length(internal) != 1L || is.na(internal)) {
-      stop("`internal` must be TRUE or FALSE.", call. = FALSE)
-    }
-    internal <- isTRUE(internal)
-
-    if (internal) {
-      idx <- as.integer(features)
-      if (anyNA(idx) || any(idx < 1L)) stop("`features` (internal=TRUE) must be valid indices >= 1.", call. = FALSE)
-
-      nF <- nrow(x$data$features %||% data.frame())
-      if (nF <= 0) stop("No features found in x$data$features.", call. = FALSE)
-      if (any(idx > nF)) stop("Some internal feature indices are out of range (1..n_features).", call. = FALSE)
-
-      feat_ids <- x$data$features$id[idx]
-    } else {
-      # treat as feature ids
-      feat_ids <- features
-    }
-
-    feat_ids <- unique(feat_ids)
-    if (length(feat_ids) == 0L) stop("`features` subset is empty after processing.", call. = FALSE)
-
-    # must exist in x$data$features$id
-    if (is.null(x$data$features) || !inherits(x$data$features, "data.frame") || nrow(x$data$features) == 0) {
-      stop("x$data$features is missing/empty; cannot validate `features` subset.", call. = FALSE)
-    }
-    ok <- feat_ids %in% x$data$features$id
-    if (any(!ok)) {
-      stop(
-        "Some feature ids in `features` were not found in x$data$features$id: ",
-        paste(feat_ids[!ok], collapse = ", "),
-        call. = FALSE
-      )
-    }
+    feature_subset <- .pa_resolve_feature_subset(x, features)
   }
 
   args <- list(
-    amount_col = amount_col,
-    features = feat_ids
+    amount_col = as.character(amount_col)[1],
+    features = if (is.null(feature_subset)) NULL else feature_subset$id
   )
 
-  # single-objective (legacy) behavior
-  x <- .pa_clone_data(x)
-  x$data$model_args$model_type <- "maximizeRepresentation"
-  x$data$model_args$objective_id <- "max_representation"
-  x$data$model_args$objective_args <- args
-
-  # atomic registration (MO)
-  x <- .pa_register_objective(
+  .pa_set_active_and_register_objective(
     x = x,
-    alias = alias,
-    objective_id = "max_representation",
     model_type = "maximizeRepresentation",
+    objective_id = "max_representation",
     objective_args = args,
-    sense = "max"
+    sense = "max",
+    alias = alias
   )
-
-  x
 }
 
 
+#' @title Add objective: minimize intervention impact
+#'
+#' @description
+#' Specify an objective that minimizes the impact associated with selecting
+#' planning units for intervention. This objective uses planning-unit selection
+#' variables (`w`) so that each planning unit contributes at most once,
+#' regardless of how many feasible actions exist in that unit.
+#'
+#' Impact values are taken from the baseline feature distribution in
+#' `x$data$dist_features`. Optionally, the objective can be restricted to a
+#' subset of features.
+#'
+#' @param x A `Data` object.
+#' @param impact_col Character. Column in `x$data$dist_features` containing the
+#'   per-(pu,feature) impact amount. Default `"amount"`.
+#' @param features Optional subset of features to include. Can be feature ids
+#'   and, if available, feature names.
+#' @param alias Optional alias for multi-objective workflows.
+#'
+#' @return Updated `Data` object.
+#' @export
+add_objective_min_intervention_impact <- function(
+    x,
+    impact_col = "amount",
+    features = NULL,
+    actions = NULL,
+    alias = NULL
+) {
+  stopifnot(inherits(x, "Data"))
 
+  impact_col <- as.character(impact_col)[1]
+  if (is.na(impact_col) || !nzchar(impact_col)) {
+    stop("impact_col must be a non-empty string.", call. = FALSE)
+  }
+
+  if (is.null(x$data$dist_features) ||
+      !inherits(x$data$dist_features, "data.frame") ||
+      nrow(x$data$dist_features) == 0) {
+    stop("x$data$dist_features is missing or empty.", call. = FALSE)
+  }
+
+  if (!(impact_col %in% names(x$data$dist_features))) {
+    stop(
+      "impact_col '", impact_col, "' was not found in x$data$dist_features.",
+      call. = FALSE
+    )
+  }
+
+  feat_subset <- .pa_resolve_feature_subset(x, features = features)
+  act_subset  <- .pa_resolve_action_subset(x, subset = actions)
+
+  args <- list(
+    impact_col = impact_col,
+    features = feat_subset$id,
+    actions = act_subset$id
+  )
+
+  .pa_set_active_and_register_objective(
+    x = x,
+    model_type = "minimizeInterventionImpact",
+    objective_id = "min_intervention_impact",
+    objective_args = args,
+    sense = "min",
+    alias = alias
+  )
+}

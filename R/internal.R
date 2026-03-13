@@ -1037,6 +1037,91 @@ available_to_solve <- function(package = ""){
   invisible(x)
 }
 
+.pa_apply_area_constraints_if_present <- function(x) {
+  stopifnot(inherits(x, "Data"))
+
+  cons <- x$data$constraints %||% list()
+  if (length(cons) == 0L) return(x)
+
+  if (is.null(cons$area_min) && is.null(cons$area_max)) {
+    return(x)
+  }
+
+  if (is.null(x$data$model_ptr)) {
+    stop("Model pointer is missing while applying area constraints.", call. = FALSE)
+  }
+
+  x <- .pa_refresh_model_snapshot(x)
+
+  ml <- x$data$model_list
+  if (is.null(ml)) {
+    stop("Model snapshot is missing while applying area constraints.", call. = FALSE)
+  }
+
+  n_pu <- as.integer(ml$n_pu %||% 0L)
+  if (n_pu <= 0L) {
+    stop("Model has n_pu=0; cannot apply area constraints.", call. = FALSE)
+  }
+
+  w0 <- as.integer(ml$w_offset %||% 0L)
+  j0 <- w0 + (0:(n_pu - 1L))
+
+  # ---- area_min
+  if (!is.null(cons$area_min)) {
+    spec <- cons$area_min
+    a <- .pa_get_area_vec(
+      x,
+      area_col = spec$area_col %||% NULL,
+      area_unit = spec$unit %||% "m2"
+    )
+
+    if (length(a) != n_pu) {
+      stop(
+        "Area vector length (", length(a), ") != n_pu (", n_pu,
+        ") while applying area_min constraint.",
+        call. = FALSE
+      )
+    }
+
+    x <- .pa_add_linear_constraint(
+      x,
+      var_index_0based = j0,
+      coeff = a,
+      sense = ">=",
+      rhs = as.numeric(spec$value),
+      name = spec$name %||% "area_min"
+    )
+  }
+
+  # ---- area_max
+  if (!is.null(cons$area_max)) {
+    spec <- cons$area_max
+    a <- .pa_get_area_vec(
+      x,
+      area_col = spec$area_col %||% NULL,
+      area_unit = spec$unit %||% "m2"
+    )
+
+    if (length(a) != n_pu) {
+      stop(
+        "Area vector length (", length(a), ") != n_pu (", n_pu,
+        ") while applying area_max constraint.",
+        call. = FALSE
+      )
+    }
+
+    x <- .pa_add_linear_constraint(
+      x,
+      var_index_0based = j0,
+      coeff = a,
+      sense = "<=",
+      rhs = as.numeric(spec$value),
+      name = spec$name %||% "area_max"
+    )
+  }
+
+  x
+}
 
 .pa_model_from_ptr <- function(op, args = list(), drop_triplets = TRUE) {
 
@@ -3359,31 +3444,72 @@ available_to_solve <- function(package = ""){
 # -------------------------------------------------------------------------
 # Internal helpers objective relations
 # -------------------------------------------------------------------------
-.pa_register_objective <- function(x, alias, objective_id, model_type, objective_args, sense) {
+.pa_register_objective <- function(
+    x,
+    alias,
+    objective_id,
+    model_type,
+    objective_args = list(),
+    sense = c("min", "max")
+) {
   stopifnot(inherits(x, "Data"))
+
   if (is.null(alias)) return(x)
 
   alias <- as.character(alias)[1]
-  if (!nzchar(alias)) stop("alias must be a non-empty string.", call. = FALSE)
+  if (is.na(alias) || !nzchar(alias)) {
+    stop("alias must be a non-empty string.", call. = FALSE)
+  }
 
-  sense <- as.character(sense)[1]
-  if (!sense %in% c("min", "max")) stop("sense must be 'min' or 'max'.", call. = FALSE)
+  objective_id <- as.character(objective_id)[1]
+  if (is.na(objective_id) || !nzchar(objective_id)) {
+    stop("objective_id must be a non-empty string.", call. = FALSE)
+  }
+
+  model_type <- as.character(model_type)[1]
+  if (is.na(model_type) || !nzchar(model_type)) {
+    stop("model_type must be a non-empty string.", call. = FALSE)
+  }
+
+  sense <- match.arg(sense)
+
+  if (is.null(objective_args)) {
+    objective_args <- list()
+  }
+  if (!is.list(objective_args)) {
+    stop("objective_args must be a list.", call. = FALSE)
+  }
 
   if (is.null(x$data$objectives) || !is.list(x$data$objectives)) {
     x$data$objectives <- list()
   }
 
+  # prevent duplicated aliases
   if (!is.null(x$data$objectives[[alias]])) {
-    stop("Objective alias '", alias, "' already exists. Use a different alias.", call. = FALSE)
+    stop(
+      "Objective alias '", alias, "' already exists. ",
+      "Use a different alias.",
+      call. = FALSE
+    )
   }
 
   x$data$objectives[[alias]] <- list(
     alias = alias,
-    objective_id = as.character(objective_id)[1],
-    model_type = as.character(model_type)[1],
+    objective_id = objective_id,
+    model_type = model_type,
     objective_args = objective_args,
-    sense = sense
+    sense = sense,
+    created_at = as.character(Sys.time())
   )
+
+  # keep deterministic ordering by alias
+  x$data$objectives <- x$data$objectives[sort(names(x$data$objectives))]
+
+  # if a model already exists, mark dirty
+  if (!is.null(x$data$model_ptr)) {
+    x$data$meta <- x$data$meta %||% list()
+    x$data$meta$model_dirty <- TRUE
+  }
 
   x
 }
@@ -3679,33 +3805,48 @@ available_to_solve <- function(package = ""){
 
 .pa_build_model_set_needs_from_objective <- function(x) {
   stopifnot(inherits(x, "Data"))
+
   args  <- x$data$model_args %||% list()
   mtype <- args$model_type %||% "minimizeCosts"
-
   raw_needs <- args$needs %||% list()
 
-  # base defaults: z ALWAYS TRUE (design decision)
-  needs <- list(
-    z = TRUE,
-    y_pu = FALSE,
-    y_action = FALSE,
-    y_intervention = FALSE,
-    u_intervention = FALSE
-  )
+  needs <- .pa_needs_default()
 
-  # allow user override for y_* (and optionally z if you want)
+  # decisión de diseño actual: z siempre disponible
+  needs$z <- TRUE
+
+  # primero respetamos overrides explícitos si vienen dados
+  if (!is.null(raw_needs$z))              needs$z <- isTRUE(raw_needs$z)
   if (!is.null(raw_needs$y_pu))           needs$y_pu <- isTRUE(raw_needs$y_pu)
   if (!is.null(raw_needs$y_action))       needs$y_action <- isTRUE(raw_needs$y_action)
   if (!is.null(raw_needs$y_intervention)) needs$y_intervention <- isTRUE(raw_needs$y_intervention)
   if (!is.null(raw_needs$u_intervention)) needs$u_intervention <- isTRUE(raw_needs$u_intervention)
 
-  # infer y_* only if not provided
-  if (is.null(raw_needs$y_pu))           needs$y_pu <- identical(mtype, "minimizeFragmentation")
-  if (is.null(raw_needs$y_action))       needs$y_action <- identical(mtype, "minimizeActionFragmentation")
-  if (is.null(raw_needs$y_intervention)) needs$y_intervention <- identical(mtype, "minimizeInterventionFragmentation")
-  if (is.null(raw_needs$u_intervention)) needs$u_intervention <- FALSE
+  # luego inferimos solo lo que no vino explícito
+  if (is.null(raw_needs$y_pu)) {
+    needs$y_pu <- identical(mtype, "minimizeFragmentation")
+  }
 
-  # clean booleans
+  if (is.null(raw_needs$y_action)) {
+    needs$y_action <- identical(mtype, "minimizeActionFragmentation")
+  }
+
+  if (is.null(raw_needs$y_intervention)) {
+    needs$y_intervention <- identical(mtype, "minimizeInterventionFragmentation")
+  }
+
+  if (is.null(raw_needs$u_intervention)) {
+    needs$u_intervention <- identical(mtype, "minimizeInterventionImpact")
+  }
+
+  # preserva metadatos extra útiles para MO, como relation_name
+  extra_fields <- setdiff(names(raw_needs), names(needs))
+  if (length(extra_fields) > 0L) {
+    for (nm in extra_fields) {
+      needs[[nm]] <- raw_needs[[nm]]
+    }
+  }
+
   needs$z              <- isTRUE(needs$z)
   needs$y_pu           <- isTRUE(needs$y_pu)
   needs$y_action       <- isTRUE(needs$y_action)
@@ -3729,6 +3870,26 @@ available_to_solve <- function(package = ""){
   args  <- x$data$model_args %||% list()
   needs <- args$needs %||% list()
   oargs <- args$objective_args %||% list()
+
+  mo_mode <- isTRUE(args$mo_mode)
+
+  if (isTRUE(mo_mode) && isTRUE(needs$y_action)) {
+    .pa_abort(
+      "MO phase 1 does not support preparing y_action in the shared superset yet."
+    )
+  }
+
+  if (isTRUE(mo_mode) && isTRUE(needs$y_intervention)) {
+    .pa_abort(
+      "MO phase 1 does not support preparing y_intervention in the shared superset yet."
+    )
+  }
+
+  if (isTRUE(mo_mode) && isTRUE(needs$u_intervention)) {
+    .pa_abort(
+      "MO phase 1 does not support preparing u_intervention in the shared superset yet."
+    )
+  }
 
   # nothing to do
   if (!isTRUE(needs$y_pu) &&
@@ -3935,6 +4096,93 @@ available_to_solve <- function(package = ""){
 
   out <- acts[keep, c("id", "internal_id"), drop = FALSE]
   if ("action_set" %in% names(acts)) out$action_set <- acts$action_set[keep]
+  rownames(out) <- NULL
+  out
+}
+
+#' @include internal.R
+NULL
+
+# -------------------------------------------------------------------------
+# Internal helpers for normalized atomic objectives
+# -------------------------------------------------------------------------
+
+.pa_set_active_and_register_objective <- function(
+    x,
+    model_type,
+    objective_id,
+    objective_args = list(),
+    sense = c("min", "max"),
+    alias = NULL
+) {
+  stopifnot(inherits(x, "Data"))
+  sense <- match.arg(sense)
+
+  x <- .pa_clone_data(x)
+
+  if (is.null(x$data$model_args) || !is.list(x$data$model_args)) {
+    x$data$model_args <- list()
+  }
+
+  x$data$model_args$model_type <- as.character(model_type)[1]
+  x$data$model_args$objective_id <- as.character(objective_id)[1]
+  x$data$model_args$objective_args <- objective_args
+
+  x <- .pa_register_objective(
+    x = x,
+    alias = alias,
+    objective_id = objective_id,
+    model_type = model_type,
+    objective_args = objective_args,
+    sense = sense
+  )
+
+  x
+}
+
+.pa_resolve_feature_subset <- function(x, features = NULL) {
+  stopifnot(inherits(x, "Data"))
+
+  feats <- x$data$features
+  if (is.null(feats) || !inherits(feats, "data.frame") || nrow(feats) == 0) {
+    stop("No features available in x$data$features.", call. = FALSE)
+  }
+  if (!all(c("id", "internal_id") %in% names(feats))) {
+    stop("x$data$features must contain columns 'id' and 'internal_id'.", call. = FALSE)
+  }
+
+  if (is.null(features)) {
+    out <- feats[, c("id", "internal_id"), drop = FALSE]
+    if ("name" %in% names(feats)) out$name <- feats$name
+    return(out)
+  }
+
+  vals <- unique(features)
+  vals <- vals[!is.na(vals)]
+
+  if (length(vals) == 0) {
+    stop("features must contain at least one non-missing value, or be NULL.", call. = FALSE)
+  }
+
+  hit_id <- feats$id %in% vals
+  hit_name <- rep(FALSE, nrow(feats))
+  if ("name" %in% names(feats)) {
+    hit_name <- as.character(feats$name) %in% as.character(vals)
+  }
+
+  keep <- hit_id | hit_name
+
+  if (!any(keep)) {
+    stop(
+      "features did not match any feature ids",
+      if ("name" %in% names(feats)) " or feature names" else "",
+      ".",
+      call. = FALSE
+    )
+  }
+
+  out <- feats[keep, c("id", "internal_id"), drop = FALSE]
+  if ("name" %in% names(feats)) out$name <- feats$name[keep]
   rownames(out) <- NULL
   out
 }

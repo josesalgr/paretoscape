@@ -77,6 +77,10 @@ rcpp_add_objective_min_fragmentation_actions_by_action <- function(x, dist_actio
     .Call(`_mosap_rcpp_add_objective_min_fragmentation_actions_by_action`, x, dist_actions_data, relation_data, actions_to_use, action_weights, weight, weight_multiplier, block_name, tag)
 }
 
+rcpp_add_objective_min_intervention_impact <- function(x, pu_data, dist_actions_data, dist_features_data, subset_key = "", impact_col = "amount", features_to_use = integerVector(), actions_to_use = integerVector(), internal_feature_col = "internal_feature", weight = 1.0, weight_multiplier = 1.0, block_name = "objective_add_min_intervention_impact", tag = "") {
+    .Call(`_mosap_rcpp_add_objective_min_intervention_impact`, x, pu_data, dist_actions_data, dist_features_data, subset_key, impact_col, features_to_use, actions_to_use, internal_feature_col, weight, weight_multiplier, block_name, tag)
+}
+
 rcpp_add_pu_locks <- function(x, pu_data, block_name = "pu_locks", tag = "") {
     .Call(`_mosap_rcpp_add_pu_locks`, x, pu_data, block_name, tag)
 }
@@ -103,6 +107,10 @@ rcpp_add_target_recovery_power <- function(x, features_data, dist_actions_data, 
 
 rcpp_fix_z_ineligible_by_positive_delta <- function(x, dist_features_data, dist_benefit_data, fix_lb_too = TRUE, eps = 1e-12) {
     .Call(`_mosap_rcpp_fix_z_ineligible_by_positive_delta`, x, dist_features_data, dist_benefit_data, fix_lb_too, eps)
+}
+
+rcpp_model_set_objective_vector <- function(x, obj, model_sense = "min") {
+    invisible(.Call(`_mosap_rcpp_model_set_objective_vector`, x, obj, model_sense))
 }
 
 rcpp_objective_max_coverage <- function(x, pu_data, features_data, dist_features_data, threats_data, dist_threats_data, boundary_data, blm, curve) {
@@ -147,5 +155,9 @@ rcpp_prepare_objective_max_profit <- function(x, dist_actions_data, dist_profit_
 
 rcpp_prepare_objective_min_cost <- function(x, pu_data, dist_actions_data, include_pu_cost = TRUE, include_action_cost = TRUE, block_name = "objective_min_cost", tag = "") {
     .Call(`_mosap_rcpp_prepare_objective_min_cost`, x, pu_data, dist_actions_data, include_pu_cost, include_action_cost, block_name, tag)
+}
+
+rcpp_prepare_objective_min_intervention_impact <- function(x, pu_data, dist_actions_data, dist_features_data, subset_key = "", impact_col = "amount", features_to_use = integerVector(), actions_to_use = integerVector(), internal_feature_col = "internal_feature", block_name = "objective_min_intervention_impact", tag = "") {
+    .Call(`_mosap_rcpp_prepare_objective_min_intervention_impact`, x, pu_data, dist_actions_data, dist_features_data, subset_key, impact_col, features_to_use, actions_to_use, internal_feature_col, block_name, tag)
 }
 

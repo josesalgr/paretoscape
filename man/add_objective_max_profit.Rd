@@ -4,40 +4,27 @@
 \alias{add_objective_max_profit}
 \title{Add objective: maximize profit}
 \usage{
-add_objective_max_profit(x, profit_col = "profit", alias = NULL)
+add_objective_max_profit(
+  x,
+  profit_col = "profit",
+  actions = NULL,
+  alias = NULL
+)
 }
 \arguments{
-\item{x}{A \code{Data} object created with \code{\link{inputData}} or \code{\link{inputDataSpatial}}.}
+\item{x}{A \code{Data} object.}
 
-\item{profit_col}{Character. Column name in \code{x$data$dist_profit} containing numeric profits.
-Default \code{"profit"}.}
+\item{profit_col}{Character. Profit column in \code{x$data$dist_profit}.}
 
-\item{alias}{Character scalar or \code{NULL}. Optional identifier to register this objective
-as an atomic objective for multi-objective workflows.}
+\item{actions}{Optional subset of actions to include. Values may match \code{actions$id}
+and, if present, \code{actions$action_set}.}
+
+\item{alias}{Optional identifier for multi-objective workflows.}
 }
 \value{
-The updated \code{Data} object.
+Updated \code{Data} object.
 }
 \description{
-Specify an objective that maximizes economic profit from selected \code{(pu, action)} pairs.
-Profit values are taken from \code{x$data$dist_profit}, typically created with
-\code{\link{add_profit}}.
-
-This function is \strong{data-only}: it stores the objective specification inside the
-\code{Data} object so it can be materialized later when the optimization model is built
-(typically when calling \code{solve()}).
-
-If \code{alias} is provided, the objective is also registered in \code{x$data$objectives}
-as an atomic objective for multi-objective workflows.
-}
-\details{
-The function updates \code{x$data$model_args} with:
-\describe{
-\item{\code{model_type}}{\code{"maximizeProfit"}}
-\item{\code{objective_id}}{\code{"max_profit"}}
-\item{\code{objective_args}}{a list with \code{profit_col}}
-}
-
-If another objective setter is called afterwards, it overwrites the active single-objective
-specification in \code{x$data$model_args}.
+Specify an objective that maximizes total profit from selected \verb{(pu, action)} pairs.
+The objective can optionally be restricted to a subset of actions.
 }

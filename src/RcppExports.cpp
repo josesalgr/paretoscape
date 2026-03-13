@@ -287,6 +287,29 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// rcpp_add_objective_min_intervention_impact
+Rcpp::List rcpp_add_objective_min_intervention_impact(SEXP x, Rcpp::DataFrame pu_data, Rcpp::DataFrame dist_actions_data, Rcpp::DataFrame dist_features_data, Rcpp::String subset_key, std::string impact_col, Rcpp::IntegerVector features_to_use, Rcpp::IntegerVector actions_to_use, std::string internal_feature_col, double weight, double weight_multiplier, std::string block_name, std::string tag);
+RcppExport SEXP _mosap_rcpp_add_objective_min_intervention_impact(SEXP xSEXP, SEXP pu_dataSEXP, SEXP dist_actions_dataSEXP, SEXP dist_features_dataSEXP, SEXP subset_keySEXP, SEXP impact_colSEXP, SEXP features_to_useSEXP, SEXP actions_to_useSEXP, SEXP internal_feature_colSEXP, SEXP weightSEXP, SEXP weight_multiplierSEXP, SEXP block_nameSEXP, SEXP tagSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type x(xSEXP);
+    Rcpp::traits::input_parameter< Rcpp::DataFrame >::type pu_data(pu_dataSEXP);
+    Rcpp::traits::input_parameter< Rcpp::DataFrame >::type dist_actions_data(dist_actions_dataSEXP);
+    Rcpp::traits::input_parameter< Rcpp::DataFrame >::type dist_features_data(dist_features_dataSEXP);
+    Rcpp::traits::input_parameter< Rcpp::String >::type subset_key(subset_keySEXP);
+    Rcpp::traits::input_parameter< std::string >::type impact_col(impact_colSEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type features_to_use(features_to_useSEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type actions_to_use(actions_to_useSEXP);
+    Rcpp::traits::input_parameter< std::string >::type internal_feature_col(internal_feature_colSEXP);
+    Rcpp::traits::input_parameter< double >::type weight(weightSEXP);
+    Rcpp::traits::input_parameter< double >::type weight_multiplier(weight_multiplierSEXP);
+    Rcpp::traits::input_parameter< std::string >::type block_name(block_nameSEXP);
+    Rcpp::traits::input_parameter< std::string >::type tag(tagSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcpp_add_objective_min_intervention_impact(x, pu_data, dist_actions_data, dist_features_data, subset_key, impact_col, features_to_use, actions_to_use, internal_feature_col, weight, weight_multiplier, block_name, tag));
+    return rcpp_result_gen;
+END_RCPP
+}
 // rcpp_add_pu_locks
 Rcpp::List rcpp_add_pu_locks(SEXP x, Rcpp::DataFrame pu_data, std::string block_name, std::string tag);
 RcppExport SEXP _mosap_rcpp_add_pu_locks(SEXP xSEXP, SEXP pu_dataSEXP, SEXP block_nameSEXP, SEXP tagSEXP) {
@@ -401,6 +424,18 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type eps(epsSEXP);
     rcpp_result_gen = Rcpp::wrap(rcpp_fix_z_ineligible_by_positive_delta(x, dist_features_data, dist_benefit_data, fix_lb_too, eps));
     return rcpp_result_gen;
+END_RCPP
+}
+// rcpp_model_set_objective_vector
+void rcpp_model_set_objective_vector(SEXP x, Rcpp::NumericVector obj, std::string model_sense);
+RcppExport SEXP _mosap_rcpp_model_set_objective_vector(SEXP xSEXP, SEXP objSEXP, SEXP model_senseSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type x(xSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type obj(objSEXP);
+    Rcpp::traits::input_parameter< std::string >::type model_sense(model_senseSEXP);
+    rcpp_model_set_objective_vector(x, obj, model_sense);
+    return R_NilValue;
 END_RCPP
 }
 // rcpp_objective_max_coverage
@@ -573,6 +608,27 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< std::string >::type block_name(block_nameSEXP);
     Rcpp::traits::input_parameter< std::string >::type tag(tagSEXP);
     rcpp_result_gen = Rcpp::wrap(rcpp_prepare_objective_min_cost(x, pu_data, dist_actions_data, include_pu_cost, include_action_cost, block_name, tag));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcpp_prepare_objective_min_intervention_impact
+Rcpp::List rcpp_prepare_objective_min_intervention_impact(SEXP x, Rcpp::DataFrame pu_data, Rcpp::DataFrame dist_actions_data, Rcpp::DataFrame dist_features_data, std::string subset_key, std::string impact_col, Rcpp::IntegerVector features_to_use, Rcpp::IntegerVector actions_to_use, std::string internal_feature_col, std::string block_name, std::string tag);
+RcppExport SEXP _mosap_rcpp_prepare_objective_min_intervention_impact(SEXP xSEXP, SEXP pu_dataSEXP, SEXP dist_actions_dataSEXP, SEXP dist_features_dataSEXP, SEXP subset_keySEXP, SEXP impact_colSEXP, SEXP features_to_useSEXP, SEXP actions_to_useSEXP, SEXP internal_feature_colSEXP, SEXP block_nameSEXP, SEXP tagSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type x(xSEXP);
+    Rcpp::traits::input_parameter< Rcpp::DataFrame >::type pu_data(pu_dataSEXP);
+    Rcpp::traits::input_parameter< Rcpp::DataFrame >::type dist_actions_data(dist_actions_dataSEXP);
+    Rcpp::traits::input_parameter< Rcpp::DataFrame >::type dist_features_data(dist_features_dataSEXP);
+    Rcpp::traits::input_parameter< std::string >::type subset_key(subset_keySEXP);
+    Rcpp::traits::input_parameter< std::string >::type impact_col(impact_colSEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type features_to_use(features_to_useSEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type actions_to_use(actions_to_useSEXP);
+    Rcpp::traits::input_parameter< std::string >::type internal_feature_col(internal_feature_colSEXP);
+    Rcpp::traits::input_parameter< std::string >::type block_name(block_nameSEXP);
+    Rcpp::traits::input_parameter< std::string >::type tag(tagSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcpp_prepare_objective_min_intervention_impact(x, pu_data, dist_actions_data, dist_features_data, subset_key, impact_col, features_to_use, actions_to_use, internal_feature_col, block_name, tag));
     return rcpp_result_gen;
 END_RCPP
 }

@@ -517,8 +517,14 @@
 
   has_actions_model <- .has_rows(x$data$dist_actions_model)
 
-  needs_actions <- mtype %in% c("maximizeBenefits", "minimizeLosses", "maximizeProfit", "maximizeNetProfit",
-                                "minimizeActionFragmentation", "minimizeInterventionFragmentation")
+  needs_actions <- mtype %in% c(
+    "maximizeBenefits",
+    "minimizeLosses",
+    "maximizeProfit",
+    "maximizeNetProfit",
+    "minimizeActionFragmentation",
+    "minimizeInterventionFragmentation",
+    "minimizeInterventionImpact")
 
   if (needs_actions && !isTRUE(has_actions_model)) {
     .pa_abort(
@@ -627,6 +633,61 @@
         aw <- as.numeric(oargs$action_weights)
         if (any(!is.finite(aw)) || any(aw < 0)) {
           .pa_abort("action_weights must be finite and >= 0.")
+        }
+      }
+    }
+
+    if (identical(mtype, "minimizeInterventionImpact")) {
+
+      if (!.has_rows(x$data$dist_features)) {
+        .pa_abort(
+          "Objective 'minimizeInterventionImpact' requires dist_features, but dist_features is empty."
+        )
+      }
+
+      icol <- as.character(oargs$impact_col %||% "amount")[1]
+      if (!(icol %in% names(x$data$dist_features))) {
+        .pa_abort(
+          "Objective 'minimizeInterventionImpact' requires column '", icol, "' in dist_features."
+        )
+      }
+
+      if (is.null(x$data$actions) || !inherits(x$data$actions, "data.frame") || nrow(x$data$actions) == 0) {
+        .pa_abort(
+          "Objective 'minimizeInterventionImpact' requires x$data$actions to exist (non-empty)."
+        )
+      }
+
+      acts <- oargs$actions %||% NULL
+      if (is.null(acts)) {
+        .pa_abort(
+          "Objective 'minimizeInterventionImpact' requires `actions=` in objective_args.\n",
+          "Example: add_objective_min_intervention_impact(actions = c('restoration'))."
+        )
+      }
+
+      act_subset <- tryCatch(
+        .pa_resolve_action_subset(x, subset = acts),
+        error = function(e) .pa_abort(conditionMessage(e))
+      )
+
+      if (!inherits(act_subset, "data.frame") || nrow(act_subset) == 0) {
+        .pa_abort(
+          "Objective 'minimizeInterventionImpact': action subset resolved to zero actions."
+        )
+      }
+
+      feats <- oargs$features %||% NULL
+      if (!is.null(feats)) {
+        feat_subset <- tryCatch(
+          .pa_resolve_feature_subset(x, features = feats),
+          error = function(e) .pa_abort(conditionMessage(e))
+        )
+
+        if (!inherits(feat_subset, "data.frame") || nrow(feat_subset) == 0) {
+          .pa_abort(
+            "Objective 'minimizeInterventionImpact': feature subset resolved to zero features."
+          )
         }
       }
     }
@@ -788,7 +849,8 @@
   modelsense <- if (mtype %in% c("minimizeCosts","minimizeLosses",
                                  "minimizeFragmentation",
                                  "minimizeActionFragmentation",
-                                 "minimizeInterventionFragmentation")) "min" else "max"
+                                 "minimizeInterventionFragmentation",
+                                 "minimizeInterventionImpact")) "min" else "max"
 
   if (!exists("rcpp_reset_objective", mode = "function")) {
     .pa_abort("Missing rcpp_reset_objective() in the package.")
@@ -1060,6 +1122,80 @@
 
     objective_id <- "min_intervention_fragmentation"
 
+
+  } else if (identical(mtype, "minimizeInterventionImpact")) {
+
+    if (!exists("rcpp_prepare_objective_min_intervention_impact", mode = "function")) {
+      .pa_abort("Missing rcpp_prepare_objective_min_intervention_impact().")
+    }
+    if (!exists("rcpp_add_objective_min_intervention_impact", mode = "function")) {
+      .pa_abort("Missing rcpp_add_objective_min_intervention_impact().")
+    }
+
+    icol <- as.character(oargs$impact_col %||% "amount")[1]
+
+    # ---- feature subset
+    feats <- oargs$features %||% NULL
+    feats_internal <- integer(0)
+    if (!is.null(feats)) {
+      m <- match(feats, x$data$features$id)
+      if (anyNA(m)) {
+        .pa_abort(
+          "minimizeInterventionImpact: some features not in x$data$features$id: ",
+          paste(feats[is.na(m)], collapse = ", ")
+        )
+      }
+      feats_internal <- as.integer(x$data$features$internal_id[m])
+    }
+
+    # ---- action subset (REQUIRED for option 2)
+    acts <- oargs$actions %||% NULL
+    if (is.null(acts)) {
+      .pa_abort(
+        "Objective 'minimizeInterventionImpact' now requires `actions=`.\n",
+        "This objective is defined over intervention-group variables linked to a subset of actions."
+      )
+    }
+
+    act_subset <- .pa_resolve_action_subset(x, subset = acts)
+    acts_internal <- as.integer(act_subset$internal_id)
+
+    if (length(acts_internal) == 0) {
+      .pa_abort("minimizeInterventionImpact: action subset resolved to zero actions.")
+    }
+
+    # optional identifier for the action subset/group
+    subset_key <- .pa_subset_to_string(act_subset$id)
+
+    prep <- rcpp_prepare_objective_min_intervention_impact(
+      op,
+      pu_data = x$data$pu,
+      dist_actions_data = x$data$dist_actions_model,
+      dist_features_data = x$data$dist_features,
+      actions_to_use = acts_internal,
+      subset_key = subset_key,
+      impact_col = icol,
+      features_to_use = feats_internal,
+      internal_feature_col = "internal_feature",
+      block_name = "objective_min_intervention_impact",
+      tag = as.character(oargs$tag %||% "")[1]
+    )
+
+    res <- rcpp_add_objective_min_intervention_impact(
+      op,
+      pu_data = x$data$pu,
+      dist_actions_data = x$data$dist_actions_model,
+      dist_features_data = x$data$dist_features,
+      actions_to_use = acts_internal,
+      subset_key = subset_key,
+      impact_col = icol,
+      features_to_use = feats_internal,
+      internal_feature_col = "internal_feature",
+      weight = 1.0
+    )
+
+    x$data$model_registry$vars$u_intervention_impact <- prep
+    objective_id <- "min_intervention_impact"
   } else {
     .pa_abort("Unknown model_type: ", mtype)
   }
@@ -1088,9 +1224,14 @@
     x <- .pa_apply_targets_if_present(x, allow_multiple_rows_per_feature = TRUE)
   }
 
-  # NEW: per-PU action max constraint
+  # per-PU action max constraint
   if (exists(".pa_apply_action_max_per_pu_if_present", mode = "function")) {
     x <- .pa_apply_action_max_per_pu_if_present(x)
+  }
+
+  # NEW: area constraints
+  if (exists(".pa_apply_area_constraints_if_present", mode = "function")) {
+    x <- .pa_apply_area_constraints_if_present(x)
   }
 
   x

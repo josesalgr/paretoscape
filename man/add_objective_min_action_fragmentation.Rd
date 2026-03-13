@@ -14,36 +14,25 @@ add_objective_min_action_fragmentation(
 )
 }
 \arguments{
-\item{x}{A \code{Data} object created with \code{\link{inputData}} or \code{\link{inputDataSpatial}}.}
+\item{x}{A \code{Data} object.}
 
-\item{relation_name}{Character. Name of the spatial relation in \code{x$data$spatial_relations}.}
+\item{relation_name}{Character. Name of the spatial relation.}
 
-\item{weight_multiplier}{Numeric \eqn{\ge 0}. Multiplier applied to all relation weights. Default \code{1}.}
+\item{weight_multiplier}{Numeric >= 0. Multiplier applied to relation weights.}
 
-\item{action_weights}{Optional action weights. Either a named numeric vector (names = action ids)
-or a \code{data.frame(action, weight)}.}
+\item{action_weights}{Optional action weights. Either a named numeric vector
+(names = action ids) or a \code{data.frame(action, weight)}.}
 
-\item{actions}{Optional subset of action ids to include in the objective.}
+\item{actions}{Optional subset of actions to include. Values may match \code{actions$id}
+and, if present, \code{actions$action_set}.}
 
-\item{alias}{Character scalar or \code{NULL}. Optional identifier to register this objective
-as an atomic objective for multi-objective workflows.}
+\item{alias}{Optional identifier for multi-objective workflows.}
 }
 \value{
-The updated \code{Data} object.
+Updated \code{Data} object.
 }
 \description{
-Specify an objective that minimizes fragmentation at the action level over a spatial relation.
-This objective is intended for models where action allocations (rather than only PU selection)
-drive spatial cohesion.
-
-This function is \strong{data-only}: it stores the objective specification inside the
-\code{Data} object so it can be materialized later when the optimization model is built.
-
-If \code{alias} is provided, the objective is also registered in \code{x$data$objectives}
-as an atomic objective for multi-objective workflows.
-}
-\details{
-Action-level fragmentation can optionally weight actions differently via \code{action_weights}
-and can optionally restrict the objective to a subset of actions via \code{actions}.
-The exact linearization and interpretation are implemented in the model builder.
+Specify an objective that minimizes fragmentation at the action level over
+a spatial relation. The objective can optionally be restricted to a subset
+of actions and/or weighted by action.
 }

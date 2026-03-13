@@ -2,7 +2,7 @@
 % Please edit documentation in R/add_objectives.R
 \name{add_objective_min_fragmentation}
 \alias{add_objective_min_fragmentation}
-\title{Add objective: minimize fragmentation (PU cut)}
+\title{Add objective: minimize fragmentation}
 \usage{
 add_objective_min_fragmentation(
   x,
@@ -12,31 +12,17 @@ add_objective_min_fragmentation(
 )
 }
 \arguments{
-\item{x}{A \code{Data} object created with \code{\link{inputData}} or \code{\link{inputDataSpatial}}.}
+\item{x}{A \code{Data} object.}
 
-\item{relation_name}{Character. Name of the spatial relation in \code{x$data$spatial_relations}
-(e.g., \code{"boundary"}, \code{"rook"}, \code{"queen"}, \code{"knn"}). Default \code{"boundary"}.}
+\item{relation_name}{Character. Name of the spatial relation.}
 
-\item{weight_multiplier}{Numeric \eqn{\ge 0}. Multiplier applied to all relation weights. Default \code{1}.}
+\item{weight_multiplier}{Numeric >= 0. Multiplier applied to relation weights.}
 
-\item{alias}{Character scalar or \code{NULL}. Optional identifier to register this objective
-as an atomic objective for multi-objective workflows.}
+\item{alias}{Optional identifier for multi-objective workflows.}
 }
 \value{
-The updated \code{Data} object.
+Updated \code{Data} object.
 }
 \description{
-Specify an objective that minimizes spatial fragmentation measured as the weighted cut
-between selected and non-selected planning units over a spatial relation:
-\deqn{\sum_{(i,j)} w_{ij}\,|z_i - z_j|.}
-
-In the model builder, this objective is linearized using auxiliary edge variables.
-Relation weights \eqn{w_{ij}} are read from \code{x$data$spatial_relations[[relation_name]]}
-and can be scaled by \code{weight_multiplier} (BLM-like scaling).
-
-This function is \strong{data-only}: it stores the objective specification inside the
-\code{Data} object so it can be materialized later when the optimization model is built.
-
-If \code{alias} is provided, the objective is also registered in \code{x$data$objectives}
-as an atomic objective for multi-objective workflows.
+Specify an objective that minimizes planning-unit fragmentation over a spatial relation.
 }
