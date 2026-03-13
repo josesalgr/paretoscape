@@ -1,3 +1,123 @@
+#' Configure epsilon-constraint multi-objective method
+#'
+#' @description
+#' Configure an epsilon-constraint multi-objective method for a
+#' \code{MOProblem}. One objective is optimized as the \emph{primary}
+#' objective, while the remaining objectives are converted into epsilon
+#' constraints.
+#'
+#' Two operating modes are supported.
+#'
+#' \strong{Manual mode}
+#' \itemize{
+#'   \item The user provides \code{eps}.
+#'   \item \code{eps} can be either:
+#'   \itemize{
+#'     \item a named numeric vector, defining a single run, or
+#'     \item a named list of numeric vectors, defining a grid of runs.
+#'   }
+#'   \item Names must correspond to constrained objective aliases, that is,
+#'   objective aliases other than \code{primary}.
+#' }
+#'
+#' \strong{Automatic mode}
+#' \itemize{
+#'   \item The user omits \code{eps} and provides \code{n_points}.
+#'   \item The epsilon grid is not built immediately. Instead, it is
+#'   constructed later during \code{\link{solve}} from extreme/payoff
+#'   information.
+#'   \item Automatic mode currently supports exactly two objectives:
+#'   one primary objective and one constrained objective.
+#'   \item If \code{lexicographic = TRUE}, the extreme points are computed
+#'   lexicographically: first one objective is optimized, and then the other
+#'   is optimized while constraining the first one to remain within
+#'   \code{lexicographic_tol} of its optimum.
+#' }
+#'
+#' In manual mode, the generated design grid is stored inside
+#' \code{x$method$runs}. In automatic mode, \code{x$method$runs} is initially
+#' \code{NULL} and is created later during \code{\link{solve}}.
+#'
+#' @param x A \code{Data} or \code{MOProblem} object.
+#' @param primary Character scalar. Alias of the primary objective to optimize.
+#' @param eps Optional epsilon specification used only in \code{mode = "manual"}.
+#'   It can be either:
+#'   \itemize{
+#'     \item a named numeric vector, defining epsilon values for a single run, or
+#'     \item a named list of numeric vectors, defining epsilon values for a grid.
+#'   }
+#'   Names must correspond to constrained objective aliases.
+#' @param aliases Optional character vector of objective aliases to consider.
+#'   By default, all registered objective aliases are used.
+#' @param mode Character scalar. Either \code{"manual"} or \code{"auto"}.
+#' @param n_points Integer scalar used only in \code{mode = "auto"}.
+#'   Number of epsilon points to generate automatically for the constrained
+#'   objective. Must be at least 2.
+#' @param include_extremes Logical scalar used only in \code{mode = "auto"}.
+#'   If \code{TRUE}, include the extreme epsilon values in the generated grid.
+#'   If \code{FALSE}, only interior epsilon values are used.
+#' @param lexicographic Logical scalar used only in \code{mode = "auto"}.
+#'   If \code{TRUE}, compute extreme points lexicographically. If \code{FALSE},
+#'   use single-objective extreme points directly.
+#' @param lexicographic_tol Numeric scalar \eqn{\ge 0}. Tolerance used in
+#'   lexicographic extreme-point computation to keep the first-stage objective
+#'   within a small margin of its optimum.
+#'
+#' @return
+#' An updated \code{MOProblem} object with the epsilon-constraint method
+#' configuration stored in \code{x$method}.
+#'
+#' In manual mode, \code{x$method$runs} contains the epsilon design grid.
+#' In automatic mode, \code{x$method$runs} is set to \code{NULL} and the design
+#' is generated later during \code{\link{solve}}.
+#'
+#' @details
+#' The configured method stores:
+#' \itemize{
+#'   \item \code{name = "epsilon_constraint"}
+#'   \item \code{mode}
+#'   \item \code{primary}
+#'   \item \code{aliases}
+#'   \item \code{constrained}
+#'   \item epsilon design information
+#'   \item lexicographic configuration
+#' }
+#'
+#' In manual mode, epsilon columns in the stored design grid are named
+#' \code{eps_<alias>}, for example \code{eps_frag}.
+#'
+#' @examples
+#' \dontrun{
+#' # Manual mode: one run
+#' p_mo <- p |>
+#'   set_method_epsilon_constraint(
+#'     primary = "cost",
+#'     mode = "manual",
+#'     eps = c(frag = 1000)
+#'   )
+#'
+#' # Manual mode: grid of runs
+#' p_mo <- p |>
+#'   set_method_epsilon_constraint(
+#'     primary = "cost",
+#'     mode = "manual",
+#'     eps = list(frag = c(1000, 2000, 3000))
+#'   )
+#'
+#' # Automatic mode
+#' p_mo <- p |>
+#'   set_method_epsilon_constraint(
+#'     primary = "cost",
+#'     aliases = c("cost", "frag"),
+#'     mode = "auto",
+#'     n_points = 5,
+#'     include_extremes = TRUE,
+#'     lexicographic = TRUE,
+#'     lexicographic_tol = 1e-8
+#'   )
+#' }
+#'
+#' @export
 set_method_epsilon_constraint <- function(
     x,
     primary,
@@ -119,7 +239,6 @@ set_method_epsilon_constraint <- function(
     return(x)
   }
 
-  # mode == "auto"
   if (length(aliases) != 2L) {
     stop(
       "set_method_epsilon_constraint(mode='auto') currently supports exactly 2 objectives.\n",
