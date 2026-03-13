@@ -25,7 +25,7 @@ Rcpp::List rcpp_prepare_fragmentation_actions_by_action(
     SEXP x,
     Rcpp::DataFrame dist_actions_data,   // internal_row, internal_pu, internal_action (model-ready)
     Rcpp::DataFrame relation_data,       // internal_pu1, internal_pu2, weight (diag allowed)
-    Rcpp::Nullable<Rcpp::IntegerVector> actions_to_use = R_NilValue, // optional internal_action ids (1-based)
+    Rcpp::Nullable<Rcpp::IntegerVector> actions_to_use = R_NilValue, // optional, now only informative
     std::string block_name = "fragmentation_actions_by_action",
     std::string tag = ""
 ) {
@@ -72,7 +72,7 @@ Rcpp::List rcpp_prepare_fragmentation_actions_by_action(
     Rcpp::stop("dist_actions_data.nrows() must equal op->_n_x (model-ready dist_actions expected).");
   }
 
-  // infer n_actions
+  // infer GLOBAL n_actions
   int n_actions = 0;
   for (int r = 0; r < da_n; ++r) {
     const int a = daa[r];
@@ -81,7 +81,7 @@ Rcpp::List rcpp_prepare_fragmentation_actions_by_action(
   }
   if (n_actions <= 0) Rcpp::stop("Could not infer number of actions (max internal_action <= 0).");
 
-  // choose actions list A (sorted unique)
+  // optional selected actions: now only validated and reported, not structural
   std::vector<int> A;
   if (actions_to_use.isNotNull()) {
     Rcpp::IntegerVector tmp(actions_to_use);
@@ -89,7 +89,9 @@ Rcpp::List rcpp_prepare_fragmentation_actions_by_action(
     A.reserve((std::size_t)tmp.size());
     for (int k = 0; k < tmp.size(); ++k) {
       const int a = tmp[k];
-      if (a < 1 || a > n_actions) Rcpp::stop("actions_to_use contains invalid internal_action id.");
+      if (a < 1 || a > n_actions) {
+        Rcpp::stop("actions_to_use contains invalid internal_action id.");
+      }
       A.push_back(a);
     }
     std::sort(A.begin(), A.end());
@@ -98,8 +100,8 @@ Rcpp::List rcpp_prepare_fragmentation_actions_by_action(
     A.reserve((std::size_t)n_actions);
     for (int a = 1; a <= n_actions; ++a) A.push_back(a);
   }
-  const int nA = (int)A.size();
-  if (nA <= 0) Rcpp::stop("No actions selected for preparation.");
+  const int nA_used = (int)A.size();
+  if (nA_used <= 0) Rcpp::stop("No actions selected for preparation.");
 
   // canonicalize unique undirected off-diagonal edges (sorted)
   std::unordered_map<std::uint64_t, double> edge_w;
@@ -119,7 +121,10 @@ Rcpp::List rcpp_prepare_fragmentation_actions_by_action(
       Rcpp::stop("relation_data weight must be finite and >= 0.");
     }
 
-    if (i1 == j1) { ++n_self_rows; continue; }
+    if (i1 == j1) {
+      ++n_self_rows;
+      continue;
+    }
 
     int a = i1, b = j1;
     if (a > b) std::swap(a, b);
@@ -131,7 +136,9 @@ Rcpp::List rcpp_prepare_fragmentation_actions_by_action(
   }
 
   const int k_edges = (int)edge_w.size();
-  if (k_edges <= 0) Rcpp::stop("No usable off-diagonal edges found for action fragmentation preparation.");
+  if (k_edges <= 0) {
+    Rcpp::stop("No usable off-diagonal edges found for action fragmentation preparation.");
+  }
 
   // deterministic order of edges by key
   std::vector<std::uint64_t> keys;
@@ -148,15 +155,17 @@ Rcpp::List rcpp_prepare_fragmentation_actions_by_action(
     e_j.push_back(j);
   }
 
-  const int mA = k_edges * nA;
+  // IMPORTANT:
+  // prepare GLOBAL block: all edges x all actions
+  const int mA = k_edges * n_actions;
 
-  // idempotence: if already prepared, enforce same expected size
+  // idempotence: if already prepared, enforce same expected GLOBAL size
   if (op->_n_y_action > 0) {
     if (op->_n_y_action != mA) {
       Rcpp::stop(
-        "Action-fragmentation auxiliaries already exist, but expected size differs. "
+        "Action-fragmentation auxiliaries already exist, but expected GLOBAL size differs. "
         "Existing _n_y_action=" + std::to_string(op->_n_y_action) +
-          ", expected mA=" + std::to_string(mA) + "."
+          ", expected mA=k_edges*n_actions=" + std::to_string(mA) + "."
       );
     }
     return Rcpp::List::create(
@@ -165,7 +174,8 @@ Rcpp::List rcpp_prepare_fragmentation_actions_by_action(
       Rcpp::Named("y_offset") = op->_y_action_offset,
       Rcpp::Named("n_y") = op->_n_y_action,
       Rcpp::Named("k_edges") = k_edges,
-      Rcpp::Named("n_actions_used") = nA
+      Rcpp::Named("n_actions_global") = n_actions,
+      Rcpp::Named("n_actions_used") = nA_used
     );
   }
 
@@ -192,7 +202,7 @@ Rcpp::List rcpp_prepare_fragmentation_actions_by_action(
     xcol[key2(ipu, act)] = col_x;
   }
 
-  // create b vars
+  // create global y_action vars
   const int y0 = (int)op->ncol_used();
   op->_y_action_offset = y0;
   op->_n_y_action      = mA;
@@ -215,9 +225,10 @@ Rcpp::List rcpp_prepare_fragmentation_actions_by_action(
     "kind=prepare"
     ";component=fragmentation_actions_by_action"
     ";b_semantics=and"
+    ";layout=global_edges_x_all_actions"
     ";k_edges=" + std::to_string(k_edges) +
       ";n_actions=" + std::to_string(n_actions) +
-      ";n_actions_used=" + std::to_string(nA) +
+      ";n_actions_used=" + std::to_string(nA_used) +
       ";mA=" + std::to_string(mA) +
       ";n_self_rows=" + std::to_string(n_self_rows) +
       ";y_offset=" + std::to_string(y0) +
@@ -232,34 +243,32 @@ Rcpp::List rcpp_prepare_fragmentation_actions_by_action(
   );
 
   // add AND constraints (3 per (edge, action)) when both x exist
-  // NEW: if missing x, FIX b = 0 via b <= 0 constraint
+  // if missing x, fix b = 0 via b <= 0
   const std::size_t cblock = op->beginConstraintBlock(block_name + "::constraints", full_tag);
 
   int n_constraints_added = 0;
   int pairs_missing_x = 0;
   int b_fixed_zero = 0;
 
-  // deterministic index: b_index = e*nA + kk
+  // GLOBAL deterministic index:
+  //   b_index = e * n_actions + (act - 1)
   for (int e = 0; e < k_edges; ++e) {
     const int i = e_i[e];
     const int j = e_j[e];
 
-    for (int kk = 0; kk < nA; ++kk) {
-      const int act = A[(std::size_t)kk];
-
-      const int bcol = y0 + (e * nA + kk);
+    for (int act = 1; act <= n_actions; ++act) {
+      const int act0 = act - 1;
+      const int bcol = y0 + (e * n_actions + act0);
 
       auto iti = xcol.find(key2(i, act));
       auto itj = xcol.find(key2(j, act));
       if (iti == xcol.end() || itj == xcol.end()) {
         ++pairs_missing_x;
 
-        // FIX: b must be 0 if it cannot represent AND(x_i, x_j)
-        // since lb(b)=0, adding b <= 0 forces b=0.
+        // force b = 0
         op->addRow({ bcol }, { 1.0 }, "<=", 0.0, "b_fix0_missing_x");
         ++n_constraints_added;
         ++b_fixed_zero;
-
         continue;
       }
 
@@ -290,7 +299,8 @@ Rcpp::List rcpp_prepare_fragmentation_actions_by_action(
     Rcpp::Named("y_offset") = op->_y_action_offset,
     Rcpp::Named("n_y") = op->_n_y_action,
     Rcpp::Named("k_edges") = k_edges,
-    Rcpp::Named("n_actions_used") = nA,
+    Rcpp::Named("n_actions_global") = n_actions,
+    Rcpp::Named("n_actions_used") = nA_used,
     Rcpp::Named("mA") = mA,
     Rcpp::Named("pairs_missing_x") = pairs_missing_x,
     Rcpp::Named("b_fixed_zero") = b_fixed_zero,

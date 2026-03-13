@@ -1915,6 +1915,7 @@ add_objective <- function(x, objective) {
   }
 
   sol_vec <- .pamo_get_solution_vector(solution)
+
   n_pu <- nrow(x$base$data$pu)
   if (!is.finite(n_pu) || is.na(n_pu) || n_pu <= 0L) {
     stop("Could not determine n_pu while evaluating boundary_cut.", call. = FALSE)
@@ -1928,8 +1929,7 @@ add_objective <- function(x, objective) {
     )
   }
 
-  # Fase 1: asumimos el orden estructural del motor:
-  # w = primeras n_pu variables
+  # Phase 1/2A assumption: w occupies the first n_pu decision variables
   w <- as.numeric(sol_vec[seq_len(n_pu)])
   w_bin <- as.numeric(w > 0.5)
 
@@ -1944,19 +1944,11 @@ add_objective <- function(x, objective) {
 
   if (length(ip1) == 0L) return(0)
 
-  # misma canonización conceptual que usa el C++:
-  #   objective = sum_i (incident_i + self_i) w_i - 2 sum_(i<j) edge_ij * y_ij
-  # con y_ij = 1{w_i = w_j = 1}
-  #
-  # evaluado directamente sobre la solución:
-  #   perimeter(selected) = sum_i (incident_i + self_i) w_i - 2 sum_(i<j) edge_ij * w_i * w_j
-
+  # self weights (diagonal rows) and canonical off-diagonal edges
   self_w <- numeric(n_pu)
   edge_map <- new.env(parent = emptyenv(), hash = TRUE)
 
-  make_key <- function(a, b) {
-    paste0(a, "::", b)
-  }
+  make_key <- function(a, b) paste0(a, "::", b)
 
   for (r in seq_along(ip1)) {
     i <- ip1[r]
@@ -1969,12 +1961,19 @@ add_objective <- function(x, objective) {
       a <- min(i, j)
       b <- max(i, j)
       k <- make_key(a, b)
-      old <- if (exists(k, envir = edge_map, inherits = FALSE)) get(k, envir = edge_map) else NA_real_
-      if (is.na(old) || wij > old) assign(k, wij, envir = edge_map)
+      old <- if (exists(k, envir = edge_map, inherits = FALSE)) {
+        get(k, envir = edge_map, inherits = FALSE)
+      } else {
+        NA_real_
+      }
+      if (is.na(old) || wij > old) {
+        assign(k, wij, envir = edge_map)
+      }
     }
   }
 
   edge_keys <- ls(edge_map, all.names = TRUE)
+
   incident <- numeric(n_pu)
   edge_sum <- 0
 
@@ -1998,6 +1997,7 @@ add_objective <- function(x, objective) {
 
   as.numeric(mult * val)
 }
+
 
 
 # -------------------------------------------------------------------------
@@ -2035,6 +2035,15 @@ add_objective <- function(x, objective) {
     if (identical(sense, "max")) return(-as.numeric(val))
     return(as.numeric(val))
   }
+
+  if (length(terms) == 1L && identical(terms[[1]]$type %||% "", "action_boundary_cut")) {
+    val <- .pamo_eval_action_boundary_cut_on_solution(x, solution, terms[[1]])
+
+    sense <- as.character(spec$sense %||% "min")[1]
+    if (identical(sense, "max")) return(-as.numeric(val))
+    return(as.numeric(val))
+  }
+
 
   # resto de objetivos: evaluación por objvec
   base_eval <- .pamo_prepare_superset_model(x$base, list(ir))
@@ -2462,14 +2471,6 @@ add_objective <- function(x, objective) {
   need_y_int <- "intervention_boundary_cut" %in% all_types
   need_u_int <- "intervention_impact" %in% all_types
 
-  if (isTRUE(need_y_act)) {
-    stop(
-      "Phase 1 superset does not yet support 'action_boundary_cut' objectives.\n",
-      "Please remove action fragmentation from the MO method for now.",
-      call. = FALSE
-    )
-  }
-
   if (isTRUE(need_y_int)) {
     stop(
       "Phase 1 superset does not yet support 'intervention_boundary_cut' objectives.\n",
@@ -2506,12 +2507,13 @@ add_objective <- function(x, objective) {
     needs = list(
       z = isTRUE(need_z),
       y_pu = isTRUE(need_y_pu),
-      y_action = FALSE,
+      y_action = isTRUE(need_y_act),
       y_intervention = FALSE,
       u_intervention = FALSE
     ),
     relation_name = if (length(rel_names) == 1L) rel_names[1] else NULL
   )
+
 }
 
 
@@ -2553,4 +2555,174 @@ add_objective <- function(x, objective) {
 
   base
 }
+
+
+.pamo_eval_action_boundary_cut_on_solution <- function(x, solution, term) {
+  stopifnot(inherits(x, "MOProblem"))
+
+  rel_name <- as.character(term$relation_name %||% "boundary")[1]
+  rel <- x$base$data$spatial_relations[[rel_name]] %||% NULL
+  if (is.null(rel) || !inherits(rel, "data.frame")) {
+    stop("Missing spatial relation '", rel_name, "' while evaluating action_boundary_cut.", call. = FALSE)
+  }
+
+  for (nm in c("internal_pu1", "internal_pu2", "weight")) {
+    if (!nm %in% names(rel)) {
+      stop("Spatial relation '", rel_name, "' must contain column '", nm, "'.", call. = FALSE)
+    }
+  }
+
+  da <- x$base$data$dist_actions_model %||% x$base$data$dist_actions %||% NULL
+  if (is.null(da) || !inherits(da, "data.frame")) {
+    stop("Missing dist_actions data while evaluating action_boundary_cut.", call. = FALSE)
+  }
+
+  # Need at least PU and action ids
+  need_basic <- c("internal_pu", "internal_action")
+  for (nm in need_basic) {
+    if (!nm %in% names(da)) {
+      stop("dist_actions data must contain column '", nm, "'.", call. = FALSE)
+    }
+  }
+
+
+  sol_vec <- .pamo_get_solution_vector(solution)
+
+  # Need model snapshot to know x-offset / n_x
+  # Determine x block layout as robustly as possible.
+  # Preferred source: model snapshot if available.
+  # Fallback for phase 2A: infer x_offset = n_pu and n_x = nrow(dist_actions),
+  # which matches the current core layout (w first, then x).
+  ml <- x$base$data$model_list %||% NULL
+
+  n_pu <- as.integer(nrow(x$base$data$pu))
+  if (!is.finite(n_pu) || is.na(n_pu) || n_pu <= 0L) {
+    stop("Could not determine n_pu while evaluating action_boundary_cut.", call. = FALSE)
+  }
+
+  if (!is.null(ml)) {
+    n_x <- as.integer(ml$n_x %||% nrow(da))
+    x0  <- as.integer(ml$x_offset %||% (length(sol_vec) - n_x))
+  } else {
+    n_x <- as.integer(nrow(da))
+    x0  <- as.integer(length(sol_vec) - n_x)
+  }
+
+
+  if (!is.finite(n_x) || is.na(n_x) || n_x <= 0L) {
+    stop("Could not determine n_x while evaluating action_boundary_cut.", call. = FALSE)
+  }
+  if (!is.finite(x0) || is.na(x0) || x0 < 0L) {
+    stop("Could not determine x_offset while evaluating action_boundary_cut.", call. = FALSE)
+  }
+
+
+  # If internal_row is absent but the table is already model-ready in row order,
+  # reconstruct it from row position.
+  if (!"internal_row" %in% names(da)) {
+    if (nrow(da) != n_x) {
+      stop(
+        "dist_actions data does not contain 'internal_row', and nrow(dist_actions) != n_x.\n",
+        "nrow(dist_actions) = ", nrow(da), ", n_x = ", n_x, ".",
+        call. = FALSE
+      )
+    }
+    da$internal_row <- seq_len(nrow(da))
+  }
+
+  if (any(!is.finite(da$internal_row)) || any(is.na(da$internal_row))) {
+    stop("dist_actions$internal_row contains NA/non-finite values.", call. = FALSE)
+  }
+  if (any(da$internal_row < 1L) || any(da$internal_row > n_x)) {
+    stop("dist_actions$internal_row is out of valid range 1..n_x.", call. = FALSE)
+  }
+
+
+  if (length(sol_vec) < (x0 + n_x)) {
+    stop(
+      "Solution vector is too short for action boundary evaluation.\n",
+      "length(sol_vec) = ", length(sol_vec),
+      ", required >= ", x0 + n_x, ".",
+      call. = FALSE
+    )
+  }
+
+  # ---- select actions used by the term
+  all_actions <- sort(unique(as.integer(da$internal_action)))
+  all_actions <- all_actions[is.finite(all_actions) & !is.na(all_actions)]
+
+  act_int <- term$actions %||% NULL
+  if (is.null(act_int) || length(act_int) == 0L) {
+    act_int <- all_actions
+  } else {
+    act_int <- as.integer(act_int)
+    act_int <- sort(unique(act_int))
+  }
+
+  if (length(act_int) == 0L) return(0)
+
+  # ---- action weights
+  aw <- term$action_weights %||% NULL
+  if (is.null(aw)) {
+    aw_map <- stats::setNames(rep(1, length(act_int)), act_int)
+  } else {
+    aw <- as.numeric(aw)
+    if (length(aw) == length(all_actions)) {
+      tmp_map <- stats::setNames(aw, all_actions)
+      aw_map <- tmp_map[as.character(act_int)]
+    } else if (length(aw) == length(act_int)) {
+      aw_map <- stats::setNames(aw, act_int)
+    } else {
+      stop(
+        "action_weights length must match either all actions or the selected action subset.",
+        call. = FALSE
+      )
+    }
+  }
+
+  # ---- x values by (pu, action)
+  da_sub <- da[, c("internal_row", "internal_pu", "internal_action"), drop = FALSE]
+  da_sub <- da_sub[da_sub$internal_action %in% act_int, , drop = FALSE]
+  if (nrow(da_sub) == 0L) return(0)
+
+  x_vals <- sol_vec[x0 + da_sub$internal_row]
+  x_bin  <- as.numeric(x_vals > 0.5)
+
+  key <- paste(da_sub$internal_pu, da_sub$internal_action, sep = "::")
+  x_map <- stats::setNames(x_bin, key)
+
+  # ---- canonical off-diagonal edges
+  rel2 <- rel[rel$internal_pu1 != rel$internal_pu2,
+              c("internal_pu1", "internal_pu2", "weight"),
+              drop = FALSE]
+  if (nrow(rel2) == 0L) return(0)
+
+  rel2$a <- pmin(rel2$internal_pu1, rel2$internal_pu2)
+  rel2$b <- pmax(rel2$internal_pu1, rel2$internal_pu2)
+  rel2 <- rel2[order(rel2$a, rel2$b), , drop = FALSE]
+
+  # same canonicalization rule used in C++: keep max duplicate weight
+  rel2 <- stats::aggregate(weight ~ a + b, data = rel2, FUN = max)
+
+  val <- 0
+
+  for (act in act_int) {
+    awi <- as.numeric(aw_map[[as.character(act)]])
+    if (!is.finite(awi) || awi == 0) next
+
+    s1 <- x_map[paste(rel2$a, act, sep = "::")]
+    s2 <- x_map[paste(rel2$b, act, sep = "::")]
+    s1[is.na(s1)] <- 0
+    s2[is.na(s2)] <- 0
+
+    # perimeter contribution for this action
+    val <- val + awi * sum(rel2$weight * abs(s1 - s2))
+  }
+
+  mult <- as.numeric(term$weight_multiplier %||% 1)[1]
+  if (!is.finite(mult)) mult <- 1
+
+  as.numeric(mult * val)
+}
+
 

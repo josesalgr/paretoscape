@@ -3873,12 +3873,6 @@ available_to_solve <- function(package = ""){
 
   mo_mode <- isTRUE(args$mo_mode)
 
-  if (isTRUE(mo_mode) && isTRUE(needs$y_action)) {
-    .pa_abort(
-      "MO phase 1 does not support preparing y_action in the shared superset yet."
-    )
-  }
-
   if (isTRUE(mo_mode) && isTRUE(needs$y_intervention)) {
     .pa_abort(
       "MO phase 1 does not support preparing y_intervention in the shared superset yet."

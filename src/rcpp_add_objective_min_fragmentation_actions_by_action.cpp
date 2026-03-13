@@ -60,7 +60,7 @@ Rcpp::List rcpp_add_objective_min_fragmentation_actions_by_action(
   if (n_x  <= 0) Rcpp::stop("This objective requires action variables, but op->_n_x <= 0.");
   if (op->_x_offset < 0) Rcpp::stop("op->_x_offset not initialized.");
 
-  // must have been prepared (b vars exist)
+  // must have been prepared (global y_action block exists)
   if (op->_n_y_action <= 0 || op->_y_action_offset < 0) {
     Rcpp::stop(
       "Action-fragmentation auxiliaries do not exist (missing y_action block). "
@@ -97,7 +97,7 @@ Rcpp::List rcpp_add_objective_min_fragmentation_actions_by_action(
     Rcpp::stop("dist_actions_data.nrows() must equal op->_n_x (model-ready dist_actions expected).");
   }
 
-  // infer n_actions
+  // infer global n_actions
   int n_actions = 0;
   for (int r = 0; r < da_n; ++r) {
     const int a = daa[r];
@@ -114,7 +114,9 @@ Rcpp::List rcpp_add_objective_min_fragmentation_actions_by_action(
     A.reserve((std::size_t)tmp.size());
     for (int k = 0; k < tmp.size(); ++k) {
       const int a = tmp[k];
-      if (a < 1 || a > n_actions) Rcpp::stop("actions_to_use contains invalid internal_action id.");
+      if (a < 1 || a > n_actions) {
+        Rcpp::stop("actions_to_use contains invalid internal_action id.");
+      }
       A.push_back(a);
     }
     std::sort(A.begin(), A.end());
@@ -126,7 +128,7 @@ Rcpp::List rcpp_add_objective_min_fragmentation_actions_by_action(
   const int nA = (int)A.size();
   if (nA <= 0) Rcpp::stop("No actions selected for objective add.");
 
-  // action weights vector wA (1-based), default=1
+  // action weights vector wA (1-based), default = 1 for all global actions
   std::vector<double> wA((std::size_t)n_actions + 1, 1.0);
   if (action_weights.isNotNull()) {
     Rcpp::NumericVector aw(action_weights);
@@ -184,16 +186,21 @@ Rcpp::List rcpp_add_objective_min_fragmentation_actions_by_action(
   }
 
   const int k_edges = (int)edge_w.size();
-  if (k_edges <= 0) Rcpp::stop("No usable off-diagonal edges found for action fragmentation objective add.");
+  if (k_edges <= 0) {
+    Rcpp::stop("No usable off-diagonal edges found for action fragmentation objective add.");
+  }
 
-  // must match prepared size
-  const int mA_expected = k_edges * nA;
+  // IMPORTANT:
+  // y_action is now assumed to be prepared as a GLOBAL block:
+  //   all canonical edges x all global actions
+  const int mA_expected = k_edges * n_actions;
   if (mA_expected != op->_n_y_action) {
     Rcpp::stop(
-      "Prepared y_action size does not match expected size from canonicalization. "
+      "Prepared global y_action size does not match expected size from canonicalization. "
       "Existing _n_y_action=" + std::to_string(op->_n_y_action) +
-        ", expected k_edges*nA=" + std::to_string(mA_expected) +
-        " (k_edges=" + std::to_string(k_edges) + ", nA=" + std::to_string(nA) + ")."
+        ", expected k_edges*n_actions=" + std::to_string(mA_expected) +
+        " (k_edges=" + std::to_string(k_edges) +
+        ", n_actions=" + std::to_string(n_actions) + ")."
     );
   }
 
@@ -249,7 +256,9 @@ Rcpp::List rcpp_add_objective_min_fragmentation_actions_by_action(
     }
   }
 
-  // 2) add edge term on b_{e,a} in EXACT prepare order: b_index = e*nA + kk
+  // 2) add edge term on global y_action block
+  // GLOBAL prepare order assumed:
+  //   b_index = e * n_actions + (act - 1)
   const int b0 = op->_y_action_offset;
   double sum_edge_added = 0.0;
 
@@ -261,7 +270,8 @@ Rcpp::List rcpp_add_objective_min_fragmentation_actions_by_action(
       const double aw = wA[(std::size_t)act];
       if (aw == 0.0) continue;
 
-      const int bcol = b0 + (e * nA + kk);
+      const int act0 = act - 1; // global 0-based action slot
+      const int bcol = b0 + (e * n_actions + act0);
       const double coef = weight * weight_multiplier * (-2.0 * we * aw);
 
       if (coef != 0.0) {
@@ -280,11 +290,13 @@ Rcpp::List rcpp_add_objective_min_fragmentation_actions_by_action(
     ";weight=" + std::to_string(weight) +
       ";multiplier=" + std::to_string(weight_multiplier) +
       ";k_edges=" + std::to_string(k_edges) +
+      ";n_actions_global=" + std::to_string(n_actions) +
       ";n_actions_used=" + std::to_string(nA) +
       ";n_diag_rows=" + std::to_string(n_diag_rows) +
       ";sum_edge_added=" + std::to_string(sum_edge_added) +
       ";sum_linear_added=" + std::to_string(sum_linear_added) +
-      ";additive=TRUE";
+      ";additive=TRUE"
+      ";y_action_layout=global_edges_x_all_actions";
 
   const std::size_t bid = op->register_objective_block(
     block_name,
@@ -301,6 +313,7 @@ Rcpp::List rcpp_add_objective_min_fragmentation_actions_by_action(
     Rcpp::Named("y_offset") = op->_y_action_offset,
     Rcpp::Named("n_y") = op->_n_y_action,
     Rcpp::Named("k_edges") = k_edges,
+    Rcpp::Named("n_actions_global") = n_actions,
     Rcpp::Named("n_actions_used") = nA,
     Rcpp::Named("sum_edge_added") = sum_edge_added,
     Rcpp::Named("sum_linear_added") = sum_linear_added
