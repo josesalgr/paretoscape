@@ -8,7 +8,7 @@
 #include <string>
 
 // [[Rcpp::export]]
-Rcpp::List rcpp_add_action_max_per_pu(
+Rcpp::List rcpp_add_constraint_action_max_per_pu(
     SEXP x,
     Rcpp::DataFrame dist_actions_data,
     int max_per_pu = 1,

@@ -21,7 +21,7 @@ static inline std::uint64_t edge_key_undirected(int i, int j) {
 }
 
 // [[Rcpp::export]]
-Rcpp::List rcpp_prepare_fragmentation_actions_by_action(
+Rcpp::List rcpp_prepare_objective_min_fragmentation_actions(
     SEXP x,
     Rcpp::DataFrame dist_actions_data,   // internal_row, internal_pu, internal_action (model-ready)
     Rcpp::DataFrame relation_data,       // internal_pu1, internal_pu2, weight (diag allowed)

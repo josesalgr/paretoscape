@@ -16,7 +16,7 @@ static inline std::uint64_t edge_key_undirected(int i, int j) {
 }
 
 // [[Rcpp::export]]
-Rcpp::List rcpp_prepare_fragmentation_pu(
+Rcpp::List rcpp_prepare_objective_min_fragmentation(
     SEXP x,
     Rcpp::DataFrame relation_data,    // internal_pu1, internal_pu2, weight (may include both directions and diagonal)
     std::string block_name = "fragmentation_pu",
