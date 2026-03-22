@@ -4,22 +4,24 @@
 \alias{get_targets}
 \title{Get target achievement table from a Solution}
 \usage{
-get_targets(x, run = 1L)
+get_targets(x, run = NULL)
 }
 \arguments{
 \item{x}{A \linkS4class{solution} object returned by \code{\link[=solve]{solve()}}.}
+
+\item{run}{Integer. For multi-run objects, the run index to extract. Default \code{1L}.}
 }
 \value{
 A \code{data.frame} with target achievement metrics, or \code{NULL} if the solution
-does not contain a targets table.
+does not contain a targets summary table.
 }
 \description{
-Extract the target achievement table (if present) from a \linkS4class{solution} object returned by \code{\link[=solve]{solve()}}.
+Extract the target achievement summary table (if present) from a \linkS4class{solution} object returned by \code{\link[=solve]{solve()}}.
 The targets table typically contains the target value, achieved value, and gap
 (\code{achieved - target_value}), plus target metadata such as type and units.
 }
 \details{
-Targets are optional. If the solution does not include \code{x$data$tables$targets},
+Targets are optional. If the solution does not include \code{x$summary$targets},
 this function returns \code{NULL} without error.
 }
 \examples{

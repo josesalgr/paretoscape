@@ -181,23 +181,29 @@ pproto <- function(`_class` = NULL, `_inherit` = NULL, ...) {
 #'
 #' @noRd
 getStatus <- function(x) {
-  # x puede ser Solution o list con $data
-  d <- if (!is.null(x$data)) x$data else x
+  # Preferred structure: Solution with diagnostics
+  d <- NULL
 
-  # acepta varias convenciones
+  if (!is.null(x$diagnostics)) {
+    d <- x$diagnostics
+  } else {
+    d <- x
+  }
+
   code <- d$status_code %||% d$status %||% NA_integer_
   code <- as.integer(code)[1]
 
   if (is.na(code)) return("unknown")
 
-  switch(as.character(code),
-         "0"   = "optimal",
-         "1"   = "infeasible_or_unbounded",
-         "2"   = "time_limit_feasible",
-         "3"   = "time_limit_no_solution",
-         "4"   = "solution_limit",
-         "999" = "unknown",
-         paste0("unknown(", code, ")")
+  switch(
+    as.character(code),
+    "0"   = "optimal",
+    "1"   = "infeasible_or_unbounded",
+    "2"   = "time_limit_feasible",
+    "3"   = "time_limit_no_solution",
+    "4"   = "solution_limit",
+    "999" = "unknown",
+    paste0("unknown(", code, ")")
   )
 }
 
@@ -1666,26 +1672,28 @@ available_to_solve <- function(package = ""){
 
   # optional baseline from z (kept for reporting only)
   base_by_feat <- data.frame(internal_feature = integer(0), baseline_contrib = numeric(0))
+
   if (!is.null(df_df) && inherits(df_df, "data.frame") && nrow(df_df) > 0 &&
-      length(zv) == nrow(df_df) &&
       all(c("internal_feature", "amount") %in% names(df_df))) {
 
-    df2 <- df_df
-    df2$z <- zv
-    df2$baseline_contrib <- as.numeric(df2$amount) * as.numeric(df2$z)
+    if (length(zv) == nrow(df_df) && length(zv) > 0L) {
+      df2 <- df_df
+      df2$z <- zv
+      df2$baseline_contrib <- as.numeric(df2$amount) * as.numeric(df2$z)
 
-    base_by_feat <- stats::aggregate(
-      baseline_contrib ~ internal_feature,
-      data = df2,
-      FUN = sum
-    )
-  } else if (!is.null(df_df) && inherits(df_df, "data.frame") && nrow(df_df) > 0 && length(zv) != nrow(df_df)) {
-    warning(
-      "Mismatch: nrow(dist_features) = ", nrow(df_df),
-      " but length(z slice) = ", length(zv),
-      ". baseline_contrib set to 0.",
-      call. = FALSE
-    )
+      base_by_feat <- stats::aggregate(
+        baseline_contrib ~ internal_feature,
+        data = df2,
+        FUN = sum
+      )
+    } else if (length(zv) > 0L && length(zv) != nrow(df_df)) {
+      warning(
+        "Mismatch: nrow(dist_features) = ", nrow(df_df),
+        " but length(z slice) = ", length(zv),
+        ". baseline_contrib set to 0.",
+        call. = FALSE
+      )
+    }
   }
 
   # choose effect column
@@ -3901,51 +3909,68 @@ NULL
   # ------------------------------------------------------------
   # 2) Minimal decoding using offsets (0-based in C++; +1 in R)
   # ------------------------------------------------------------
-  n_pu <- as.integer(model$n_pu %||% 0L)
-  n_x  <- as.integer(model$n_x  %||% 0L)
-  n_z  <- as.integer(model$n_z  %||% 0L)
-
-  w0 <- as.integer(model$w_offset %||% 0L)
-  x0 <- as.integer(model$x_offset %||% 0L)
-  z0 <- as.integer(model$z_offset %||% 0L)
-
-  sol_monitoring <- if (n_pu > 0L && length(solvec) >= (w0 + n_pu)) {
-    base::round(solvec[(w0 + 1L):(w0 + n_pu)])
-  } else numeric(0)
-
-  sol_actions <- if (n_x > 0L && length(solvec) >= (x0 + n_x)) {
-    base::round(solvec[(x0 + 1L):(x0 + n_x)])
-  } else numeric(0)
-
-  sol_conservation <- if (n_z > 0L && length(solvec) >= (z0 + n_z)) {
-    solvec[(z0 + 1L):(z0 + n_z)]
-  } else numeric(0)
+  # n_pu <- as.integer(model$n_pu %||% 0L)
+  # n_x  <- as.integer(model$n_x  %||% 0L)
+  # n_z  <- as.integer(model$n_z  %||% 0L)
+  #
+  # w0 <- as.integer(model$w_offset %||% 0L)
+  # x0 <- as.integer(model$x_offset %||% 0L)
+  # z0 <- as.integer(model$z_offset %||% 0L)
+  #
+  # sol_monitoring <- if (n_pu > 0L && length(solvec) >= (w0 + n_pu)) {
+  #   base::round(solvec[(w0 + 1L):(w0 + n_pu)])
+  # } else numeric(0)
+  #
+  # sol_actions <- if (n_x > 0L && length(solvec) >= (x0 + n_x)) {
+  #   base::round(solvec[(x0 + 1L):(x0 + n_x)])
+  # } else numeric(0)
+  #
+  # sol_conservation <- if (n_z > 0L && length(solvec) >= (z0 + n_z)) {
+  #   solvec[(z0 + 1L):(z0 + n_z)]
+  # } else numeric(0)
 
   # ------------------------------------------------------------
   # 3) Build human-readable tables (you implement this helper)
   # ------------------------------------------------------------
-  tables <- .pa_extract_solution_tables(x, solvec)
+  summary <- .pa_extract_solution_tables(x, solvec)
 
   x$data$runtime_updates <- NULL
 
-  # ------------------------------------------------------------
-  # 4) Construct Solution ONCE
-  # ------------------------------------------------------------
+  objs <- x$data$objectives %||% list()
+
+  alias_values <- NULL
+  if (is.list(objs) && length(objs) == 1L) {
+    alias_single <- names(objs)[1]
+    alias_values <- stats::setNames(objval, alias_single)
+  }
+
+
   s <- pproto(
     NULL, Solution,
-    data = list(
-      objval = objval,
-      sol = solvec,
-      gap = gap,
-      status = as.integer(status_code),
-      runtime = runtime,
-      args = solve_args,
-      sol_monitoring = sol_monitoring,
-      sol_actions = sol_actions,
-      sol_conservation = sol_conservation,
-      tables = tables
+    problem = x,
+    solution = list(
+      objective = objval,
+      vector = solvec,
+      alias_values = alias_values
     ),
-    Problem = x
+    summary = summary,
+    diagnostics = list(
+      status_code = as.integer(status_code),
+      gap = gap,
+      runtime = runtime,
+      solver = solve_args$solver,
+      cores = solve_args$cores,
+      timelimit = solve_args$timelimit,
+      verbose = solve_args$verbose,
+      solution_limit = solve_args$solution_limit,
+      name_output_file = solve_args$name_output_file,
+      output_file = solve_args$output_file,
+      solver_args = solve_args
+    ),
+    method = list(
+      type = "single"
+    ),
+    meta = list()
   )
 
   s

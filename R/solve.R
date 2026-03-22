@@ -16,10 +16,9 @@ solve <- function(x, ...) {
 }
 
 #' @export
-solve.Problem <- function(x, ..., return = c("results", "problem")) {
+solve.Problem <- function(x, ...) {
 
   assertthat::assert_that(inherits(x, "Problem"))
-  return <- match.arg(return)
 
   # registro de objetivos
   objs <- x$data$objectives %||% list()
@@ -53,13 +52,7 @@ solve.Problem <- function(x, ..., return = c("results", "problem")) {
       )
     }
 
-    x$data$results <- res
-
-    if (identical(return, "problem")) {
-      return(x)
-    } else {
-      return(res)
-    }
+    return(res)
   }
 
   # si no hay método pero hay múltiples objetivos, error
@@ -72,7 +65,17 @@ solve.Problem <- function(x, ..., return = c("results", "problem")) {
   }
 
   # caso normal single-objective
-  .pa_solve_single_problem(x, ...)
+  res <- .pa_solve_single_problem(x, ...)
+
+  if (!inherits(res, "Solution")) {
+    stop(
+      "Internal error: single-objective solve did not return a Solution object.\n",
+      "Returned class: ", paste(class(res), collapse = ", "),
+      call. = FALSE
+    )
+  }
+
+  res
 }
 
 

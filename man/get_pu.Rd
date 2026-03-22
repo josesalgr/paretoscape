@@ -4,26 +4,28 @@
 \alias{get_pu}
 \title{Get planning unit results from a Solution}
 \usage{
-get_pu(x, only_selected = FALSE, run = 1L)
+get_pu(x, only_selected = FALSE, run = NULL)
 }
 \arguments{
 \item{x}{A \linkS4class{solution} object returned by \code{\link[=solve]{solve()}}.}
 
 \item{only_selected}{Logical. If \code{TRUE}, return only rows where \code{selected == 1}.
 Default \code{FALSE}.}
+
+\item{run}{Integer. For multi-run objects, the run index to extract. Default \code{1L}.}
 }
 \value{
-A \code{data.frame} with planning-unit information stored in the solution and
+A \code{data.frame} with planning-unit information stored in the solution summary and
 a \code{selected} column.
 }
 \description{
-Extract the planning-unit results table from a \linkS4class{solution} object returned by \code{\link[=solve]{solve()}}.
+Extract the planning-unit summary table from a \linkS4class{solution} object returned by \code{\link[=solve]{solve()}}.
 The returned table includes a \code{selected} indicator (typically \code{0/1}) showing
 whether each planning unit is selected in the solution.
 }
 \details{
-This function expects the solution object to store a planning-unit results table at
-\code{x$data$tables$pu}. It errors if the table is missing. If \code{only_selected = TRUE},
+This function expects the solution object to store a planning-unit summary table at
+\code{x$summary$pu}. It errors if the table is missing. If \code{only_selected = TRUE},
 it also errors when the \code{selected} column is not present.
 }
 \examples{

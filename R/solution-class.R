@@ -8,17 +8,28 @@ NULL
 #'
 #' @description
 #' The `Solution` class stores the output of solving a `Problem` object in
-#' `mosap`. It contains the optimization status, objective value, solver
-#' metadata, decoded decision vectors, and human-readable result tables.
+#' `mosap`. It contains the original problem, the optimization result,
+#' solver diagnostics, user-facing summary tables, and metadata describing
+#' how the solution was obtained.
 #'
 #' Objects of this class are typically created with [solve()].
 #'
 #' @section Fields:
 #' \describe{
-#'   \item{data}{A named `list` containing optimization outputs, such as the
-#'   objective value, raw solution vector, optimality gap, runtime, solver
-#'   arguments, decoded decision vectors, and result tables.}
-#'   \item{Problem}{The `Problem` object used to generate the solution.}
+#'   \item{problem}{The `Problem` object used to generate the solution.}
+#'   \item{solution}{A named `list` containing the core optimization outputs,
+#'   such as the objective value, raw solution vector, decoded decision vectors,
+#'   and evaluated objective aliases.}
+#'   \item{summary}{A named `list` of user-facing summary tables derived from
+#'   the problem and solution, typically used for plotting, reporting, and
+#'   inspection.}
+#'   \item{diagnostics}{A named `list` containing solver diagnostics such as
+#'   optimization status, optimality gap, runtime, and solver arguments.}
+#'   \item{method}{A named `list` describing the optimization method used to
+#'   obtain the solution.}
+#'   \item{meta}{A named `list` containing additional metadata associated with
+#'   the solution.}
+#'   \item{name}{A `character(1)` name for the solution object.}
 #' }
 #'
 #' @section Methods:
@@ -87,7 +98,7 @@ NULL
 
 # internal helper
 .pa_solution_alias_values_summary <- function(self, max_show = 6L) {
-  av <- self$data$alias_values %||% NULL
+  av <- self$solution$alias_values %||% NULL
 
   if (is.null(av) || length(av) == 0) {
     return(NULL)
@@ -116,8 +127,12 @@ NULL
 #' @export
 Solution <- pproto(
   "Solution",
-  data = list(),
-  Problem = NULL,
+  problem = NULL,
+  solution = list(),
+  summary = list(),
+  diagnostics = list(),
+  method = list(),
+  meta = list(),
   name = "sol",
 
   print = function(self) {
@@ -126,14 +141,14 @@ Solution <- pproto(
 
     cli::cli_text("A mosap solution ({.cls Solution})")
 
-    obj <- self$data$objval %||% NA_real_
-    gap <- self$data$gap %||% NA_real_
-    rt  <- self$data$runtime %||% NA_real_
+    obj <- self$solution$objective %||% NA_real_
+    gap <- self$diagnostics$gap %||% NA_real_
+    rt  <- self$diagnostics$runtime %||% NA_real_
     st  <- getStatus(self)
 
-    tb <- self$data$tables %||% list()
-    sa <- self$data$args %||% list()
-    pr <- self$Problem %||% NULL
+    sm <- self$summary %||% list()
+    dg <- self$diagnostics %||% list()
+    pr <- self$problem %||% NULL
 
     # ---- totals from problem
     n_pu_total <- if (!is.null(pr) && !is.null(pr$data$pu) && inherits(pr$data$pu, "data.frame")) {
@@ -148,27 +163,27 @@ Solution <- pproto(
       NA_integer_
     }
 
-    n_tgt_total <- if (!is.null(tb$targets) && inherits(tb$targets, "data.frame")) {
-      nrow(tb$targets)
+    n_tgt_total <- if (!is.null(sm$targets) && inherits(sm$targets, "data.frame")) {
+      nrow(sm$targets)
     } else {
       NA_integer_
     }
 
     # ---- selected counts
-    n_pu_sel <- if (!is.null(tb$pu) && inherits(tb$pu, "data.frame") && "selected" %in% names(tb$pu)) {
-      sum(tb$pu$selected %in% 1L, na.rm = TRUE)
+    n_pu_sel <- if (!is.null(sm$pu) && inherits(sm$pu, "data.frame") && "selected" %in% names(sm$pu)) {
+      sum(sm$pu$selected %in% 1L, na.rm = TRUE)
     } else {
       NA_integer_
     }
 
-    n_act_sel <- if (!is.null(tb$actions) && inherits(tb$actions, "data.frame") && "selected" %in% names(tb$actions)) {
-      sum(tb$actions$selected %in% 1L, na.rm = TRUE)
+    n_act_sel <- if (!is.null(sm$actions) && inherits(sm$actions, "data.frame") && "selected" %in% names(sm$actions)) {
+      sum(sm$actions$selected %in% 1L, na.rm = TRUE)
     } else {
       NA_integer_
     }
 
-    n_tgt_met <- if (!is.null(tb$targets) && inherits(tb$targets, "data.frame") && "gap" %in% names(tb$targets)) {
-      sum(tb$targets$gap >= 0, na.rm = TRUE)
+    n_tgt_met <- if (!is.null(sm$targets) && inherits(sm$targets, "data.frame") && "gap" %in% names(sm$targets)) {
+      sum(sm$targets$gap >= 0, na.rm = TRUE)
     } else {
       NA_integer_
     }
@@ -231,9 +246,9 @@ Solution <- pproto(
     # ---- SOLVER
     cli::cli_text("{ch$l}{ch$b}{.h solver}", .envir = environment())
 
-    solver_txt <- as.character(sa$solver %||% "unknown")[1]
-    cores_txt  <- as.character(sa$cores %||% NA)[1]
-    tl_txt     <- as.character(sa$timelimit %||% NA)[1]
+    solver_txt <- as.character(dg$solver %||% dg$solver_name %||% "unknown")[1]
+    cores_txt  <- as.character(dg$cores %||% NA)[1]
+    tl_txt     <- as.character(dg$timelimit %||% dg$time_limit %||% NA)[1]
 
     cli::cli_text(
       " {ch$v}{ch$j}{ch$b}name:            {.code {solver_txt}}",
@@ -252,7 +267,7 @@ Solution <- pproto(
     if (is.function(info_sym)) info_sym <- info_sym()
     cli::cli_text(
       cli::col_grey(
-        paste0("# ", info_sym, " Use {.code x$data$tables} to inspect decoded solution tables.")
+        paste0("# ", info_sym, " Use {.code x$summary} to inspect user-facing solution summaries.")
       )
     )
 
@@ -264,7 +279,7 @@ Solution <- pproto(
 
   repr = function(self) {
     st <- tryCatch(getStatus(self), error = function(e) "unknown")
-    obj <- self$data$objval %||% NA_real_
+    obj <- self$solution$objective %||% NA_real_
     paste0("<Solution> status=", st, ", objective=", .pa_num_text(obj))
   }
 )

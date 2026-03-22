@@ -8,6 +8,8 @@ get_solution_vector(x, run = 1L)
 }
 \arguments{
 \item{x}{A \linkS4class{solution} object returned by \code{\link[=solve]{solve()}}.}
+
+\item{run}{Integer. For multi-run objects, the run index to extract. Default \code{1L}.}
 }
 \value{
 A numeric vector with one value per model variable.
@@ -17,7 +19,7 @@ Return the raw decision-variable vector produced by the solver, in the internal 
 variable order used by the optimizer backend.
 }
 \details{
-This function expects the raw solution vector at \code{x$data$sol} and errors if it is missing.
+This function expects the raw solution vector at \code{x$solution$vector} and errors if it is missing.
 The vector is returned as numeric and corresponds to the model's variable ordering (e.g.,
 planning-unit selection variables, action variables, and any auxiliary variables such as
 fragmentation variables when present).

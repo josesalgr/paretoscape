@@ -9,18 +9,29 @@ No return value.
 }
 \description{
 The \code{Solution} class stores the output of solving a \code{Problem} object in
-\code{mosap}. It contains the optimization status, objective value, solver
-metadata, decoded decision vectors, and human-readable result tables.
+\code{mosap}. It contains the original problem, the optimization result,
+solver diagnostics, user-facing summary tables, and metadata describing
+how the solution was obtained.
 
 Objects of this class are typically created with \code{\link[=solve]{solve()}}.
 }
 \section{Fields}{
 
 \describe{
-\item{data}{A named \code{list} containing optimization outputs, such as the
-objective value, raw solution vector, optimality gap, runtime, solver
-arguments, decoded decision vectors, and result tables.}
-\item{Problem}{The \code{Problem} object used to generate the solution.}
+\item{problem}{The \code{Problem} object used to generate the solution.}
+\item{solution}{A named \code{list} containing the core optimization outputs,
+such as the objective value, raw solution vector, decoded decision vectors,
+and evaluated objective aliases.}
+\item{summary}{A named \code{list} of user-facing summary tables derived from
+the problem and solution, typically used for plotting, reporting, and
+inspection.}
+\item{diagnostics}{A named \code{list} containing solver diagnostics such as
+optimization status, optimality gap, runtime, and solver arguments.}
+\item{method}{A named \code{list} describing the optimization method used to
+obtain the solution.}
+\item{meta}{A named \code{list} containing additional metadata associated with
+the solution.}
+\item{name}{A \code{character(1)} name for the solution object.}
 }
 }
 

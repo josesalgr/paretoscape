@@ -8,25 +8,41 @@ NULL
 #'
 #' @description
 #' The `SolutionSet` class stores the output of solving a `Problem` object in
-#' `mosap`. It contains the optimization status, objective value, solver
-#' metadata, decoded decision vectors, and human-readable result tables.
+#' `mosap` when multiple runs or multiple objective trade-offs are produced.
+#' It contains the original problem, the multi-run solution content, user-facing
+#' summaries, diagnostics, optimization method metadata, and additional metadata.
 #'
 #' Objects of this class are typically created with [solve()].
 #'
 #' @section Fields:
 #' \describe{
-#'   \item{data}{A named `list` containing optimization outputs, such as the
-#'   objective value, raw solution vector, optimality gap, runtime, solver
-#'   arguments, decoded decision vectors, and result tables.}
-#'   \item{Problem}{The `Problem` object used to generate the solution.}
+#'   \item{problem}{The `Problem` object used to generate the solution set.}
+#'   \item{solution}{A named `list` containing the core multi-run optimization
+#'   outputs, typically including the experimental design, run summary table,
+#'   and the list of individual `Solution` objects.}
+#'   \item{summary}{A named `list` containing user-facing summaries derived from
+#'   the solution set, intended for reporting, plotting, and inspection.}
+#'   \item{diagnostics}{A named `list` containing diagnostics describing the
+#'   solution set as a whole, such as number of runs, status summaries, and
+#'   runtime/gap ranges.}
+#'   \item{method}{A named `list` describing the multi-objective optimization
+#'   method used to obtain the solution set.}
+#'   \item{meta}{A named `list` containing additional metadata associated with
+#'   the solution set.}
+#'   \item{name}{A `character(1)` name for the solution set object.}
 #' }
 #'
 #' @section Methods:
 #' \describe{
-#'   \item{print()}{Print a concise summary of the solution, including solver
-#'   status, objective value, runtime, selection summary, and target fulfillment.}
+#'   \item{print()}{Print a concise summary of the solution set, including method,
+#'   content, and run-level diagnostics.}
 #'   \item{show()}{Alias of `print()`.}
 #'   \item{repr()}{Returns a short string representation.}
+#'   \item{getMethod()}{Return the method specification.}
+#'   \item{getDesign()}{Return the design table stored in `solution$design`.}
+#'   \item{getRuns()}{Return the run summary table stored in `solution$runs`.}
+#'   \item{getSolutions()}{Return the list of `Solution` objects stored in
+#'   `solution$solutions`.}
 #' }
 #'
 #' @return No return value.
@@ -37,7 +53,7 @@ NULL
 
 .pa_solutionset_method_label <- function(method) {
   if (is.null(method) || !is.list(method)) return("unknown")
-  as.character(method$name %||% "unknown")[1]
+  as.character(method$name %||% method$type %||% "unknown")[1]
 }
 
 .pa_solutionset_aliases <- function(method) {
@@ -149,7 +165,6 @@ NULL
   mname <- .pa_solutionset_method_label(method)
 
   if (identical(mname, "weighted")) {
-    # for weighted, use first value_* column as a simple preview criterion if present
     val_cols <- grep("^value_", names(rr), value = TRUE)
     if (length(val_cols) > 0L) {
       idx <- 1L
@@ -158,20 +173,19 @@ NULL
     }
   }
 
-  # fallback: first feasible row
   rr[1, , drop = FALSE]
 }
 
 #' @export
 SolutionSet <- pproto(
   "SolutionSet",
-  data = NULL,
-  method = NULL,
-  design = NULL,
-  runs = NULL,
-  solutions = list(),
-  extras = list(),
+  problem = NULL,
+  solution = list(),
+  summary = list(),
+  diagnostics = list(),
+  method = list(),
   meta = list(),
+  name = "solset",
 
   print = function(self) {
     ch <- .pa_cli_box_chars()
@@ -180,10 +194,13 @@ SolutionSet <- pproto(
     method_name <- .pa_solutionset_method_label(self$method)
     aliases <- .pa_solutionset_aliases(self$method)
 
-    n_design <- if (inherits(self$design, "data.frame")) nrow(self$design) else 0L
-    n_runs <- if (inherits(self$runs, "data.frame")) nrow(self$runs) else 0L
-    n_solutions <- length(self$solutions)
-    n_extras <- length(self$extras %||% list())
+    design <- self$solution$design %||% NULL
+    runs <- self$solution$runs %||% NULL
+    sols <- self$solution$solutions %||% list()
+
+    n_design <- if (inherits(design, "data.frame")) nrow(design) else 0L
+    n_runs <- if (inherits(runs, "data.frame")) nrow(runs) else 0L
+    n_solutions <- length(sols)
 
     alias_txt <- if (length(aliases) == 0L) {
       "none"
@@ -191,21 +208,21 @@ SolutionSet <- pproto(
       .pa_preview_text(aliases, max_show = 6L, quote = FALSE)
     }
 
-    status_txt <- .pa_solutionset_status_summary(self$runs)
+    status_txt <- .pa_solutionset_status_summary(runs)
 
-    runtime_txt <- if (!is.null(self$runs) && "runtime" %in% names(self$runs)) {
-      .pa_solutionset_range_text(self$runs$runtime, digits = 3)
+    runtime_txt <- if (!is.null(runs) && "runtime" %in% names(runs)) {
+      .pa_solutionset_range_text(runs$runtime, digits = 3)
     } else {
       "none"
     }
 
-    gap_txt <- if (!is.null(self$runs) && "gap" %in% names(self$runs)) {
-      .pa_solutionset_range_text(self$runs$gap, digits = 4)
+    gap_txt <- if (!is.null(runs) && "gap" %in% names(runs)) {
+      .pa_solutionset_range_text(runs$gap, digits = 4)
     } else {
       "none"
     }
 
-    run_cols <- .pa_solutionset_run_columns(self$runs)
+    run_cols <- .pa_solutionset_run_columns(runs)
     design_txt <- if (length(run_cols$design) == 0L) "none" else paste(run_cols$design, collapse = ", ")
     value_txt  <- if (length(run_cols$values) == 0L) "none" else paste(run_cols$values, collapse = ", ")
 
@@ -226,11 +243,7 @@ SolutionSet <- pproto(
     cli::cli_text("{ch$l}{ch$b}{.h content}", .envir = environment())
     cli::cli_text(" {ch$v}{ch$j}{ch$b}design rows:     {n_design}", .envir = environment())
     cli::cli_text(" {ch$v}{ch$j}{ch$b}runs:            {n_runs}", .envir = environment())
-    cli::cli_text(" {ch$v}{ch$j}{ch$b}solutions:       {n_solutions}", .envir = environment())
-    cli::cli_text(
-      " {ch$v}{ch$l}{ch$b}extras:          {if (n_extras > 0L) paste(names(self$extras), collapse = ', ') else '{.muted none}'}",
-      .envir = environment()
-    )
+    cli::cli_text(" {ch$v}{ch$l}{ch$b}solutions:       {n_solutions}", .envir = environment())
 
     # ---- RUN SUMMARY
     cli::cli_text("{ch$l}{ch$b}{.h run summary}", .envir = environment())
@@ -240,29 +253,15 @@ SolutionSet <- pproto(
     cli::cli_text(" {ch$v}{ch$j}{ch$b}design cols:     {design_txt}", .envir = environment())
     cli::cli_text(" {ch$v}{ch$l}{ch$b}value cols:      {value_txt}", .envir = environment())
 
-    # ---- RUN PREVIEW
-    # prev <- .pa_solutionset_preview_table(self$runs, max_rows = 6L, digits = 3)
-    #
-    # cli::cli_text("{ch$l}{ch$b}{.h run preview}", .envir = environment())
-    #
-    # if (is.null(prev) || nrow(prev) == 0L) {
-    #   cli::cli_text(" {ch$v}{ch$l}{ch$b}{.muted none}", .envir = environment())
-    # } else {
-    #   prev_df <- as.data.frame(prev, stringsAsFactors = FALSE)
-    #   class(prev_df) <- "data.frame"
-    #
-    #   txt <- utils::capture.output(
-    #     print(prev_df)
-    #   )
-    #
-    #   cli::cli_verbatim(paste(txt, collapse = "\n"))
-    # }
-
     info_sym <- cli::symbol$info
     if (is.function(info_sym)) info_sym <- info_sym()
     cli::cli_text(
       cli::col_grey(
-        paste0("# ", info_sym, " Use {.code x$runs}, {.code x$design}, and {.code x$solutions[[i]]} to inspect details.")
+        paste0(
+          "# ", info_sym,
+          " Use {.code x$solution$runs}, {.code x$solution$design}, ",
+          "and {.code x$solution$solutions[[i]]} to inspect details."
+        )
       )
     )
 
@@ -274,12 +273,13 @@ SolutionSet <- pproto(
 
   repr = function(self) {
     method_name <- .pa_solutionset_method_label(self$method)
-    n_runs <- if (inherits(self$runs, "data.frame")) nrow(self$runs) else 0L
+    runs <- self$solution$runs %||% NULL
+    n_runs <- if (inherits(runs, "data.frame")) nrow(runs) else 0L
     paste0("<SolutionSet> method=", method_name, ", runs=", n_runs)
   },
 
   getMethod = function(self) self$method,
-  getDesign = function(self) self$design,
-  getRuns = function(self) self$runs,
-  getSolutions = function(self) self$solutions
+  getDesign = function(self) self$solution$design %||% NULL,
+  getRuns = function(self) self$solution$runs %||% NULL,
+  getSolutions = function(self) self$solution$solutions %||% list()
 )

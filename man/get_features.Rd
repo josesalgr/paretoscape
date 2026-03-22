@@ -4,21 +4,23 @@
 \alias{get_features}
 \title{Get feature achievement summary from a Solution}
 \usage{
-get_features(x, run = 1L)
+get_features(x, run = NULL)
 }
 \arguments{
 \item{x}{A \linkS4class{solution} object returned by \code{\link[=solve]{solve()}}.}
+
+\item{run}{Integer. For multi-run objects, the run index to extract. Default \code{1L}.}
 }
 \value{
-A \code{data.frame} with feature achievement metrics stored in the solution.
+A \code{data.frame} with feature achievement metrics stored in the solution summary.
 }
 \description{
-Extract the feature achievement table from a \linkS4class{solution} object returned by \code{\link[=solve]{solve()}}.
+Extract the feature achievement summary table from a \linkS4class{solution} object returned by \code{\link[=solve]{solve()}}.
 This table typically summarizes, for each feature, how much is achieved by baseline selection
 and by action effects, and their total.
 }
 \details{
-This function expects the feature achievement table at \code{x$data$tables$features} and
+This function expects the feature achievement summary table at \code{x$summary$features} and
 errors if it is missing. The exact columns depend on the model and reporting options, but
 commonly include:
 \itemize{

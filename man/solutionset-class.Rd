@@ -9,28 +9,44 @@ No return value.
 }
 \description{
 The \code{SolutionSet} class stores the output of solving a \code{Problem} object in
-\code{mosap}. It contains the optimization status, objective value, solver
-metadata, decoded decision vectors, and human-readable result tables.
+\code{mosap} when multiple runs or multiple objective trade-offs are produced.
+It contains the original problem, the multi-run solution content, user-facing
+summaries, diagnostics, optimization method metadata, and additional metadata.
 
 Objects of this class are typically created with \code{\link[=solve]{solve()}}.
 }
 \section{Fields}{
 
 \describe{
-\item{data}{A named \code{list} containing optimization outputs, such as the
-objective value, raw solution vector, optimality gap, runtime, solver
-arguments, decoded decision vectors, and result tables.}
-\item{Problem}{The \code{Problem} object used to generate the solution.}
+\item{problem}{The \code{Problem} object used to generate the solution set.}
+\item{solution}{A named \code{list} containing the core multi-run optimization
+outputs, typically including the experimental design, run summary table,
+and the list of individual \code{Solution} objects.}
+\item{summary}{A named \code{list} containing user-facing summaries derived from
+the solution set, intended for reporting, plotting, and inspection.}
+\item{diagnostics}{A named \code{list} containing diagnostics describing the
+solution set as a whole, such as number of runs, status summaries, and
+runtime/gap ranges.}
+\item{method}{A named \code{list} describing the multi-objective optimization
+method used to obtain the solution set.}
+\item{meta}{A named \code{list} containing additional metadata associated with
+the solution set.}
+\item{name}{A \code{character(1)} name for the solution set object.}
 }
 }
 
 \section{Methods}{
 
 \describe{
-\item{print()}{Print a concise summary of the solution, including solver
-status, objective value, runtime, selection summary, and target fulfillment.}
+\item{print()}{Print a concise summary of the solution set, including method,
+content, and run-level diagnostics.}
 \item{show()}{Alias of \code{print()}.}
 \item{repr()}{Returns a short string representation.}
+\item{getMethod()}{Return the method specification.}
+\item{getDesign()}{Return the design table stored in \code{solution$design}.}
+\item{getRuns()}{Return the run summary table stored in \code{solution$runs}.}
+\item{getSolutions()}{Return the list of \code{Solution} objects stored in
+\code{solution$solutions}.}
 }
 }
 

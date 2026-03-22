@@ -4,86 +4,6 @@
 # Utilities
 # -------------------------------------------------------------------------
 
-#' Create a new `pproto` object
-#'
-#' Construct a new object with `pproto`. This object system is inspired
-#' from the `ggproto` system used in the `ggplot2` package.
-#'
-#' @param _class Class name to assign to the object. This is stored as the class
-#'   attribute of the object. This is optional: if `NULL` (the default),
-#'   no class name will be added to the object.
-#'
-#' @param _inherit `pproto` object to inherit from. If `NULL`, don"t
-#'   inherit from any object.
-#'
-#' @param ... A list of members to add to the new `pproto` object.
-#'
-#' @examples
-#' Adder <- pproto("Adder",
-#'   x = 0,
-#'   add = function(self, n) {
-#'     self$x <- self$x + n
-#'     self$x
-#'   }
-#' )
-#'
-#' Adder$add(10)
-#' Adder$add(10)
-#'
-#' Abacus <- pproto("Abacus", Adder,
-#'   subtract = function(self, n) {
-#'     self$x <- self$x - n
-#'     self$x
-#'   }
-#' )
-#' Abacus$add(10)
-#' Abacus$subtract(10)
-#' @noRd
-pproto <- function(`_class` = NULL, `_inherit` = NULL, ...) {
-  assertthat::assert_that(
-    assertthat::is.string(`_class`) || is.null(`_class`),
-    inherits(`_inherit`, "pproto") || is.null(`_inherit`)
-  )
-  # copy objects from one proto to another proto
-  assign_fields <- function(p1, p2) {
-    if (!inherits(p2, "proto")) {
-      return()
-    }
-    for (i in p2$ls()) {
-      if (inherits(p2[[i]], "proto")) {
-        p1[[i]] <- proto::proto()
-        class(p1[[i]]) <- class(p2[[i]])
-        assign_fields(p1[[i]], p2[[i]])
-      } else {
-        p1[[i]] <- p2[[i]]
-      }
-    }
-    assign_fields(p1, p2$.super)
-  }
-  # create new proto
-  p <- proto::proto()
-  if (!is.null(`_inherit`)) {
-    # assign inherited members
-    assign_fields(p, `_inherit`)
-    # assign inherited classes
-    class(p) <- class(`_inherit`)
-  } else {
-    # assign pproto class
-    class(p) <- c("pproto", class(p))
-  }
-  # assign members to new proto
-  assign_fields(p, proto::proto(...))
-  # assign new class if specified
-  if (!is.null(`_class`)) {
-    class(p) <- c(`_class`, class(p))
-  }
-  # return value
-  p
-}
-
-
-`%||%` <- function(a, b) if (!is.null(a)) a else b
-
 # -------------------------------------------------------------------------
 # Promote Problem -> Problem (internal; never exposed to user)
 # -------------------------------------------------------------------------
@@ -1046,11 +966,11 @@ pproto <- function(`_class` = NULL, `_inherit` = NULL, ...) {
     value_mat[r, ] <- unname(as.numeric(alias_values))
 
     # store metadata inside each individual Solution
-    if (!is.null(solutions[[r]]) && !is.null(solutions[[r]]$data)) {
-      solutions[[r]]$data$alias_values <- alias_values
-      solutions[[r]]$data$run_id <- design_df$run_id[r]
-      solutions[[r]]$data$method_name <- "weighted"
-      solutions[[r]]$data$weights <- stats::setNames(as.numeric(w_r), aliases)
+    if (!is.null(solutions[[r]]) && inherits(solutions[[r]], "Solution")) {
+      solutions[[r]]$solution$alias_values <- alias_values
+      solutions[[r]]$meta$run_id <- design_df$run_id[r]
+      solutions[[r]]$method$type <- "weighted"
+      solutions[[r]]$method$weights <- stats::setNames(as.numeric(w_r), aliases)
     }
   }
 
@@ -1068,17 +988,33 @@ pproto <- function(`_class` = NULL, `_inherit` = NULL, ...) {
     as.data.frame(value_mat, stringsAsFactors = FALSE)
   )
 
+  summary_set <- .pamo_bind_solution_summaries(
+    solutions = solutions,
+    run_ids = design_df$run_id
+  )
+
   pproto(
     NULL, SolutionSet,
-    data = data,
+    problem = x,
+    solution = list(
+      design = design_df,
+      runs = runs,
+      solutions = solutions
+    ),
+    summary = summary_set,
+    diagnostics = list(
+      n_design = nrow(design_df),
+      n_runs = nrow(runs),
+      n_solutions = length(solutions),
+      status_summary = .pa_solutionset_status_summary(runs),
+      runtime_range = if ("runtime" %in% names(runs)) .pa_solutionset_range_text(runs$runtime, digits = 3) else "none",
+      gap_range = if ("gap" %in% names(runs)) .pa_solutionset_range_text(runs$gap, digits = 4) else "none"
+    ),
     method = method,
-    design = design_df,
-    runs = runs,
-    solutions = solutions,
-    extras = list(),
     meta = list(
       call = match.call()
-    )
+    ),
+    name = "solset"
   )
 }
 
@@ -1215,12 +1151,12 @@ pproto <- function(`_class` = NULL, `_inherit` = NULL, ...) {
 
     value_mat[r, ] <- unname(as.numeric(alias_values))
 
-    if (!is.null(solutions[[r]]) && !is.null(solutions[[r]]$data)) {
-      solutions[[r]]$data$alias_values <- alias_values
-      solutions[[r]]$data$run_id <- design_df$run_id[r]
-      solutions[[r]]$data$method_name <- "epsilon_constraint"
-      solutions[[r]]$data$primary_alias <- primary
-      solutions[[r]]$data$eps <- stats::setNames(
+    if (!is.null(solutions[[r]]) && inherits(solutions[[r]], "Solution")) {
+      solutions[[r]]$solution$alias_values <- alias_values
+      solutions[[r]]$meta$run_id <- design_df$run_id[r]
+      solutions[[r]]$method$type <- "epsilon_constraint"
+      solutions[[r]]$method$primary_alias <- primary
+      solutions[[r]]$method$eps <- stats::setNames(
         as.numeric(design_df[r, eps_cols, drop = TRUE]),
         constrained
       )
@@ -1262,17 +1198,36 @@ pproto <- function(`_class` = NULL, `_inherit` = NULL, ...) {
     extras$method_meta <- method$meta
   }
 
+  summary_set <- .pamo_bind_solution_summaries(
+    solutions = solutions,
+    run_ids = design_df$run_id
+  )
+
   pproto(
     NULL, SolutionSet,
-    data = data,
+    problem = x,
+    solution = list(
+      design = design_df,
+      runs = runs,
+      solutions = solutions
+    ),
+    summary = summary_set,
+    diagnostics = list(
+      n_design = nrow(design_df),
+      n_runs = nrow(runs),
+      n_solutions = length(solutions),
+      status_summary = .pa_solutionset_status_summary(runs),
+      runtime_range = if ("runtime" %in% names(runs)) .pa_solutionset_range_text(runs$runtime, digits = 3) else "none",
+      gap_range = if ("gap" %in% names(runs)) .pa_solutionset_range_text(runs$gap, digits = 4) else "none"
+    ),
     method = method,
-    design = design_df,
-    runs = runs,
-    solutions = solutions,
-    extras = extras,
     meta = list(
-      call = match.call()
-    )
+      call = match.call(),
+      epsilon_grid = design_df,
+      extremes = attr(design_df, "extremes", exact = TRUE),
+      method_meta = method$meta %||% NULL
+    ),
+    name = "solset"
   )
 }
 
@@ -2032,12 +1987,10 @@ add_objective <- function(x, objective) {
 # Internal: extract (minimal) results from mosap Solution
 # ---------------------------------------------------------
 .pamo_extract_solution <- function(out) {
-  # out is expected to be a mosap::Solution (pproto)
-  # We'll be defensive: if slots are missing, keep NA.
-  objval <- tryCatch(out$data$objval, error = function(e) NA_real_)
-  gap    <- tryCatch(out$data$gap,    error = function(e) NA_real_)
-  runtime <- tryCatch(out$data$runtime, error = function(e) NA_real_)
-  status <- tryCatch(out$data$status, error = function(e) "ok")
+  objval <- tryCatch(out$solution$objective, error = function(e) NA_real_)
+  gap <- tryCatch(out$diagnostics$gap, error = function(e) NA_real_)
+  runtime <- tryCatch(out$diagnostics$runtime, error = function(e) NA_real_)
+  status <- tryCatch(getStatus(out), error = function(e) "unknown")
 
   list(
     solution = out,
@@ -2057,44 +2010,49 @@ add_objective <- function(x, objective) {
 #' @keywords internal
 .mo_get_solution_from <- function(x, run = 1L) {
 
+  run <- as.integer(run)[1]
+  if (!is.finite(run) || is.na(run) || run < 1L) {
+    .mo_abort("run must be a positive integer (1-based).")
+  }
+
   # Case 1: already a Solution
-  if (inherits(x, "Solution")) return(x)
+  if (inherits(x, "Solution")) {
+    return(x)
+  }
 
-  # Case 2: Problem -> x$results$solutions
-  if (inherits(x, "Problem")) {
-    r <- x$results %||% NULL
-    if (is.null(r)) .mo_abort("Problem has no results (x$results is NULL).")
-    sols <- r$solutions %||% NULL
-    if (is.null(sols)) .mo_abort("Problem results has no solutions (x$results$solutions is NULL).")
+  # Case 2: SolutionSet -> x$solution$solutions[[run]]
+  if (inherits(x, "SolutionSet")) {
+    sols <- x$solution$solutions %||% NULL
 
-    run <- as.integer(run)[1]
-    if (!is.finite(run) || run < 1L) .mo_abort("run must be a positive integer (1-based).")
-    if (run > length(sols)) .mo_abort("run=", run, " out of range. There are only ", length(sols), " solutions.")
+    if (is.null(sols)) {
+      .mo_abort("SolutionSet has no solutions (x$solution$solutions is NULL).")
+    }
+    if (!is.list(sols) || length(sols) == 0L) {
+      .mo_abort("SolutionSet contains an empty solutions list.")
+    }
+    if (run > length(sols)) {
+      .mo_abort("run=", run, " out of range. There are only ", length(sols), " solutions.")
+    }
+
     sol <- sols[[run]]
-    if (!inherits(sol, "Solution")) .mo_abort("x$results$solutions[[run]] is not a Solution.")
+    if (!inherits(sol, "Solution")) {
+      .mo_abort("x$solution$solutions[[run]] is not a Solution.")
+    }
+
     return(sol)
   }
 
-  # Case 3: generic MOResults list-like (optional)
-  # Accept either list of Solution or object with $solutions
-  if (is.list(x) && !is.null(x$solutions)) {
-    sols <- x$solutions
-    run <- as.integer(run)[1]
-    if (!is.finite(run) || run < 1L) .mo_abort("run must be a positive integer (1-based).")
-    if (run > length(sols)) .mo_abort("run=", run, " out of range. There are only ", length(sols), " solutions.")
-    sol <- sols[[run]]
-    if (!inherits(sol, "Solution")) .mo_abort("x$solutions[[run]] is not a Solution.")
-    return(sol)
-  }
-
-  if (is.list(x) && length(x) > 0 && inherits(x[[1]], "Solution")) {
-    run <- as.integer(run)[1]
-    if (!is.finite(run) || run < 1L) .mo_abort("run must be a positive integer (1-based).")
-    if (run > length(x)) .mo_abort("run=", run, " out of range. There are only ", length(x), " solutions.")
+  # Case 3: plain list of Solution (optional internal convenience)
+  if (is.list(x) && length(x) > 0L && inherits(x[[1]], "Solution")) {
+    if (run > length(x)) {
+      .mo_abort("run=", run, " out of range. There are only ", length(x), " solutions.")
+    }
     return(x[[run]])
   }
 
-  .mo_abort("Unsupported object. Expected Solution, Problem, or MOResults-like with $solutions.")
+  .mo_abort(
+    "Unsupported object. Expected a Solution or SolutionSet."
+  )
 }
 
 
@@ -2104,16 +2062,14 @@ add_objective <- function(x, objective) {
 # -------------------------------------------------------------------------
 .pamo_get_solution_vector <- function(sol) {
 
-  # accept Solution or list-like object
-  d <- if (!is.null(sol$data)) sol$data else sol
+  if (!is.null(sol$solution$vector) && is.numeric(sol$solution$vector) && length(sol$solution$vector) > 0) {
+    return(as.numeric(sol$solution$vector))
+  }
 
-  candidates <- c(
-    "solution",
-    "sol",
-    "x",
-    "best_solution",
-    "solution_vector"
-  )
+  # fallback defensivo por si entra una lista rara interna
+  candidates <- c("vector", "solution", "sol", "x", "best_solution", "solution_vector")
+
+  d <- sol$solution %||% sol
 
   for (nm in candidates) {
     v <- d[[nm]] %||% NULL
@@ -2124,7 +2080,7 @@ add_objective <- function(x, objective) {
 
   stop(
     "Could not extract the raw decision vector from the solution object.\n",
-    "Expected one of: data$solution, data$sol, data$x, data$best_solution, data$solution_vector.",
+    "Expected x$solution$vector or an equivalent numeric field.",
     call. = FALSE
   )
 }
@@ -2833,10 +2789,10 @@ add_objective <- function(x, objective) {
   stopifnot(inherits(x, "Problem"))
 
   rel_name <- as.character(term$relation_name %||% "boundary")[1]
-  sol_data <- solution$data %||% list()
+  sol_problem <- solution$problem %||% NULL
 
-  rel <- sol_data$spatial_relations_model[[rel_name]] %||%
-    sol_data$spatial_relations[[rel_name]] %||%
+  rel <- sol_problem$data$spatial_relations_model[[rel_name]] %||%
+    sol_problem$data$spatial_relations[[rel_name]] %||%
     x$data$spatial_relations_model[[rel_name]] %||%
     x$data$spatial_relations[[rel_name]] %||%
     NULL
@@ -2851,8 +2807,8 @@ add_objective <- function(x, objective) {
     }
   }
 
-  da <- sol_data$dist_actions_model %||%
-    sol_data$dist_actions %||%
+  da <- sol_problem$data$dist_actions_model %||%
+    sol_problem$data$dist_actions %||%
     x$data$dist_actions_model %||%
     x$data$dist_actions %||%
     NULL
@@ -2869,7 +2825,7 @@ add_objective <- function(x, objective) {
 
   sol_vec <- .pamo_get_solution_vector(solution)
 
-  ml <- sol_data$model_list %||% x$data$model_list %||% NULL
+  ml <- sol_problem$data$model_list %||% x$data$model_list %||% NULL
 
   n_pu <- as.integer(ml$n_pu %||% nrow(x$data$pu))
   if (!is.finite(n_pu) || is.na(n_pu) || n_pu <= 0L) {
@@ -3078,7 +3034,7 @@ add_objective <- function(x, objective) {
   act_ids <- unique(as.character(act_subset$id))
 
   # tabla de acciones de la solución
-  act_tbl <- solution$data$tables$actions %||% NULL
+  act_tbl <- solution$summary$actions %||% NULL
   if (is.null(act_tbl) || !inherits(act_tbl, "data.frame")) {
     stop("No actions table found in solution while evaluating intervention_impact.", call. = FALSE)
   }
@@ -3093,7 +3049,7 @@ add_objective <- function(x, objective) {
 
   if (is.null(pu_col) || is.null(ac_col)) {
     stop(
-      "Could not identify PU/action columns in solution$data$tables$actions while evaluating intervention_impact.",
+      "Could not identify PU/action columns in solution$summary$actions while evaluating intervention_impact.",
       call. = FALSE
     )
   }
@@ -3115,4 +3071,58 @@ add_objective <- function(x, objective) {
   )
 
   as.numeric(val)
+}
+
+
+.pamo_bind_solution_summaries <- function(solutions, run_ids = NULL) {
+  if (is.null(solutions) || length(solutions) == 0L) {
+    return(list(
+      pu = NULL,
+      actions = NULL,
+      features = NULL,
+      targets = NULL
+    ))
+  }
+
+  if (is.null(run_ids)) {
+    run_ids <- seq_along(solutions)
+  }
+
+  if (length(run_ids) != length(solutions)) {
+    stop("run_ids length must match solutions length.", call. = FALSE)
+  }
+
+  bind_one <- function(name) {
+    out <- vector("list", length(solutions))
+
+    for (i in seq_along(solutions)) {
+      sol <- solutions[[i]]
+      if (!inherits(sol, "Solution")) next
+
+      tb <- sol$summary[[name]] %||% NULL
+      if (is.null(tb) || !inherits(tb, "data.frame") || nrow(tb) == 0L) next
+
+      tb$run_id <- run_ids[i]
+      out[[i]] <- tb
+    }
+
+    out <- Filter(Negate(is.null), out)
+    if (length(out) == 0L) return(NULL)
+
+    # usar tu helper de fill si las columnas no coinciden exactamente
+    acc <- out[[1]]
+    if (length(out) > 1L) {
+      for (j in 2:length(out)) {
+        acc <- .pa_rbind_fill(acc, out[[j]])
+      }
+    }
+    acc
+  }
+
+  list(
+    pu = bind_one("pu"),
+    actions = bind_one("actions"),
+    features = bind_one("features"),
+    targets = bind_one("targets")
+  )
 }
