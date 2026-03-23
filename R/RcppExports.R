@@ -81,6 +81,10 @@ rcpp_add_objective_min_intervention_impact <- function(x, pu_data, dist_actions_
     .Call(`_mosap_rcpp_add_objective_min_intervention_impact`, x, pu_data, dist_actions_data, dist_features_data, subset_key, impact_col, features_to_use, actions_to_use, internal_feature_col, weight, weight_multiplier, block_name, tag)
 }
 
+rcpp_add_objective_min_loss <- function(x, coef_x, weight = 1.0, weight_multiplier = 1.0, block_name = "objective_add_min_loss", tag = "") {
+    .Call(`_mosap_rcpp_add_objective_min_loss`, x, coef_x, weight, weight_multiplier, block_name, tag)
+}
+
 rcpp_add_pu_locks <- function(x, pu_data, block_name = "pu_locks", tag = "") {
     .Call(`_mosap_rcpp_add_pu_locks`, x, pu_data, block_name, tag)
 }
@@ -117,8 +121,8 @@ rcpp_add_to_objective_scalar <- function(x, ind1, val) {
     invisible(.Call(`_mosap_rcpp_add_to_objective_scalar`, x, ind1, val))
 }
 
-rcpp_prepare_objective_max_benefit <- function(x, dist_actions_data, dist_benefit_data, benefit_col = "benefit", block_name = "prepare_max_benefit", tag = "") {
-    .Call(`_mosap_rcpp_prepare_objective_max_benefit`, x, dist_actions_data, dist_benefit_data, benefit_col, block_name, tag)
+rcpp_prepare_objective_max_benefit <- function(x, dist_actions_data, dist_effects_data, block_name = "prepare_max_benefit", tag = "") {
+    .Call(`_mosap_rcpp_prepare_objective_max_benefit`, x, dist_actions_data, dist_effects_data, block_name, tag)
 }
 
 rcpp_prepare_objective_max_net_profit <- function(x, pu_data, dist_actions_data, dist_profit_data, profit_col = "profit", include_pu_cost = TRUE, include_action_cost = TRUE, block_name = "objective_max_net_profit", tag = "") {
@@ -143,5 +147,9 @@ rcpp_prepare_objective_min_fragmentation_actions <- function(x, dist_actions_dat
 
 rcpp_prepare_objective_min_intervention_impact <- function(x, pu_data, dist_actions_data, dist_features_data, subset_key = "", impact_col = "amount", features_to_use = integerVector(), actions_to_use = integerVector(), internal_feature_col = "internal_feature", block_name = "objective_min_intervention_impact", tag = "") {
     .Call(`_mosap_rcpp_prepare_objective_min_intervention_impact`, x, pu_data, dist_actions_data, dist_features_data, subset_key, impact_col, features_to_use, actions_to_use, internal_feature_col, block_name, tag)
+}
+
+rcpp_prepare_objective_min_loss <- function(x, dist_actions_data, dist_effects_data, block_name = "prepare_min_loss", tag = "") {
+    .Call(`_mosap_rcpp_prepare_objective_min_loss`, x, dist_actions_data, dist_effects_data, block_name, tag)
 }
 

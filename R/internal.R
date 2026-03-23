@@ -3944,3 +3944,49 @@ NULL
 
   s
 }
+
+
+.validate_split_effects <- function(tbl, context = "effects") {
+  if (!("benefit" %in% names(tbl)) || !("loss" %in% names(tbl))) {
+    stop("Internal error: .validate_split_effects() requires 'benefit' and 'loss' columns.", call. = FALSE)
+  }
+
+  tbl$benefit <- as.numeric(tbl$benefit)
+  tbl$loss    <- as.numeric(tbl$loss)
+
+  if (na_to_zero) {
+    tbl$benefit[is.na(tbl$benefit)] <- 0
+    tbl$loss[is.na(tbl$loss)] <- 0
+  }
+
+  if (any(tbl$benefit < 0, na.rm = TRUE) || any(tbl$loss < 0, na.rm = TRUE)) {
+    stop(
+      context,
+      ": 'benefit' and 'loss' must be non-negative.",
+      call. = FALSE
+    )
+  }
+
+  bad <- which(tbl$benefit > 0 & tbl$loss > 0)
+  if (length(bad) > 0) {
+    ex <- tbl[bad[1], intersect(c("pu", "action", "feature", "benefit", "loss"), names(tbl)), drop = FALSE]
+    msg <- paste0(
+      context,
+      ": a single (pu, action, feature) effect cannot have both positive 'benefit' and positive 'loss'. ",
+      "This is checked after aggregation by (pu, action, feature), so the same triple cannot contain both gains and damages."
+    )
+    if (nrow(ex) == 1) {
+      msg <- paste0(
+        msg,
+        " Example offending row -> pu=", ex$pu,
+        ", action='", ex$action,
+        "', feature=", ex$feature,
+        ", benefit=", ex$benefit,
+        ", loss=", ex$loss, "."
+      )
+    }
+    stop(msg, call. = FALSE)
+  }
+
+  tbl
+}

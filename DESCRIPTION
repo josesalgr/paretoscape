@@ -2,7 +2,7 @@ Package: mosap
 Type: Package
 Version: 1.0.4
 Title: Integrated Multi-Objective Spatial Action Planning            
-Description: Description: Provides an exact multi-objective optimisation framework for integrated
+Description: Provides an exact multi-objective optimisation framework for integrated
     spatial action planning using mixed-integer programming (MIP). The package
     supports the design of management portfolios (e.g., conservation, restoration,
     and other interventions) across planning units to abate threats and satisfy
@@ -94,10 +94,10 @@ Collate:
     'set_method_epsilon_constraint.R'
     'set_method_weighted.R'
     'set_solver.R'
+    'solutionset-class.R'
+    'solution-class.R'
     'show.R'
     'simData.R'
-    'solution-class.R'
-    'solutionset-class.R'
     'solve.R'
     'utils-pipe.R'
     'zzz.R'

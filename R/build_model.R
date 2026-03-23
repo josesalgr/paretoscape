@@ -855,54 +855,100 @@
 
   } else if (identical(mtype, "maximizeBenefits")) {
 
-    if (!exists("rcpp_prepare_objective_max_benefit", mode = "function")) .pa_abort("Missing rcpp_prepare_objective_max_benefit().")
-    if (!exists("rcpp_add_objective_max_benefit",     mode = "function")) .pa_abort("Missing rcpp_add_objective_max_benefit().")
+    if (!exists("rcpp_prepare_objective_max_benefit", mode = "function")) {
+      .pa_abort("Missing rcpp_prepare_objective_max_benefit().")
+    }
+    if (!exists("rcpp_add_objective_max_benefit", mode = "function")) {
+      .pa_abort("Missing rcpp_add_objective_max_benefit().")
+    }
 
-    bcol <- as.character(oargs$benefit_col %||% "benefit")[1]
+    de <- x$data$dist_effects_model
+    if (is.null(de) || !inherits(de, "data.frame")) {
+      .pa_abort("Missing x$data$dist_effects_model for objective 'maximizeBenefits'.")
+    }
 
-    rcpp_prepare_objective_max_benefit(
+    for (nm in c("internal_pu", "internal_action", "internal_feature", "benefit")) {
+      if (!(nm %in% names(de))) {
+        .pa_abort("dist_effects_model must contain column '", nm, "'.")
+      }
+    }
+
+    # filter action subset if requested
+    acts <- oargs$actions %||% NULL
+    if (!is.null(acts)) {
+      de <- de[de$internal_action %in% as.integer(acts), , drop = FALSE]
+    }
+
+    # filter feature subset if requested
+    feats <- oargs$features %||% NULL
+    if (!is.null(feats)) {
+      de <- de[de$internal_feature %in% as.integer(feats), , drop = FALSE]
+    }
+
+    prep <- rcpp_prepare_objective_max_benefit(
       op,
       dist_actions_data = x$data$dist_actions_model,
-      dist_benefit_data = x$data$dist_benefit_model,
-      benefit_col = bcol,
+      dist_effects_data = de,
       block_name = "objective_max_benefit",
       tag = as.character(oargs$tag %||% "")[1]
     )
 
     res <- rcpp_add_objective_max_benefit(
       op,
-      dist_actions_data = x$data$dist_actions_model,
-      dist_benefit_data = x$data$dist_benefit_model,
-      benefit_col = bcol,
-      weight = 1.0
+      coef_x = as.numeric(prep$coef_x),
+      weight = 1.0,
+      block_name = "objective_max_benefit",
+      tag = as.character(oargs$tag %||% "")[1]
     )
 
     objective_id <- "max_benefit"
 
   } else if (identical(mtype, "minimizeLosses")) {
 
-    if (!exists("rcpp_prepare_objective_min_loss", mode = "function")) .pa_abort("Missing rcpp_prepare_objective_min_loss().")
-    if (!exists("rcpp_add_objective_min_loss",     mode = "function")) .pa_abort("Missing rcpp_add_objective_min_loss().")
+    if (!exists("rcpp_prepare_objective_min_loss", mode = "function")) {
+      .pa_abort("Missing rcpp_prepare_objective_min_loss().")
+    }
+    if (!exists("rcpp_add_objective_min_loss", mode = "function")) {
+      .pa_abort("Missing rcpp_add_objective_min_loss().")
+    }
 
-    lcol <- as.character(oargs$loss_col %||% "loss")[1]
+    de <- x$data$dist_effects_model
+    if (is.null(de) || !inherits(de, "data.frame")) {
+      .pa_abort("Missing x$data$dist_effects_model for objective 'minimizeLosses'.")
+    }
 
-    stop("It is not yet programmed.")
+    for (nm in c("internal_pu", "internal_action", "internal_feature", "loss")) {
+      if (!(nm %in% names(de))) {
+        .pa_abort("dist_effects_model must contain column '", nm, "'.")
+      }
+    }
 
-    rcpp_prepare_objective_min_loss(
-      op,
+    # filter action subset if requested
+    acts <- oargs$actions %||% NULL
+    if (!is.null(acts)) {
+      de <- de[de$internal_action %in% as.integer(acts), , drop = FALSE]
+    }
+
+    # filter feature subset if requested
+    feats <- oargs$features %||% NULL
+    if (!is.null(feats)) {
+      de <- de[de$internal_feature %in% as.integer(feats), , drop = FALSE]
+    }
+
+    prep <- rcpp_prepare_objective_min_loss(
+      x = op,
       dist_actions_data = x$data$dist_actions_model,
-      dist_effects_data = x$data$dist_effects_model,
-      loss_col = lcol,
+      dist_effects_data = de,
       block_name = "objective_min_loss",
       tag = as.character(oargs$tag %||% "")[1]
     )
 
     res <- rcpp_add_objective_min_loss(
-      op,
-      dist_actions_data = x$data$dist_actions_model,
-      dist_effects_data = x$data$dist_effects_model,
-      loss_col = lcol,
-      weight = 1.0
+      x = op,
+      coef_x = as.numeric(prep$coef_x),
+      weight = 1.0,
+      block_name = "objective_min_loss",
+      tag = as.character(oargs$tag %||% "")[1]
     )
 
     objective_id <- "min_loss"

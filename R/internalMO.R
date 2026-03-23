@@ -1409,7 +1409,6 @@ add_objective <- function(x, objective) {
   }
 
   .resolve_feature_internal <- function(features) {
-    features <- .chr(features)
     if (is.null(features)) return(integer(0))
 
     feat_df <- base_superset$data$features
@@ -1420,20 +1419,64 @@ add_objective <- function(x, objective) {
       stop("x$data$features must contain 'id' and 'internal_id'.", call. = FALSE)
     }
 
-    idx <- match(features, as.character(feat_df$id))
-    if (anyNA(idx)) {
-      bad <- features[is.na(idx)]
-      stop("Unknown feature ids in objective subset: ", paste(bad, collapse = ", "), call. = FALSE)
+    vals_chr <- .chr(features)
+    vals_int <- suppressWarnings(as.integer(vals_chr))
+
+    # 1) try internal ids first
+    if (length(vals_int) > 0 && all(!is.na(vals_int)) &&
+        all(vals_int %in% feat_df$internal_id)) {
+      return(as.integer(unique(vals_int)))
     }
 
-    as.integer(feat_df$internal_id[idx])
+    # 2) then external ids
+    idx <- match(vals_chr, as.character(feat_df$id))
+    if (all(!is.na(idx))) {
+      return(as.integer(feat_df$internal_id[idx]))
+    }
+
+    # 3) then names if available
+    if ("name" %in% names(feat_df)) {
+      idx2 <- match(vals_chr, as.character(feat_df$name))
+      if (all(!is.na(idx2))) {
+        return(as.integer(feat_df$internal_id[idx2]))
+      }
+    }
+
+    bad <- vals_chr[
+      !(vals_chr %in% as.character(feat_df$id)) &
+        !(vals_chr %in% as.character(feat_df$internal_id)) &
+        !("name" %in% names(feat_df) && vals_chr %in% as.character(feat_df$name))
+    ]
+
+    stop(
+      "Unknown features in objective subset: ",
+      paste(unique(bad), collapse = ", "),
+      call. = FALSE
+    )
   }
 
   .resolve_action_internal <- function(actions) {
-    actions <- .chr(actions)
     if (is.null(actions)) return(integer(0))
 
-    out <- .pa_resolve_action_subset(base_superset, subset = actions)
+    act_df <- base_superset$data$actions
+    if (is.null(act_df) || !inherits(act_df, "data.frame") || nrow(act_df) == 0) {
+      stop("Cannot resolve action subset: x$data$actions is missing/empty.", call. = FALSE)
+    }
+    if (!all(c("id", "internal_id") %in% names(act_df))) {
+      stop("x$data$actions must contain 'id' and 'internal_id'.", call. = FALSE)
+    }
+
+    vals_chr <- .chr(actions)
+    vals_int <- suppressWarnings(as.integer(vals_chr))
+
+    # 1) try internal ids first
+    if (length(vals_int) > 0 && all(!is.na(vals_int)) &&
+        all(vals_int %in% act_df$internal_id)) {
+      return(as.integer(unique(vals_int)))
+    }
+
+    # 2) otherwise fall back to the standard resolver (ids / action_set / etc.)
+    out <- .pa_resolve_action_subset(base_superset, subset = vals_chr)
     as.integer(out$internal_id)
   }
 
@@ -1570,22 +1613,73 @@ add_objective <- function(x, objective) {
 
     } else if (identical(type, "benefit")) {
 
-      bcol <- as.character(t$benefit_col %||% "benefit")[1]
-
-      db_sub <- .subset_dist_effects(
-        df = base_superset$data$dist_benefit_model,
+      de_sub <- .subset_dist_effects(
+        df = base_superset$data$dist_effects_model,
         actions = t$actions,
         features = t$features
       )
 
       da_sub <- .subset_dist_actions(actions = t$actions)
 
-      rcpp_add_objective_max_benefit(
-        op,
+      if (is.null(de_sub) || !inherits(de_sub, "data.frame")) {
+        stop("dist_effects_model is missing for benefit objective.", call. = FALSE)
+      }
+      for (nm in c("internal_pu", "internal_action", "benefit")) {
+        if (!(nm %in% names(de_sub))) {
+          stop("dist_effects_model must contain column '", nm, "' for benefit objective.", call. = FALSE)
+        }
+      }
+
+      prep <- rcpp_prepare_objective_max_benefit(
+        x = op,
         dist_actions_data = da_sub,
-        dist_benefit_data = db_sub,
-        benefit_col = bcol,
-        weight = 1.0
+        dist_effects_data = de_sub,
+        block_name = "prepare_max_benefit",
+        tag = "from=.pamo_objvec_from_ir"
+      )
+
+      rcpp_add_objective_max_benefit(
+        x = op,
+        coef_x = as.numeric(prep$coef_x),
+        weight = 1.0,
+        block_name = "objective_add_max_benefit",
+        tag = "from=.pamo_objvec_from_ir"
+      )
+
+    } else if (identical(type, "loss")) {
+
+      de_sub <- .subset_dist_effects(
+        df = base_superset$data$dist_effects_model,
+        actions = t$actions,
+        features = t$features
+      )
+
+      da_sub <- .subset_dist_actions(actions = t$actions)
+
+      if (is.null(de_sub) || !inherits(de_sub, "data.frame")) {
+        stop("dist_effects_model is missing for loss objective.", call. = FALSE)
+      }
+      for (nm in c("internal_pu", "internal_action", "loss")) {
+        if (!(nm %in% names(de_sub))) {
+          stop("dist_effects_model must contain column '", nm, "' for loss objective.", call. = FALSE)
+        }
+      }
+
+      prep <- rcpp_prepare_objective_min_loss(
+        x = op,
+        dist_actions_data = da_sub,
+        dist_effects_data = de_sub,
+        block_name = "prepare_min_loss",
+        tag = "from=.pamo_objvec_from_ir"
+      )
+
+      rcpp_add_objective_min_loss(
+        x = op,
+        coef_x = as.numeric(prep$coef_x),
+        weight = 1.0,
+        block_name = "objective_add_min_loss",
+        tag = "from=.pamo_objvec_from_ir"
+
       )
 
     } else if (identical(type, "profit")) {
@@ -1651,7 +1745,6 @@ add_objective <- function(x, objective) {
 
       act_int <- .resolve_action_internal(t$actions)
 
-      # ensure the global y_action block exists and matches the current layout
       rcpp_prepare_objective_min_fragmentation_actions(
         op,
         dist_actions_data = base_superset$data$dist_actions_model,
@@ -1661,19 +1754,16 @@ add_objective <- function(x, objective) {
         tag = "from=.pamo_objvec_from_ir"
       )
 
-      # build the objective vector explicitly instead of relying on side effects
       term2 <- t
       term2$actions <- if (length(act_int) > 0) as.integer(act_int) else NULL
 
       v_term <- .pamo_objvec_action_boundary_cut(base_superset, term2)
 
-      # write directly into the model objective buffer
       if (length(v_term) == 0L) {
         stop("Empty vector returned by .pamo_objvec_action_boundary_cut().", call. = FALSE)
       }
 
       if (!exists("rcpp_model_set_objective_vector", mode = "function")) {
-        # fallback: accumulate in current objective by recreating the whole vector
         m0 <- .pa_model_from_ptr(
           op,
           args = base_superset$data$model_args %||% list(),
@@ -2313,125 +2403,6 @@ add_objective <- function(x, objective) {
   base_eval
 }
 
-
-.pamo_solve_lexicographic_extreme_2obj <- function(x, first, second, gap_limit = NULL, time_limit = NULL) {
-  stopifnot(inherits(x, "Problem"))
-
-  method <- x$data$method %||% list()
-  tol <- as.numeric(method$lexicographic_tol %||% 0)[1]
-  if (!is.finite(tol) || tol < 0) tol <- 0
-
-  ir_first  <- .pamo_objective_to_ir(x, .pamo_get_objective_spec(x, first))
-  ir_second <- .pamo_objective_to_ir(x, .pamo_get_objective_spec(x, second))
-
-  # 1) resolver el primer objetivo
-  sol_first <- .pamo_solve_one(
-    x = x,
-    primary_alias = first,
-    constrained_aliases = character(0),
-    eps_named = NULL,
-    gap_limit = gap_limit,
-    time_limit = time_limit
-  )
-
-  first_star <- .pamo_get_alias_value_from_solution(x, sol_first$solution, first)
-
-  # 2) construir un superset para ambos objetivos
-  base_eval <- .pamo_prepare_superset_model(x, list(ir_first, ir_second))
-
-  # 3) restringir el primer objetivo en su óptimo
-  base_eval <- .pamo_add_alias_upper_bound_constraint(
-    base_eval = base_eval,
-    x = x,
-    alias = first,
-    rhs = first_star,
-    tol = tol,
-    name = paste0("lexi_fix_", first)
-  )
-
-  # 4) reconfigurar el objetivo activo del modelo para optimizar el segundo
-  #    reutilizamos la lógica existente: creamos un problema temporal con segundo como primary
-  x_tmp <- x
-  x_tmp$method <- list(
-    name = "epsilon_constraint",
-    mode = "manual",
-    primary = second,
-    aliases = c(first, second),
-    constrained = character(0),
-    eps = NULL,
-    runs = NULL
-  )
-
-  # Resolver sobre el modelo modificado
-  sol_second <- .pamo_solve_on_prebuilt_model(
-    x = x_tmp,
-    base_eval = base_eval,
-    primary_alias = second,
-    gap_limit = gap_limit,
-    time_limit = time_limit
-  )
-
-  list(
-    first_alias = first,
-    second_alias = second,
-    first_star = as.numeric(first_star),
-    solution = sol_second$solution,
-    first_value = .pamo_get_alias_value_from_solution(x, sol_second$solution, first),
-    second_value = .pamo_get_alias_value_from_solution(x, sol_second$solution, second),
-    stage1 = sol_first,
-    stage2 = sol_second
-  )
-}
-
-.pamo_solve_on_prebuilt_model <- function(x, base_eval, primary_alias, gap_limit = NULL, time_limit = NULL) {
-  stopifnot(inherits(x, "Problem"))
-  stopifnot(inherits(base_eval, "Problem"))
-
-  spec <- .pamo_get_objective_spec(x, primary_alias)
-  ir   <- .pamo_objective_to_ir(x, spec)
-
-  # reset objetivo del modelo preconstruido
-  base_eval <- .pamo_set_ir_as_active_objective(base_eval, ir)
-
-  ans <- solve(
-    base_eval,
-    gap_limit = gap_limit,
-    time_limit = time_limit
-  )
-
-  list(
-    solution = ans,
-    primary = primary_alias
-  )
-}
-
-.pamo_set_ir_as_active_objective <- function(base_eval, ir) {
-  stopifnot(inherits(base_eval, "Problem"))
-
-  obj_vec <- .pamo_objvec_from_ir(base_eval, ir)
-
-  op <- base_eval$data$model_ptr
-  if (is.null(op)) {
-    stop("model_ptr is NULL in .pamo_set_ir_as_active_objective().", call. = FALSE)
-  }
-
-  # limpia objetivo actual y escribe el nuevo
-  if (!exists("rcpp_model_set_objective_vector", mode = "function")) {
-    stop(
-      "Missing C++ helper rcpp_model_set_objective_vector(). ",
-      "You need a low-level setter to overwrite the active objective.",
-      call. = FALSE
-    )
-  }
-
-  rcpp_model_set_objective_vector(
-    op = op,
-    obj = as.numeric(obj_vec),
-    model_sense = "min"
-  )
-
-  base_eval
-}
 # -------------------------------------------------------------------------
 # Internal: compute 2-objective extreme points for auto epsilon mode
 #

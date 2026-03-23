@@ -310,6 +310,22 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// rcpp_add_objective_min_loss
+Rcpp::List rcpp_add_objective_min_loss(SEXP x, Rcpp::NumericVector coef_x, double weight, double weight_multiplier, std::string block_name, std::string tag);
+RcppExport SEXP _mosap_rcpp_add_objective_min_loss(SEXP xSEXP, SEXP coef_xSEXP, SEXP weightSEXP, SEXP weight_multiplierSEXP, SEXP block_nameSEXP, SEXP tagSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type x(xSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type coef_x(coef_xSEXP);
+    Rcpp::traits::input_parameter< double >::type weight(weightSEXP);
+    Rcpp::traits::input_parameter< double >::type weight_multiplier(weight_multiplierSEXP);
+    Rcpp::traits::input_parameter< std::string >::type block_name(block_nameSEXP);
+    Rcpp::traits::input_parameter< std::string >::type tag(tagSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcpp_add_objective_min_loss(x, coef_x, weight, weight_multiplier, block_name, tag));
+    return rcpp_result_gen;
+END_RCPP
+}
 // rcpp_add_pu_locks
 Rcpp::List rcpp_add_pu_locks(SEXP x, Rcpp::DataFrame pu_data, std::string block_name, std::string tag);
 RcppExport SEXP _mosap_rcpp_add_pu_locks(SEXP xSEXP, SEXP pu_dataSEXP, SEXP block_nameSEXP, SEXP tagSEXP) {
@@ -439,18 +455,17 @@ BEGIN_RCPP
 END_RCPP
 }
 // rcpp_prepare_objective_max_benefit
-Rcpp::List rcpp_prepare_objective_max_benefit(SEXP x, Rcpp::DataFrame dist_actions_data, Rcpp::DataFrame dist_benefit_data, std::string benefit_col, std::string block_name, std::string tag);
-RcppExport SEXP _mosap_rcpp_prepare_objective_max_benefit(SEXP xSEXP, SEXP dist_actions_dataSEXP, SEXP dist_benefit_dataSEXP, SEXP benefit_colSEXP, SEXP block_nameSEXP, SEXP tagSEXP) {
+Rcpp::List rcpp_prepare_objective_max_benefit(SEXP x, Rcpp::DataFrame dist_actions_data, Rcpp::DataFrame dist_effects_data, std::string block_name, std::string tag);
+RcppExport SEXP _mosap_rcpp_prepare_objective_max_benefit(SEXP xSEXP, SEXP dist_actions_dataSEXP, SEXP dist_effects_dataSEXP, SEXP block_nameSEXP, SEXP tagSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< SEXP >::type x(xSEXP);
     Rcpp::traits::input_parameter< Rcpp::DataFrame >::type dist_actions_data(dist_actions_dataSEXP);
-    Rcpp::traits::input_parameter< Rcpp::DataFrame >::type dist_benefit_data(dist_benefit_dataSEXP);
-    Rcpp::traits::input_parameter< std::string >::type benefit_col(benefit_colSEXP);
+    Rcpp::traits::input_parameter< Rcpp::DataFrame >::type dist_effects_data(dist_effects_dataSEXP);
     Rcpp::traits::input_parameter< std::string >::type block_name(block_nameSEXP);
     Rcpp::traits::input_parameter< std::string >::type tag(tagSEXP);
-    rcpp_result_gen = Rcpp::wrap(rcpp_prepare_objective_max_benefit(x, dist_actions_data, dist_benefit_data, benefit_col, block_name, tag));
+    rcpp_result_gen = Rcpp::wrap(rcpp_prepare_objective_max_benefit(x, dist_actions_data, dist_effects_data, block_name, tag));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -554,6 +569,21 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< std::string >::type block_name(block_nameSEXP);
     Rcpp::traits::input_parameter< std::string >::type tag(tagSEXP);
     rcpp_result_gen = Rcpp::wrap(rcpp_prepare_objective_min_intervention_impact(x, pu_data, dist_actions_data, dist_features_data, subset_key, impact_col, features_to_use, actions_to_use, internal_feature_col, block_name, tag));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcpp_prepare_objective_min_loss
+Rcpp::List rcpp_prepare_objective_min_loss(SEXP x, Rcpp::DataFrame dist_actions_data, Rcpp::DataFrame dist_effects_data, std::string block_name, std::string tag);
+RcppExport SEXP _mosap_rcpp_prepare_objective_min_loss(SEXP xSEXP, SEXP dist_actions_dataSEXP, SEXP dist_effects_dataSEXP, SEXP block_nameSEXP, SEXP tagSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type x(xSEXP);
+    Rcpp::traits::input_parameter< Rcpp::DataFrame >::type dist_actions_data(dist_actions_dataSEXP);
+    Rcpp::traits::input_parameter< Rcpp::DataFrame >::type dist_effects_data(dist_effects_dataSEXP);
+    Rcpp::traits::input_parameter< std::string >::type block_name(block_nameSEXP);
+    Rcpp::traits::input_parameter< std::string >::type tag(tagSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcpp_prepare_objective_min_loss(x, dist_actions_data, dist_effects_data, block_name, tag));
     return rcpp_result_gen;
 END_RCPP
 }

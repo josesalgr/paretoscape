@@ -68,48 +68,90 @@ The updated \code{Problem} object with \code{x$data$dist_effects} created/update
 metadata stored in \code{x$data$effects_meta}.
 }
 \description{
-Define the ecological (or any feature-based) effects of implementing actions in planning units.
-Effects are stored in \code{x$data$dist_effects} as two non-negative components per
-feasible \code{(pu, action, feature)} triple:
+Define the effects of implementing actions on features in planning units.
+Effects are stored in \code{x$data$dist_effects} using a canonical representation with
+two non-negative columns for each feasible \code{(pu, action, feature)} triple:
 \itemize{
-\item \code{benefit} \eqn{\ge 0}: positive change (improvement),
-\item \code{loss} \eqn{\ge 0}: magnitude of negative change (damage), computed as
-\code{loss = -min(delta, 0)}.
+\item \code{benefit} \eqn{\ge 0}: the positive component of the effect,
+\item \code{loss} \eqn{\ge 0}: the magnitude of the negative component of the effect.
 }
+
+For any stored row, the net effect is understood as
+\deqn{\mathrm{delta} = \mathrm{benefit} - \mathrm{loss}.}
+
+In the standard interpretation adopted by this function, each \code{(pu, action, feature)}
+triple represents a single net change. Therefore, after validation, a row in
+\code{dist_effects} cannot have both \code{benefit > 0} and \code{loss > 0} at the same time.
+In other words, a given effect is either beneficial, harmful, or zero for a specific
+planning unit, action, and feature combination.
 }
 \details{
-Internally, effects may originate from signed values (deltas) or from after-action amounts.
-Regardless of input, \code{dist_effects} always stores \code{benefit} and \code{loss} as
-non-negative values to avoid ambiguity and to support models that separately account for
-gains and damages.
+This function provides a single entry point for specifying action effects while enforcing a
+clear internal semantics. Users may supply effects as signed deltas, after-action amounts,
+multipliers relative to baseline feature amounts, or explicit non-negative \code{benefit}/\code{loss}
+columns. Regardless of the input format, the stored output always follows the same canonical
+structure.
+
+\strong{Core semantic rule.}
+The package interprets each \code{(pu, action, feature)} triple as a single effect with a single
+net change. Accordingly:
+\itemize{
+\item if the net effect is positive, it is stored as \code{benefit > 0} and \code{loss = 0},
+\item if the net effect is negative, it is stored as \code{benefit = 0} and \code{loss > 0},
+\item if there is no change, both values are 0.
+}
+Inputs that explicitly provide both \code{benefit > 0} and \code{loss > 0} for the same row are
+rejected because they are ambiguous under this interpretation. Likewise, if duplicated rows are
+provided for the same \code{(pu, action, feature)} triple, they are aggregated before final
+validation, and the resulting triple must still satisfy the same rule.
+
+\strong{Why store benefit and loss instead of a signed delta?}
+The split representation avoids ambiguity in downstream optimization models. It allows the
+package to support objectives and constraints that separately account for positive effects and
+damages, such as maximizing gains, minimizing damages, enforcing no-net-loss conditions, or
+combining these criteria in multi-objective settings.
 
 \strong{Baseline and after-action amounts.}
-If \code{effect_type = "after"}, provided values are interpreted as after-action amounts and
-converted to signed deltas using the baseline amounts in \code{x$data$dist_features$amount}:
+If \code{effect_type = "after"}, supplied values are interpreted as after-action amounts and
+converted internally to signed net changes by comparing them with the baseline amounts stored in
+\code{x$data$dist_features$amount}:
 \deqn{\mathrm{delta} = \mathrm{after} - \mathrm{baseline}.}
 Missing baseline values are treated as 0.
 
 \strong{Supported effect specifications.}
 \enumerate{
-\item \emph{NULL}: store an empty effects table (recommended default when effects are not available yet).
-\item \emph{Multipliers}: a \code{data.frame(action, feature, multiplier)} that applies a signed multiplier to
-baseline amounts: \eqn{\mathrm{delta} = \mathrm{amount} \times \mathrm{multiplier}}.
-\item \emph{Explicit rows}: a \code{data.frame(pu, action, feature, ...)} providing either signed deltas
-(\code{delta} or \code{effect}, or legacy signed \code{benefit}), after-action amounts (\code{after}),
-or already split non-negative \code{benefit}/\code{loss}.
-\item \emph{Rasters per action}: a named list of \code{terra::SpatRaster} objects (names are action ids),
-each with one layer per feature. Raster values are aggregated by planning unit using
-\code{effect_aggregation} and then interpreted as deltas or after-action amounts depending on \code{effect_type}.
+\item \emph{NULL}: create an empty effects table. This is useful when actions exist but effects
+are not yet available.
+\item \emph{Multipliers}: a \code{data.frame(action, feature, multiplier)} where the multiplier is
+applied to the baseline amount of each feature in each planning unit, so that
+\eqn{\mathrm{delta} = \mathrm{amount} \times \mathrm{multiplier}}.
+\item \emph{Explicit rows}: a \code{data.frame(pu, action, feature, ...)} providing one of the following:
+\itemize{
+\item \code{delta} or \code{effect}: a signed net change,
+\item \code{after}: an after-action amount, interpreted according to \code{effect_type},
+\item \code{benefit} and/or \code{loss}: already split non-negative components. Under the package
+semantics, both cannot be strictly positive in the same row or after aggregation by triple,
+\item legacy signed \code{benefit} without \code{loss}: interpreted as a signed net change for backwards compatibility.
+}
+\item \emph{Rasters per action}: a named list of \code{terra::SpatRaster} objects where names are
+action ids and layers correspond to features. Raster values are aggregated to the planning-unit
+level and interpreted as signed deltas or after-action amounts depending on \code{effect_type}.
 }
 
 \strong{Feasibility and locks.}
-Effects are retained only for feasible \code{(pu, action)} pairs present in \code{x$data$dist_actions}.
-If \code{drop_locked_out = TRUE} and \code{x$data$dist_actions$status} exists, pairs with \code{status == 3}
-are excluded before effects are processed.
+Effects are retained only for feasible \code{(pu, action)} pairs listed in \code{x$data$dist_actions}.
+If \code{drop_locked_out = TRUE} and \code{x$data$dist_actions$status} exists, rows with
+\code{status == 3} are removed before effects are stored.
 
 \strong{Filtering.}
-You can keep only beneficial effects (\code{benefit > 0}) or only losses (\code{loss > 0}) using \code{filter}.
-By default, rows with both \code{benefit == 0} and \code{loss == 0} are dropped unless \code{keep_zero = TRUE}.
+After validation and canonicalization, you can keep all non-zero effects, only beneficial effects,
+or only losses using \code{filter}. By default, rows with both \code{benefit == 0} and
+\code{loss == 0} are removed unless \code{keep_zero = TRUE}.
+
+\strong{Interpretation in optimization models.}
+\code{dist_effects} is best understood as an inventory of consequences of actions, not as a complete
+optimization preference by itself. Downstream model components may choose to maximize benefits,
+minimize losses, combine them into net effects, or constrain one component while optimizing the other.
 }
 \examples{
 \dontrun{

@@ -1,4 +1,7 @@
 #' @include internal.R
+#' @include problem-class.R
+#' @include solution-class.R
+#' @include solutionset-class.R
 NULL
 
 #' Show
