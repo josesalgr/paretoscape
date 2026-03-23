@@ -124,27 +124,50 @@ get_actions <- function(x, only_selected = FALSE, run = NULL) {
   a
 }
 
-#' @title Get feature achievement summary from a Solution
+
+
+#' @title Get feature summary from a Solution
 #'
 #' @description
-#' Extract the feature achievement summary table from a [solution-class] object returned by [solve()].
-#' This table typically summarizes, for each feature, how much is achieved by baseline selection
-#' and by action effects, and their total.
+#' Extract the per-feature summary table from a [solution-class] object returned by [solve()].
+#'
+#' The returned table summarizes, for each feature, the total amount available in the
+#' landscape together with the positive and negative contributions induced by the
+#' selected actions in the solution.
 #'
 #' @param x A [solution-class] object returned by [solve()].
-#' @param run Integer. For multi-run objects, the run index to extract. Default \code{1L}.
+#' @param run Integer. For multi-run objects, the run index to extract. Default `NULL`
+#'   (all runs if present).
 #'
-#' @return A \code{data.frame} with feature achievement metrics stored in the solution summary.
+#' @return A `data.frame` with one row per feature. The returned columns typically include:
+#' \itemize{
+#'   \item `feature`: feature id,
+#'   \item `feature_name`: feature name,
+#'   \item `total_available`: total amount available in the landscape for that feature,
+#'   \item `benefit`: positive contribution induced by selected actions,
+#'   \item `loss`: negative contribution induced by selected actions,
+#'   \item `net`: net contribution, computed as `benefit - loss`,
+#'   \item `total`: total resulting amount, typically `total_available + net`.
+#' }
+#'
+#' If the solution summary includes a `run_id` column and multiple runs are returned,
+#' that column is preserved.
 #'
 #' @details
-#' This function expects the feature achievement summary table at \code{x$summary$features} and
-#' errors if it is missing. The exact columns depend on the model and reporting options, but
-#' commonly include:
+#' This function expects the feature summary table at `x$summary$features` and errors if
+#' it is missing.
+#'
+#' The summary is intended to provide a user-facing overview of feature outcomes in the
+#' solution. In particular:
 #' \itemize{
-#' \item \code{baseline_contrib}: contribution from baseline / conservation selection.
-#' \item \code{recovery_contrib}: contribution from action effects (e.g., benefits).
-#' \item \code{total}: baseline + recovery.
+#'   \item `total_available` refers to the total baseline amount available across the full landscape,
+#'   \item `benefit` and `loss` summarize the action-induced positive and negative effects,
+#'   \item `net` summarizes the overall balance of action effects,
+#'   \item `total` combines the baseline amount and the net effect.
 #' }
+#'
+#' This function is distinct from [get_targets()], which reports target achievement rather
+#' than the overall effect balance by feature.
 #'
 #' @examples
 #' \dontrun{
@@ -177,31 +200,81 @@ get_features <- function(x, run = NULL) {
     f <- f[f$run_id == run, , drop = FALSE]
   }
 
-  f
+  out <- f
+
+  # ensure core numeric columns exist
+  if (!("total_available" %in% names(out))) out$total_available <- 0
+  if (!("benefit" %in% names(out))) out$benefit <- 0
+  if (!("loss" %in% names(out))) out$loss <- 0
+
+  out$total_available <- as.numeric(out$total_available)
+  out$benefit <- as.numeric(out$benefit)
+  out$loss <- as.numeric(out$loss)
+
+  if (!("net" %in% names(out))) {
+    out$net <- out$benefit - out$loss
+  } else {
+    out$net <- as.numeric(out$net)
+  }
+
+  if (!("total" %in% names(out))) {
+    out$total <- out$total_available + out$net
+  } else {
+    out$total <- as.numeric(out$total)
+  }
+
+  keep_first <- c(
+    "run_id",
+    "feature",
+    "feature_name",
+    "total_available",
+    "benefit",
+    "loss",
+    "net",
+    "total"
+  )
+
+  keep_first <- intersect(keep_first, names(out))
+  keep_rest <- setdiff(names(out), keep_first)
+  out <- out[, c(keep_first, keep_rest), drop = FALSE]
+
+  if ("run_id" %in% names(out) && length(unique(out$run_id)) <= 1L && is.null(run)) {
+    out$run_id <- NULL
+  }
+
+  out
 }
 
 #' @title Get target achievement table from a Solution
 #'
 #' @description
-#' Extract the target achievement summary table (if present) from a [solution-class] object returned by [solve()].
-#' The targets table typically contains the target value, achieved value, and gap
-#' (\code{achieved - target_value}), plus target metadata such as type and units.
+#' Extract the target achievement summary table from a [solution-class] object returned by [solve()].
+#'
+#' This function returns a simplified user-facing table with the most relevant target
+#' information: feature id, feature name, target level, total available amount, target value,
+#' achieved value, gap, and whether the target was met.
 #'
 #' @param x A [solution-class] object returned by [solve()].
-#' @param run Integer. For multi-run objects, the run index to extract. Default \code{1L}.
+#' @param run Integer. For multi-run objects, the run index to extract. Default `NULL`
+#'   (all runs if present).
 #'
-#' @return A \code{data.frame} with target achievement metrics, or \code{NULL} if the solution
+#' @return A `data.frame` with a simplified target summary, or `NULL` if the solution
 #'   does not contain a targets summary table.
 #'
 #' @details
-#' Targets are optional. If the solution does not include \code{x$summary$targets},
-#' this function returns \code{NULL} without error.
+#' Targets are optional. If the solution does not include `x$summary$targets`,
+#' this function returns `NULL` without error.
 #'
-#' @examples
-#' \dontrun{
-#' sol <- solve(problem)
-#' tgt_tbl <- get_targets(sol)
-#' if (!is.null(tgt_tbl)) head(tgt_tbl)
+#' The returned table typically includes:
+#' \itemize{
+#'   \item `feature`: feature id,
+#'   \item `feature_name`: feature name (if available),
+#'   \item `target_level`: relative or absolute target level as stored in the target definition,
+#'   \item `total_available`: total amount available in the landscape for that feature,
+#'   \item `target`: target value,
+#'   \item `achieved`: achieved value in the solution,
+#'   \item `gap`: `achieved - target`,
+#'   \item `met`: logical indicator of whether the target was met.
 #' }
 #'
 #' @export
@@ -229,7 +302,47 @@ get_targets <- function(x, run = NULL) {
     t <- t[t$run_id == run, , drop = FALSE]
   }
 
-  t
+  out <- t
+
+  if (all(c("achieved", "target_value") %in% names(out))) {
+    if ("sense" %in% names(out)) {
+      out$met <- ifelse(
+        out$sense %in% c("ge", ">=", "min"),
+        out$achieved >= out$target_value,
+        ifelse(
+          out$sense %in% c("le", "<=", "max"),
+          out$achieved <= out$target_value,
+          NA
+        )
+      )
+    } else {
+      out$met <- out$achieved >= out$target_value
+    }
+  }
+
+  keep <- c(
+    "run_id",
+    "feature",
+    "feature_name",
+    "target_raw",
+    "basis_total",
+    "target_value",
+    "achieved",
+    "gap",
+    "met"
+  )
+  keep <- intersect(keep, names(out))
+  out <- out[, keep, drop = FALSE]
+
+  names(out)[names(out) == "target_raw"] <- "target_level"
+  names(out)[names(out) == "basis_total"] <- "total_available"
+  names(out)[names(out) == "target_value"] <- "target"
+
+  if ("run_id" %in% names(out) && length(unique(out$run_id)) <= 1L && is.null(run)) {
+    out$run_id <- NULL
+  }
+
+  out
 }
 
 #' @title Get raw solution vector from a Solution

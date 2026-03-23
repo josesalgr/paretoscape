@@ -1667,51 +1667,38 @@ available_to_solve <- function(package = ""){
   # -------------------------
   # 3) Features achieved
   # -------------------------
+  # -------------------------
+  # 3) Features summary
+  # -------------------------
   feats <- x$data$features
   de <- x$data$dist_effects_model %||% x$data$dist_effects
 
-  # optional baseline from z (kept for reporting only)
-  base_by_feat <- data.frame(internal_feature = integer(0), baseline_contrib = numeric(0))
+  # total available in the landscape (independent of the solution)
+  base_by_feat <- data.frame(
+    internal_feature = integer(0),
+    total_available = numeric(0)
+  )
 
   if (!is.null(df_df) && inherits(df_df, "data.frame") && nrow(df_df) > 0 &&
       all(c("internal_feature", "amount") %in% names(df_df))) {
 
-    if (length(zv) == nrow(df_df) && length(zv) > 0L) {
-      df2 <- df_df
-      df2$z <- zv
-      df2$baseline_contrib <- as.numeric(df2$amount) * as.numeric(df2$z)
+    df2 <- df_df
+    df2$amount <- as.numeric(df2$amount)
 
-      base_by_feat <- stats::aggregate(
-        baseline_contrib ~ internal_feature,
-        data = df2,
-        FUN = sum
-      )
-    } else if (length(zv) > 0L && length(zv) != nrow(df_df)) {
-      warning(
-        "Mismatch: nrow(dist_features) = ", nrow(df_df),
-        " but length(z slice) = ", length(zv),
-        ". baseline_contrib set to 0.",
-        call. = FALSE
-      )
-    }
+    base_by_feat <- stats::aggregate(
+      total_available ~ internal_feature,
+      data = data.frame(
+        internal_feature = as.integer(df2$internal_feature),
+        total_available = as.numeric(df2$amount)
+      ),
+      FUN = sum
+    )
   }
 
-  # choose effect column
-  args  <- x$data$model_args %||% list()
-  oid   <- args$objective_id %||% NA_character_
-  oargs <- args$objective_args %||% list()
-
-  value_col <- if (identical(oid, "min_loss")) {
-    as.character(oargs$loss_col %||% "loss")[1]
-  } else {
-    as.character(oargs$benefit_col %||% "benefit")[1]
-  }
-
-  # map x rows
+  # map x rows to effects table
   de_with_x <- NULL
   if (!is.null(de) && inherits(de, "data.frame") && nrow(de) > 0 &&
       length(xv) > 0 &&
-      value_col %in% names(de) &&
       all(c("internal_pu", "internal_action", "internal_feature") %in% names(de)) &&
       inherits(da_out, "data.frame") && nrow(da_out) > 0 &&
       all(c("internal_pu", "internal_action") %in% names(da_out))) {
@@ -1746,18 +1733,60 @@ available_to_solve <- function(package = ""){
 
     de_with_x <- de
     de_with_x$x_value <- as.numeric(xv[xrow])
-    de_with_x$effect_value <- as.numeric(de_with_x[[value_col]])
-    de_with_x$selected_contrib <- de_with_x$effect_value * de_with_x$x_value
+
+    if (!("benefit" %in% names(de_with_x))) de_with_x$benefit <- 0
+    if (!("loss" %in% names(de_with_x))) de_with_x$loss <- 0
+
+    de_with_x$benefit <- as.numeric(de_with_x$benefit)
+    de_with_x$loss <- as.numeric(de_with_x$loss)
+
+    de_with_x$selected_benefit <- de_with_x$benefit * de_with_x$x_value
+    de_with_x$selected_loss <- de_with_x$loss * de_with_x$x_value
+    de_with_x$selected_net <- de_with_x$selected_benefit - de_with_x$selected_loss
   }
 
-  # total achieved across all actions
-  rec_by_feat <- data.frame(internal_feature = integer(0), recovery_contrib = numeric(0))
+  benefit_by_feat <- data.frame(
+    internal_feature = integer(0),
+    benefit = numeric(0)
+  )
+
+  loss_by_feat <- data.frame(
+    internal_feature = integer(0),
+    loss = numeric(0)
+  )
+
+  net_by_feat <- data.frame(
+    internal_feature = integer(0),
+    net = numeric(0)
+  )
+
   if (!is.null(de_with_x) && nrow(de_with_x) > 0) {
-    tmp <- data.frame(
-      internal_feature = as.integer(de_with_x$internal_feature),
-      recovery_contrib = as.numeric(de_with_x$selected_contrib)
+    benefit_by_feat <- stats::aggregate(
+      benefit ~ internal_feature,
+      data = data.frame(
+        internal_feature = as.integer(de_with_x$internal_feature),
+        benefit = as.numeric(de_with_x$selected_benefit)
+      ),
+      FUN = sum
     )
-    rec_by_feat <- stats::aggregate(recovery_contrib ~ internal_feature, data = tmp, FUN = sum)
+
+    loss_by_feat <- stats::aggregate(
+      loss ~ internal_feature,
+      data = data.frame(
+        internal_feature = as.integer(de_with_x$internal_feature),
+        loss = as.numeric(de_with_x$selected_loss)
+      ),
+      FUN = sum
+    )
+
+    net_by_feat <- stats::aggregate(
+      net ~ internal_feature,
+      data = data.frame(
+        internal_feature = as.integer(de_with_x$internal_feature),
+        net = as.numeric(de_with_x$selected_net)
+      ),
+      FUN = sum
+    )
   }
 
   # main feature table
@@ -1765,16 +1794,22 @@ available_to_solve <- function(package = ""){
     feat_tbl <- data.frame()
   } else {
     feat_tbl <- data.frame(
-      internal_feature = as.integer(feats$internal_id),
-      feature = as.character(feats$name),
+      feature = as.integer(feats$internal_id),
+      feature_name = as.character(feats$name),
       stringsAsFactors = FALSE
     )
 
-    feat_tbl <- dplyr::left_join(feat_tbl, base_by_feat, by = "internal_feature")
-    feat_tbl <- dplyr::left_join(feat_tbl, rec_by_feat,  by = "internal_feature")
-    feat_tbl$baseline_contrib[is.na(feat_tbl$baseline_contrib)] <- 0
-    feat_tbl$recovery_contrib[is.na(feat_tbl$recovery_contrib)] <- 0
-    feat_tbl$total <- feat_tbl$baseline_contrib + feat_tbl$recovery_contrib
+    feat_tbl <- dplyr::left_join(feat_tbl, base_by_feat,    by = c("feature" = "internal_feature"))
+    feat_tbl <- dplyr::left_join(feat_tbl, benefit_by_feat, by = c("feature" = "internal_feature"))
+    feat_tbl <- dplyr::left_join(feat_tbl, loss_by_feat,    by = c("feature" = "internal_feature"))
+    feat_tbl <- dplyr::left_join(feat_tbl, net_by_feat,     by = c("feature" = "internal_feature"))
+
+    feat_tbl$total_available[is.na(feat_tbl$total_available)] <- 0
+    feat_tbl$benefit[is.na(feat_tbl$benefit)] <- 0
+    feat_tbl$loss[is.na(feat_tbl$loss)] <- 0
+    feat_tbl$net[is.na(feat_tbl$net)] <- 0
+
+    feat_tbl$total <- feat_tbl$total_available + feat_tbl$net
   }
 
   # -------------------------
@@ -1820,7 +1855,7 @@ available_to_solve <- function(package = ""){
 
       tmp <- data.frame(
         feature = as.integer(dd$internal_feature),
-        achieved = as.numeric(dd$selected_contrib)
+        achieved = as.numeric(dd$selected_benefit)
       )
       agg <- stats::aggregate(achieved ~ feature, data = tmp, FUN = sum)
 

@@ -2,32 +2,53 @@
 % Please edit documentation in R/get_solution.R
 \name{get_features}
 \alias{get_features}
-\title{Get feature achievement summary from a Solution}
+\title{Get feature summary from a Solution}
 \usage{
 get_features(x, run = NULL)
 }
 \arguments{
 \item{x}{A \linkS4class{solution} object returned by \code{\link[=solve]{solve()}}.}
 
-\item{run}{Integer. For multi-run objects, the run index to extract. Default \code{1L}.}
+\item{run}{Integer. For multi-run objects, the run index to extract. Default \code{NULL}
+(all runs if present).}
 }
 \value{
-A \code{data.frame} with feature achievement metrics stored in the solution summary.
+A \code{data.frame} with one row per feature. The returned columns typically include:
+\itemize{
+\item \code{feature}: feature id,
+\item \code{feature_name}: feature name,
+\item \code{total_available}: total amount available in the landscape for that feature,
+\item \code{benefit}: positive contribution induced by selected actions,
+\item \code{loss}: negative contribution induced by selected actions,
+\item \code{net}: net contribution, computed as \code{benefit - loss},
+\item \code{total}: total resulting amount, typically \code{total_available + net}.
+}
+
+If the solution summary includes a \code{run_id} column and multiple runs are returned,
+that column is preserved.
 }
 \description{
-Extract the feature achievement summary table from a \linkS4class{solution} object returned by \code{\link[=solve]{solve()}}.
-This table typically summarizes, for each feature, how much is achieved by baseline selection
-and by action effects, and their total.
+Extract the per-feature summary table from a \linkS4class{solution} object returned by \code{\link[=solve]{solve()}}.
+
+The returned table summarizes, for each feature, the total amount available in the
+landscape together with the positive and negative contributions induced by the
+selected actions in the solution.
 }
 \details{
-This function expects the feature achievement summary table at \code{x$summary$features} and
-errors if it is missing. The exact columns depend on the model and reporting options, but
-commonly include:
+This function expects the feature summary table at \code{x$summary$features} and errors if
+it is missing.
+
+The summary is intended to provide a user-facing overview of feature outcomes in the
+solution. In particular:
 \itemize{
-\item \code{baseline_contrib}: contribution from baseline / conservation selection.
-\item \code{recovery_contrib}: contribution from action effects (e.g., benefits).
-\item \code{total}: baseline + recovery.
+\item \code{total_available} refers to the total baseline amount available across the full landscape,
+\item \code{benefit} and \code{loss} summarize the action-induced positive and negative effects,
+\item \code{net} summarizes the overall balance of action effects,
+\item \code{total} combines the baseline amount and the net effect.
 }
+
+This function is distinct from \code{\link[=get_targets]{get_targets()}}, which reports target achievement rather
+than the overall effect balance by feature.
 }
 \examples{
 \dontrun{

@@ -9,28 +9,35 @@ get_targets(x, run = NULL)
 \arguments{
 \item{x}{A \linkS4class{solution} object returned by \code{\link[=solve]{solve()}}.}
 
-\item{run}{Integer. For multi-run objects, the run index to extract. Default \code{1L}.}
+\item{run}{Integer. For multi-run objects, the run index to extract. Default \code{NULL}
+(all runs if present).}
 }
 \value{
-A \code{data.frame} with target achievement metrics, or \code{NULL} if the solution
+A \code{data.frame} with a simplified target summary, or \code{NULL} if the solution
 does not contain a targets summary table.
 }
 \description{
-Extract the target achievement summary table (if present) from a \linkS4class{solution} object returned by \code{\link[=solve]{solve()}}.
-The targets table typically contains the target value, achieved value, and gap
-(\code{achieved - target_value}), plus target metadata such as type and units.
+Extract the target achievement summary table from a \linkS4class{solution} object returned by \code{\link[=solve]{solve()}}.
+
+This function returns a simplified user-facing table with the most relevant target
+information: feature id, feature name, target level, total available amount, target value,
+achieved value, gap, and whether the target was met.
 }
 \details{
 Targets are optional. If the solution does not include \code{x$summary$targets},
 this function returns \code{NULL} without error.
-}
-\examples{
-\dontrun{
-sol <- solve(problem)
-tgt_tbl <- get_targets(sol)
-if (!is.null(tgt_tbl)) head(tgt_tbl)
-}
 
+The returned table typically includes:
+\itemize{
+\item \code{feature}: feature id,
+\item \code{feature_name}: feature name (if available),
+\item \code{target_level}: relative or absolute target level as stored in the target definition,
+\item \code{total_available}: total amount available in the landscape for that feature,
+\item \code{target}: target value,
+\item \code{achieved}: achieved value in the solution,
+\item \code{gap}: \code{achieved - target},
+\item \code{met}: logical indicator of whether the target was met.
+}
 }
 \seealso{
 \code{\link[=get_pu]{get_pu()}}, \code{\link[=get_actions]{get_actions()}}, \code{\link[=get_features]{get_features()}}
