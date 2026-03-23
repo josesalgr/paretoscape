@@ -24,6 +24,11 @@ NULL
 #'    - `pu` is used as a mask/template (cells with `NA` in `pu` are excluded)
 #'    This avoids raster-to-polygon conversion and is substantially faster for large grids.
 #'
+#'#' 4) **Hybrid sf-tabular mode**: If `pu` is an `sf` object, while `features` and
+#'    `dist_features` are `data.frame`s, then the problem is built from the supplied
+#'    tabular feature distribution, while preserving PU geometry and raw spatial
+#'    attributes for downstream spatial operations.
+#'
 #' @details
 #' \strong{Spatial relations are not created automatically.}
 #' This version of `inputData()` does \emph{not} take a `boundary` argument.
@@ -512,5 +517,182 @@ methods::setMethod(
       cost_aggregation = cost_aggregation,
       ...
     )
+  }
+)
+
+
+# =========================================================
+# Method: HYBRID sf + tabular features/dist_features
+# =========================================================
+#' @export
+#' @rdname inputData
+methods::setMethod(
+  "inputData",
+  methods::signature(pu = "ANY", features = "data.frame", dist_features = "data.frame"),
+  function(
+    pu,
+    features,
+    dist_features,
+    cost = NULL,
+    pu_id_col = "id",
+    cost_aggregation = c("mean", "sum"),
+    ...
+  ) {
+
+    if (!requireNamespace("sf", quietly = TRUE)) {
+      stop("This method requires the 'sf' package.", call. = FALSE)
+    }
+
+    pu_sf <- pu
+
+    # ---- ensure id column exists
+    if (!(pu_id_col %in% names(pu_sf))) {
+      if (identical(pu_id_col, "id")) {
+        warning(
+          "Planning unit sf object has no 'id' column. Creating sequential ids (1..n). ",
+          "If you want to use an existing field, set pu_id_col to its name.",
+          call. = FALSE,
+          immediate. = TRUE
+        )
+        pu_sf$id <- seq_len(nrow(pu_sf))
+        pu_id_col <- "id"
+      } else {
+        stop(
+          "Planning unit sf object is missing the id column: '", pu_id_col, "'. ",
+          "Either provide that column or set pu_id_col to an existing column name.",
+          call. = FALSE
+        )
+      }
+    }
+
+    # ---- raw PU attributes (without geometry)
+    pu_df_raw <- sf::st_drop_geometry(pu_sf)
+    names(pu_df_raw)[names(pu_df_raw) == pu_id_col] <- "id"
+    pu_df_raw$id <- as.integer(round(pu_df_raw$id))
+
+    # ---- cost must come from sf attribute table
+    if (is.null(cost)) {
+      if (!("cost" %in% names(pu_df_raw))) {
+        stop(
+          "For pu='sf' + features='data.frame' + dist_features='data.frame', ",
+          "you must provide `cost` as a column name in the sf attribute table, ",
+          "or include a column literally named 'cost'.",
+          call. = FALSE
+        )
+      }
+      pu_df_raw$cost <- as.numeric(pu_df_raw$cost)
+    } else if (is.character(cost) && length(cost) == 1L && (cost %in% names(pu_df_raw))) {
+      pu_df_raw$cost <- as.numeric(pu_df_raw[[cost]])
+    } else {
+      stop(
+        "For pu='sf' + features='data.frame' + dist_features='data.frame', ",
+        "`cost` must be the name of a column in the sf attribute table.",
+        call. = FALSE
+      )
+    }
+
+    if (any(!is.finite(pu_df_raw$cost))) {
+      stop("PU cost column contains non-finite values.", call. = FALSE)
+    }
+
+    # ---- features checks
+    if (!inherits(features, "data.frame")) {
+      stop("`features` must be a data.frame.", call. = FALSE)
+    }
+    if (!("id" %in% names(features))) {
+      stop("`features` must contain an 'id' column.", call. = FALSE)
+    }
+    features$id <- as.integer(features$id)
+
+    # ---- dist_features checks
+    if (!inherits(dist_features, "data.frame")) {
+      stop("`dist_features` must be a data.frame.", call. = FALSE)
+    }
+
+    req_df_cols <- c("pu", "feature", "amount")
+    miss_df_cols <- setdiff(req_df_cols, names(dist_features))
+    if (length(miss_df_cols) > 0) {
+      stop(
+        "`dist_features` must contain columns: pu, feature, amount. Missing: ",
+        paste(miss_df_cols, collapse = ", "),
+        call. = FALSE
+      )
+    }
+
+    dist_features$pu <- as.integer(dist_features$pu)
+    dist_features$feature <- as.integer(dist_features$feature)
+    dist_features$amount <- as.numeric(dist_features$amount)
+
+    # ---- build PU table for tabular backend
+    pu_df_out <- pu_df_raw[, c("id", "cost"), drop = FALSE]
+    pu_df_out$locked_in <- FALSE
+    pu_df_out$locked_out <- FALSE
+
+    # ---- consistency checks
+    bad_pu <- setdiff(unique(dist_features$pu), pu_df_out$id)
+    if (length(bad_pu) > 0) {
+      stop(
+        "Some `dist_features$pu` ids are not present in `pu`: ",
+        paste(head(bad_pu, 20), collapse = ", "),
+        if (length(bad_pu) > 20) " ..." else "",
+        call. = FALSE
+      )
+    }
+
+    bad_feat <- setdiff(unique(dist_features$feature), features$id)
+    if (length(bad_feat) > 0) {
+      stop(
+        "Some `dist_features$feature` ids are not present in `features`: ",
+        paste(head(bad_feat, 20), collapse = ", "),
+        if (length(bad_feat) > 20) " ..." else "",
+        call. = FALSE
+      )
+    }
+
+    # ---- build tabular problem
+    x <- .pa_inputData_tabular_impl(
+      pu = pu_df_out,
+      features = features,
+      dist_features = dist_features,
+      boundary = NULL,
+      ...
+    )
+
+    # ---- preserve spatial information
+    ctr <- suppressWarnings(sf::st_centroid(sf::st_geometry(pu_sf)))
+    xy <- sf::st_coordinates(ctr)
+
+    pu_coords <- data.frame(
+      id = pu_df_out$id,
+      x = as.numeric(xy[, 1]),
+      y = as.numeric(xy[, 2]),
+      stringsAsFactors = FALSE
+    )
+
+    pu_sf_store <- pu_sf
+    if (pu_id_col %in% names(pu_sf_store)) {
+      names(pu_sf_store)[names(pu_sf_store) == pu_id_col] <- "id"
+    }
+    pu_sf_store$id <- as.integer(round(pu_sf_store$id))
+
+    ord <- match(x$data$pu$id, pu_sf_store$id)
+    if (any(is.na(ord))) {
+      warning(
+        "Could not safely match PU geometry to PU ids; 'pu_sf' will not be stored in the problem object.",
+        call. = FALSE,
+        immediate. = TRUE
+      )
+    } else {
+      x$data$pu_sf <- pu_sf_store[ord, , drop = FALSE]
+    }
+
+    x$data$pu_coords <- pu_coords
+    x$data$pu_data_raw <- pu_df_raw
+
+    if (is.null(x$data$spatial_relations) || !is.list(x$data$spatial_relations)) {
+      x$data$spatial_relations <- list()
+    }
+
+    x
   }
 )

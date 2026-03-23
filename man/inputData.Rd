@@ -5,6 +5,7 @@
 \alias{inputData,data.frame,data.frame,data.frame-method}
 \alias{inputData,ANY,ANY,missing-method}
 \alias{inputData,ANY,ANY,NULL-method}
+\alias{inputData,ANY,data.frame,data.frame-method}
 \title{Create a planning problem input object}
 \usage{
 inputData(
@@ -38,6 +39,16 @@ inputData(
 )
 
 \S4method{inputData}{ANY,ANY,NULL}(
+  pu,
+  features,
+  dist_features,
+  cost = NULL,
+  pu_id_col = "id",
+  cost_aggregation = c("mean", "sum"),
+  ...
+)
+
+\S4method{inputData}{ANY,data.frame,data.frame}(
   pu,
   features,
   dist_features,
@@ -100,6 +111,11 @@ valid raster cell becomes a planning unit. In this mode:
 This avoids raster-to-polygon conversion and is substantially faster for large grids.
 }
 }
+
+#' 4) \strong{Hybrid sf-tabular mode}: If \code{pu} is an \code{sf} object, while \code{features} and
+\code{dist_features} are \code{data.frame}s, then the problem is built from the supplied
+tabular feature distribution, while preserving PU geometry and raw spatial
+attributes for downstream spatial operations.
 }
 \details{
 \strong{Spatial relations are not created automatically.}
