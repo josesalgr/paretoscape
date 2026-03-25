@@ -2,53 +2,76 @@
 % Please edit documentation in R/get_solution.R
 \name{get_features}
 \alias{get_features}
-\title{Get feature summary from a Solution}
+\title{Get feature summary from a solution}
 \usage{
 get_features(x, run = NULL)
 }
 \arguments{
-\item{x}{A \linkS4class{solution} object returned by \code{\link[=solve]{solve()}}.}
+\item{x}{A \code{Solution} or \code{SolutionSet} object returned by
+\code{\link{solve}}.}
 
-\item{run}{Integer. For multi-run objects, the run index to extract. Default \code{NULL}
-(all runs if present).}
+\item{run}{Optional positive integer giving the run index to extract from a
+\code{SolutionSet}. If \code{NULL}, all runs are returned when available.}
 }
 \value{
-A \code{data.frame} with one row per feature. The returned columns typically include:
-\itemize{
-\item \code{feature}: feature id,
-\item \code{feature_name}: feature name,
-\item \code{total_available}: total amount available in the landscape for that feature,
-\item \code{benefit}: positive contribution induced by selected actions,
-\item \code{loss}: negative contribution induced by selected actions,
-\item \code{net}: net contribution, computed as \code{benefit - loss},
-\item \code{total}: total resulting amount, typically \code{total_available + net}.
-}
-
-If the solution summary includes a \code{run_id} column and multiple runs are returned,
-that column is preserved.
+A \code{data.frame} with one row per feature, or one row per
+feature--run combination when multiple runs are present. The returned table
+always includes the columns \code{total_available}, \code{benefit},
+\code{loss}, \code{net}, and \code{total}.
 }
 \description{
-Extract the per-feature summary table from a \linkS4class{solution} object returned by \code{\link[=solve]{solve()}}.
+Extract the per-feature summary table from a \code{Solution} or
+\code{SolutionSet} object returned by \code{\link{solve}}.
 
-The returned table summarizes, for each feature, the total amount available in the
-landscape together with the positive and negative contributions induced by the
-selected actions in the solution.
+The returned table summarizes, for each feature, the total amount available
+in the landscape together with the positive and negative contributions induced
+by the selected actions in the solution.
 }
 \details{
-This function expects the feature summary table at \code{x$summary$features} and errors if
-it is missing.
+This function reads the feature summary stored in \code{x$summary$features}.
+It errors if that table is missing.
 
-The summary is intended to provide a user-facing overview of feature outcomes in the
-solution. In particular:
-\itemize{
-\item \code{total_available} refers to the total baseline amount available across the full landscape,
-\item \code{benefit} and \code{loss} summarize the action-induced positive and negative effects,
-\item \code{net} summarizes the overall balance of action effects,
-\item \code{total} combines the baseline amount and the net effect.
+Let \eqn{B_f} denote the total baseline amount available in the landscape for
+feature \eqn{f}. Let \eqn{G_f} denote the total positive contribution induced
+by selected actions, and let \eqn{L_f} denote the total negative
+contribution. Then the returned table is intended to summarize quantities of
+the form:
+
+\deqn{
+\mathrm{net}_f = G_f - L_f,
 }
 
-This function is distinct from \code{\link[=get_targets]{get_targets()}}, which reports target achievement rather
-than the overall effect balance by feature.
+\deqn{
+\mathrm{total}_f = B_f + \mathrm{net}_f.
+}
+
+In the stored summary, these quantities are typically represented by the
+columns:
+\itemize{
+\item \code{total_available}, corresponding to \eqn{B_f},
+\item \code{benefit}, corresponding to \eqn{G_f},
+\item \code{loss}, corresponding to \eqn{L_f},
+\item \code{net}, corresponding to \eqn{G_f - L_f},
+\item \code{total}, corresponding to \eqn{B_f + G_f - L_f}.
+}
+
+If any of the core numeric columns \code{total_available}, \code{benefit}, or
+\code{loss} are missing, they are created and filled with zero. If
+\code{net} is missing, it is computed as \code{benefit - loss}. If
+\code{total} is missing, it is computed as \code{total_available + net}.
+
+Thus, this function guarantees that the returned table contains the columns
+\code{total_available}, \code{benefit}, \code{loss}, \code{net}, and
+\code{total}, even if some of them were absent from the stored summary.
+
+If \code{x} is a \code{SolutionSet} and \code{run} is provided, only rows
+belonging to that run are returned. If the result contains a \code{run_id}
+column but only a single run is present and \code{run} was not requested
+explicitly, the \code{run_id} column is removed for convenience.
+
+This function summarizes feature outcomes in the solution. It is different
+from \code{\link{get_targets}}, which focuses on target achievement rather
+than total feature balance.
 }
 \examples{
 \dontrun{
@@ -58,5 +81,7 @@ feat_tbl <- get_features(sol)
 
 }
 \seealso{
-\code{\link[=get_pu]{get_pu()}}, \code{\link[=get_actions]{get_actions()}}, \code{\link[=get_targets]{get_targets()}}
+\code{\link{get_pu}},
+\code{\link{get_actions}},
+\code{\link{get_targets}}
 }

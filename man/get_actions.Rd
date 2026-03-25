@@ -2,40 +2,67 @@
 % Please edit documentation in R/get_solution.R
 \name{get_actions}
 \alias{get_actions}
-\title{Get action results from a Solution}
+\title{Get action results from a solution}
 \usage{
 get_actions(x, only_selected = FALSE, run = NULL)
 }
 \arguments{
-\item{x}{A \linkS4class{solution} object returned by \code{\link[=solve]{solve()}}.}
+\item{x}{A \code{Solution} or \code{SolutionSet} object returned by
+\code{\link{solve}}.}
 
-\item{only_selected}{Logical. If \code{TRUE}, return only rows where \code{selected == 1}.
-Default \code{FALSE}.}
+\item{only_selected}{Logical. If \code{TRUE}, return only rows where
+\code{selected == 1}. Default is \code{FALSE}.}
 
-\item{run}{Integer. For multi-run objects, the run index to extract. Default \code{1L}.}
+\item{run}{Optional positive integer giving the run index to extract from a
+\code{SolutionSet}. If \code{NULL}, all runs are returned when available.}
 }
 \value{
-A \code{data.frame} with action-allocation information stored in the solution summary and
-a \code{selected} column.
+A \code{data.frame} containing the stored action-allocation summary.
+Typical columns include planning-unit ids, action ids, optional labels, and
+a \code{selected} indicator.
 }
 \description{
-Extract the action-allocation summary table from a \linkS4class{solution} object returned by \code{\link[=solve]{solve()}}.
-The returned table includes a \code{selected} indicator (typically \code{0/1}) showing whether
-each feasible \code{(pu, action)} pair is selected in the solution.
+Extract the action-allocation summary table from a \code{Solution} or
+\code{SolutionSet} object returned by \code{\link{solve}}.
+
+The returned table summarizes solution values at the
+planning unit--action level and typically includes a \code{selected}
+indicator showing whether each feasible \code{(pu, action)} pair is selected
+in the solution.
 }
 \details{
-This function expects the solution object to store an action-allocation summary table at
-\code{x$summary$actions}. It errors if the table is missing. If \code{only_selected = TRUE},
-it also errors when the \code{selected} column is not present.
+This function reads the action summary stored in \code{x$summary$actions}. It
+does not reconstruct the table from the raw decision vector; it simply
+returns the stored summary after optional filtering.
+
+Let \eqn{x_{ia}} denote the decision variable associated with selecting
+action \eqn{a} in planning unit \eqn{i}. In standard \code{mosap} workflows,
+the \code{selected} column is the user-facing representation of that
+decision, typically coded as \code{0} or \code{1}.
+
+If \code{x} is a \code{SolutionSet} and \code{run} is provided, only rows
+belonging to that run are returned. This requires the summary table to
+contain a \code{run_id} column.
+
+If \code{only_selected = TRUE}, only rows with \code{selected == 1} are
+returned. This requires the summary table to contain a \code{selected}
+column.
+
+This function is intended for user-facing inspection of action allocations.
+For the raw model variable vector, use \code{\link{get_solution_vector}}.
 }
 \examples{
 \dontrun{
 sol <- solve(problem)
+
 act_tbl <- get_actions(sol)
 act_sel <- get_actions(sol, only_selected = TRUE)
 }
 
 }
 \seealso{
-\code{\link[=get_pu]{get_pu()}}, \code{\link[=get_features]{get_features()}}, \code{\link[=get_targets]{get_targets()}}, \code{\link[=get_solution_vector]{get_solution_vector()}}
+\code{\link{get_pu}},
+\code{\link{get_features}},
+\code{\link{get_targets}},
+\code{\link{get_solution_vector}}
 }

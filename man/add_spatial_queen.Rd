@@ -2,30 +2,62 @@
 % Please edit documentation in R/add_spatial_relations.R
 \name{add_spatial_queen}
 \alias{add_spatial_queen}
-\title{Add queen adjacency from sf polygons}
+\title{Add queen adjacency from polygons}
 \usage{
 add_spatial_queen(x, pu_sf = NULL, name = "default", weight = 1)
 }
 \arguments{
-\item{x}{A \linkS4class{problem} object created with \code{\link[=inputDataSpatial]{inputDataSpatial()}}.}
+\item{x}{A \code{Problem} object created with
+\code{\link{inputData}} or another object containing aligned
+planning-unit polygons.}
 
-\item{pu_sf}{Optional \code{sf} object with PU polygons and an \code{id} column. If \code{NULL},
-uses \code{x$data$pu_sf}.}
+\item{pu_sf}{Optional \code{sf} object with planning-unit polygons and an
+\code{id} column. If \code{NULL}, \code{x$data$pu_sf} is used.}
 
-\item{name}{Character name/key under which to store the relation.}
+\item{name}{Character string giving the key under which the relation is
+stored.}
 
-\item{weight}{Numeric edge weight assigned to each queen adjacency (default 1).}
+\item{weight}{Numeric scalar giving the edge weight assigned to each queen
+adjacency.}
 }
 \value{
-Updated \linkS4class{problem} object.
+An updated \code{Problem} object.
 }
 \description{
-Build and register a queen adjacency relation (shared edge or shared vertex) from planning-unit polygons.
-Queen adjacency includes all rook neighbours plus corner-touching neighbours.
+Build and register a queen adjacency relation from planning-unit polygons.
+
+Two planning units are queen-adjacent if their boundaries touch, either along
+a shared edge or at a shared vertex.
+}
+\details{
+This constructor derives an adjacency graph from polygon geometry using a
+queen criterion. If planning units \eqn{i} and \eqn{j} touch at any boundary
+point, then an edge \eqn{(i,j)} is added to the relation.
+
+Let \eqn{G = (V,E)} denote the resulting graph. Then:
+\deqn{
+(i,j) \in E \quad \Longleftrightarrow \quad
+\partial i \cap \partial j \neq \varnothing.
+}
+
+Thus, queen adjacency includes all rook neighbours plus corner-touching
+neighbours.
+
+All edges receive the same user-supplied weight.
+
+The resulting relation is stored as an undirected spatial relation.
 }
 \examples{
 \dontrun{
-x <- x |> add_spatial_queen(name = "queen", weight = 1)
+p <- add_spatial_queen(
+  x = p,
+  name = "queen",
+  weight = 1
+)
 }
 
+}
+\seealso{
+\code{\link{add_spatial_rook}},
+\code{\link{add_spatial_boundary}}
 }

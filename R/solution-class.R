@@ -4,46 +4,183 @@
 if (!methods::isClass("Solution")) methods::setOldClass("Solution")
 NULL
 
-#' Solution class
+#' @name solution-class
+#' @aliases Solution
+#' @title Solution class
 #'
 #' @description
-#' The `Solution` class stores the output of solving a `Problem` object in
-#' `mosap`. It contains the original problem, the optimization result,
-#' solver diagnostics, user-facing summary tables, and metadata describing
-#' how the solution was obtained.
+#' The \code{Solution} class stores the result of solving a single
+#' \code{\link{Problem}} object in \pkg{mosap}.
 #'
-#' Objects of this class are typically created with [solve()].
+#' A \code{Solution} object contains the original problem definition, the core
+#' optimization output returned by the solver, user-facing summary tables,
+#' diagnostics about the solve process, and metadata describing how the solution
+#' was obtained.
+#'
+#' Objects of this class are typically created by \code{\link{solve}}.
+#'
+#' @details
+#' \strong{Conceptual role}
+#'
+#' The \code{Solution} class represents the output of one optimization run.
+#'
+#' It should be understood as the single-run counterpart of the modelling
+#' workflow:
+#' \preformatted{
+#' Problem -> solve() -> Solution
+#' }
+#'
+#' Thus, a \code{Solution} object does not replace the original
+#' \code{Problem}; instead, it keeps a reference to it in the \code{problem}
+#' field and augments it with optimization results.
+#'
+#' \strong{Single-run semantics}
+#'
+#' A \code{Solution} corresponds to one realized solution of one configured
+#' optimization problem. This may come from:
+#' \itemize{
+#'   \item a single-objective solve,
+#'   \item one run of a weighted multi-objective workflow,
+#'   \item one \eqn{\epsilon}-constraint subproblem,
+#'   \item one AUGMECON subproblem,
+#'   \item or any other workflow that ultimately produces one optimizer output.
+#' }
+#'
+#' When multiple runs are generated, they are typically collected in a separate
+#' \code{SolutionSet} object rather than a single \code{Solution}.
+#'
+#' \strong{Internal structure}
+#'
+#' A \code{Solution} object separates results into several layers:
+#'
+#' \describe{
+#'   \item{\code{problem}}{The original \code{Problem} object used to generate
+#'   the solution.}
+#'
+#'   \item{\code{solution}}{A named \code{list} containing the core optimization
+#'   output. This may include the objective value, raw model variable vector,
+#'   decoded decision vectors, and evaluated objective values by alias.}
+#'
+#'   \item{\code{summary}}{A named \code{list} of user-facing summary tables,
+#'   typically derived from the original problem and the solved decisions. These
+#'   tables are intended for inspection, plotting, reporting, and downstream
+#'   analysis.}
+#'
+#'   \item{\code{diagnostics}}{A named \code{list} containing solver diagnostics
+#'   such as status, runtime, optimality gap, solver name, and runtime
+#'   settings.}
+#'
+#'   \item{\code{method}}{A named \code{list} describing the optimization method
+#'   used to obtain the solution.}
+#'
+#'   \item{\code{meta}}{A named \code{list} containing additional metadata.}
+#'
+#'   \item{\code{name}}{A \code{character(1)} identifier for the solution
+#'   object.}
+#' }
+#'
+#' \strong{Core optimization output}
+#'
+#' The \code{solution} field stores the solver-facing result. Typical entries may
+#' include:
+#' \describe{
+#'   \item{\code{objective}}{The scalar objective value returned by the solver
+#'   for this run.}
+#'   \item{\code{vector}}{The raw internal solution vector in model-variable
+#'   order.}
+#'   \item{\code{alias_values}}{Objective values evaluated for registered
+#'   aliases, when available.}
+#' }
+#'
+#' The raw solution vector may contain not only user-facing decision variables
+#' such as planning-unit or action decisions, but also auxiliary variables
+#' introduced internally by the model builder.
+#'
+#' \strong{User-facing summaries}
+#'
+#' The \code{summary} field stores derived tables intended for interpretation
+#' rather than solver interaction. Typical entries include:
+#' \describe{
+#'   \item{\code{pu}}{Planning-unit summary table.}
+#'   \item{\code{actions}}{Planning unit--action allocation summary table.}
+#'   \item{\code{features}}{Feature-level outcome summary table.}
+#'   \item{\code{targets}}{Target-achievement summary table, when targets were
+#'   part of the problem.}
+#' }
+#'
+#' These tables are the main source used by user-facing accessors such as
+#' \code{\link{get_pu}}, \code{\link{get_actions}},
+#' \code{\link{get_features}}, and \code{\link{get_targets}}.
+#'
+#' \strong{Diagnostics}
+#'
+#' The \code{diagnostics} field stores metadata about the optimization process,
+#' including solver status and runtime information. Typical entries may include:
+#' \itemize{
+#'   \item solver name,
+#'   \item runtime in seconds,
+#'   \item optimality gap,
+#'   \item number of cores,
+#'   \item time limit,
+#'   \item status code or status label.
+#' }
+#'
+#' These values describe how the solution was obtained, not the content of the
+#' solution itself.
+#'
+#' \strong{Printing}
+#'
+#' The \code{print()} method is intended as a concise diagnostic summary. It
+#' reports:
+#' \itemize{
+#'   \item solver status,
+#'   \item objective value,
+#'   \item optimality gap,
+#'   \item runtime,
+#'   \item counts of selected planning units and actions,
+#'   \item target fulfillment summary when available,
+#'   \item evaluated objective alias values when available,
+#'   \item and basic solver information.
+#' }
+#'
+#' This summary is intended for quick inspection. More detailed exploration
+#' should use the stored \code{summary}, \code{solution}, and
+#' \code{diagnostics} fields directly, or the dedicated accessor functions.
 #'
 #' @section Fields:
 #' \describe{
-#'   \item{problem}{The `Problem` object used to generate the solution.}
-#'   \item{solution}{A named `list` containing the core optimization outputs,
-#'   such as the objective value, raw solution vector, decoded decision vectors,
-#'   and evaluated objective aliases.}
-#'   \item{summary}{A named `list` of user-facing summary tables derived from
-#'   the problem and solution, typically used for plotting, reporting, and
-#'   inspection.}
-#'   \item{diagnostics}{A named `list` containing solver diagnostics such as
-#'   optimization status, optimality gap, runtime, and solver arguments.}
-#'   \item{method}{A named `list` describing the optimization method used to
-#'   obtain the solution.}
-#'   \item{meta}{A named `list` containing additional metadata associated with
-#'   the solution.}
-#'   \item{name}{A `character(1)` name for the solution object.}
+#'   \item{\code{problem}}{The \code{Problem} object used to generate the
+#'   solution.}
+#'   \item{\code{solution}}{A named \code{list} containing the core optimization
+#'   result.}
+#'   \item{\code{summary}}{A named \code{list} of user-facing summary tables.}
+#'   \item{\code{diagnostics}}{A named \code{list} of solver diagnostics.}
+#'   \item{\code{method}}{A named \code{list} describing the method used.}
+#'   \item{\code{meta}}{A named \code{list} of additional metadata.}
+#'   \item{\code{name}}{A \code{character(1)} name for the solution object.}
 #' }
 #'
 #' @section Methods:
 #' \describe{
-#'   \item{print()}{Print a concise summary of the solution, including solver
-#'   status, objective value, runtime, selection summary, and target fulfillment.}
-#'   \item{show()}{Alias of `print()`.}
-#'   \item{repr()}{Returns a short string representation.}
+#'   \item{\code{print()}}{Print a concise summary of the solution, including
+#'   status, objective value, runtime, selection counts, and target
+#'   fulfillment.}
+#'
+#'   \item{\code{show()}}{Alias of \code{print()}.}
+#'
+#'   \item{\code{repr()}}{Return a short one-line representation of the
+#'   solution.}
 #' }
 #'
-#' @return No return value.
+#' @return No return value. This page documents the \code{Solution} class.
 #'
-#' @name solution-class
-#' @aliases Solution
+#' @seealso
+#' \code{\link{problem-class}},
+#' \code{\link{get_pu}},
+#' \code{\link{get_actions}},
+#' \code{\link{get_features}},
+#' \code{\link{get_targets}},
+#' \code{\link{solve}}
 NULL
 
 # internal helper

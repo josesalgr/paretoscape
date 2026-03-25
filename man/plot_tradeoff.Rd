@@ -21,24 +21,27 @@ plot_tradeoff(
 \item{x}{A \code{SolutionSet} object.}
 
 \item{objectives}{Optional character vector of objective aliases to display.
-These should match the suffixes of the \verb{value_*} columns in \code{x$solution$runs}.
-If \code{NULL}, all available objectives are used.}
+These must match the suffixes of the \code{value_*} columns in
+\code{x$solution$runs}. If \code{NULL}, all available objective columns are
+used.}
 
-\item{color_by}{Optional character scalar used to color points. It may refer to
-one of the selected objective aliases (e.g. \code{"benefit"}) or to one of the
-run-level columns \code{"run_id"}, \code{"status"}, \code{"runtime"}, or \code{"gap"}.}
+\item{color_by}{Optional character scalar used to colour points. This may be
+either one of the selected objective aliases or one of the run-level
+columns \code{"run_id"}, \code{"status"}, \code{"runtime"}, or
+\code{"gap"}.}
 
-\item{all_pairs}{Logical. If \code{TRUE}, allow plotting all pairwise combinations
-even when more than four objectives are present. If \code{NULL}, it is treated as
-\code{FALSE}.}
+\item{all_pairs}{Logical. If \code{TRUE}, allow plotting all pairwise
+combinations even when more than four objectives are selected. If
+\code{NULL}, it is treated as \code{FALSE}.}
 
-\item{connect}{Logical. If \code{TRUE}, connect points by \code{run_id} within each panel.}
+\item{connect}{Logical. If \code{TRUE}, connect points by run order within
+each panel.}
 
 \item{label_runs}{Logical. If \code{TRUE}, add run labels to points.}
 
 \item{point_size}{Numeric point size.}
 
-\item{line_alpha}{Numeric alpha for connecting lines.}
+\item{line_alpha}{Numeric alpha value for connecting lines.}
 
 \item{text_size}{Numeric size for run labels.}
 
@@ -48,9 +51,70 @@ even when more than four objectives are present. If \code{NULL}, it is treated a
 Invisibly returns a \code{ggplot} object.
 }
 \description{
-Plot pairwise trade-offs among objective values stored in a \code{SolutionSet}.
+Plot pairwise trade-offs among objective values stored in a
+\code{SolutionSet}.
 
-If exactly two objectives are selected, the function returns a single scatterplot.
-If three or more objectives are selected, it returns all pairwise combinations
-using facets.
+This function is intended for multi-objective workflows in which the solution
+set contains one row per run and one or more objective value columns of the
+form \code{value_*}.
+
+If exactly two objectives are selected, the function returns a single
+scatterplot. If three or more objectives are selected, all pairwise
+combinations are plotted using facets.
+}
+\details{
+This function reads the run-level table stored in \code{x$solution$runs}. It
+expects objective values to be stored in columns whose names begin with
+\code{"value_"}.
+
+If the available objective columns are, for example,
+\code{value_cost}, \code{value_benefit}, and \code{value_frag}, then the
+corresponding objective aliases are \code{"cost"}, \code{"benefit"}, and
+\code{"frag"}.
+
+Let \eqn{f_k(r)} denote the value of objective \eqn{k} in run \eqn{r}. This
+function visualizes pairwise projections of the run table of the form:
+\deqn{
+\left(f_k(r), f_\ell(r)\right)
+}
+for selected pairs of objectives \eqn{k,\ell}.
+
+If exactly two objectives are selected, a single panel is produced.
+
+If three or more objectives are selected, all pairwise combinations are
+generated:
+\deqn{
+\{(k,\ell): k < \ell,\; k,\ell \in \mathcal{O}\},
+}
+where \eqn{\mathcal{O}} is the selected set of objective aliases.
+
+By default, plotting more than four objectives is not allowed unless
+\code{all_pairs = TRUE}, because the number of panels grows quadratically in
+the number of objectives.
+
+\strong{Colouring}
+
+If \code{color_by} is supplied, points are coloured by either:
+\itemize{
+\item one of the selected objective aliases, in which case the
+corresponding \code{value_*} column is used,
+\item or one of the run-level columns \code{run_id}, \code{status},
+\code{runtime}, or \code{gap}.
+}
+
+\strong{Connecting runs}
+
+If \code{connect = TRUE}, runs are connected in their current table order
+within each panel. This can be useful when runs correspond to an ordered scan
+of weights, \eqn{\epsilon}-levels, or frontier points, but it should be used
+with care when run order has no substantive meaning.
+
+\strong{Run labels}
+
+If \code{label_runs = TRUE}, each point is labelled by its \code{run_id}. If
+the \pkg{ggrepel} package is available, repelled labels are used.
+}
+\seealso{
+\code{\link{solve}},
+\code{\link{get_solution_vector}}
 }

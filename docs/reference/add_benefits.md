@@ -1,14 +1,17 @@
-# Add benefits (positive effects)
+# Add benefits
 
 Convenience wrapper around
 [`add_effects`](https://josesalgr.github.io/mosap/reference/add_effects.md)
-that keeps only rows with `benefit > 0` (i.e., positive changes). For
-backwards compatibility, the argument `benefits` is an alias of
-`effects`.
+that keeps only positive effects, that is, rows with `benefit > 0`.
 
-In addition to writing `x$data$dist_effects`, this function also writes
-a backward-compatible table `x$data$dist_benefit` containing only the
-benefit component.
+This function is useful when the user wants to work only with beneficial
+consequences of actions. Internally, it calls
+[`add_effects()`](https://josesalgr.github.io/mosap/reference/add_effects.md)
+with `filter = "benefit"` and stores the resulting canonical effects
+table in `x$data$dist_effects`.
+
+For backwards compatibility, a mirror table containing only the benefit
+component is also written to `x$data$dist_benefit`.
 
 ## Usage
 
@@ -30,54 +33,92 @@ add_benefits(
 
 - x:
 
-  A `Data` object created with
+  A `Problem` object created with
   [`inputData`](https://josesalgr.github.io/mosap/reference/inputData.md)
-  or
-  [`inputDataSpatial`](https://josesalgr.github.io/mosap/reference/inputDataSpatial.md).
-  Must contain `x$data$dist_actions` (run
+  or `inputDataSpatial`. It must already contain `x$data$dist_actions`;
+  run
   [`add_actions`](https://josesalgr.github.io/mosap/reference/add_actions.md)
-  first).
+  first.
 
 - benefits:
 
-  Alias of `effects` for backwards compatibility.
+  Alias of `effects`, kept for backwards compatibility.
 
 - effect_type:
 
-  Character. How to interpret provided values for explicit tables or
-  raster lists:
+  Character string indicating how supplied effect values are
+  interpreted. Must be one of:
 
-  - `"delta"`: values represent signed deltas (default),
+  - `"delta"`: values represent signed net changes,
 
-  - `"after"`: values represent after-action amounts (converted to
-    deltas using baseline).
+  - `"after"`: values represent after-action amounts and are converted
+    to net changes relative to baseline feature amounts.
 
 - effect_aggregation:
 
-  Character. Aggregation used to compute PU-level values from rasters.
-  One of `"sum"` or `"mean"`.
+  Character string giving the aggregation used when converting raster
+  values to planning-unit level. Must be one of `"sum"` or `"mean"`.
 
 - align_rasters:
 
-  Logical. If `TRUE`, attempt to align effect rasters to the PU raster
-  grid before zonal operations (default `TRUE`).
+  Logical. If `TRUE`, effect rasters are aligned to the planning-unit
+  raster grid before raster extraction or zonal aggregation.
 
 - keep_zero:
 
-  Logical. If `TRUE`, keep rows where `benefit == 0` and `loss == 0`.
-  Default `FALSE`.
+  Logical. If `TRUE`, keep rows for which both `benefit == 0` and
+  `loss == 0`. Default is `FALSE`.
 
 - drop_locked_out:
 
-  Logical. If `TRUE`, drop rows for `(pu, action)` pairs with
-  `status == 3` in `x$data$dist_actions` (if the column exists). Default
-  `TRUE`.
+  Logical. If `TRUE`, rows associated with `(pu, action)` pairs marked
+  as locked out (`status == 3`) in `x$data$dist_actions` are removed
+  before storing effects.
 
 - na_to_zero:
 
-  Logical. If `TRUE`, treat missing values as 0 when computing
-  benefit/loss. Default `TRUE`.
+  Logical. If `TRUE`, missing values are interpreted as zero when
+  constructing or validating effects.
 
 ## Value
 
-The updated `Data` object.
+An updated `Problem` object with:
+
+- `x$data$dist_effects`:
+
+  The canonical filtered effects table, containing only rows with
+  `benefit > 0`.
+
+- `x$data$dist_benefit`:
+
+  A backwards-compatible table containing only the benefit component.
+
+## See also
+
+[`add_effects`](https://josesalgr.github.io/mosap/reference/add_effects.md),
+[`add_losses`](https://josesalgr.github.io/mosap/reference/add_losses.md)
+
+## Examples
+
+``` r
+pu <- data.frame(id = 1:2, cost = c(1, 2))
+features <- data.frame(id = 1, name = "sp1")
+dist_features <- data.frame(pu = 1:2, feature = 1, amount = c(5, 10))
+
+p <- inputData(pu = pu, features = features, dist_features = dist_features)
+p <- add_actions(p, data.frame(id = "restoration"))
+
+eff <- data.frame(
+  pu = c(1, 2),
+  action = c("restoration", "restoration"),
+  feature = c(1, 1),
+  delta = c(2, -1)
+)
+
+p <- add_benefits(p, benefits = eff)
+p$data$dist_benefit
+#>   pu      action feature benefit internal_pu internal_action internal_feature
+#> 1  1 restoration       1       2           1               1                1
+#>   feature_name action_name
+#> 1          sp1 restoration
+```

@@ -1,137 +1,210 @@
-# Set multi-objective method: weighted sum
+# Set the weighted-sum multi-objective method
 
-Configure the **weighted-sum** multi-objective method on top of *atomic
-objectives* previously registered in the planning object.
+Configure a `Problem` object to be solved with a weighted-sum
+multi-objective method.
 
-The weighted-sum method combines multiple objectives into a single
-scalar objective: \$\$\sum\_{k \in K} w_k \\ f_k(x)\$\$ where each
-\\f_k(x)\\ is an *atomic objective* (e.g., minimum cost, minimum
-fragmentation, maximum benefit) and \\w_k \ge 0\\ are user-supplied
-weights.
-
-This function **does not solve** the problem. It stores the
-multi-objective configuration inside an `"MOProblem"` object so it can
-later be used by a multi-objective solving workflow (e.g., weighted
-runs, epsilon-constraint, AUGMECON, interactive methods).
+In the weighted-sum method, several registered atomic objectives are
+combined into a single scalar objective using a weighted linear
+combination. This function stores that configuration in `x$data$method`
+so that it can be used later by
+[`solve`](https://josesalgr.github.io/mosap/reference/solve.md).
 
 ## Usage
 
 ``` r
-set_method_weighted(x, aliases, weights, normalize = FALSE)
+set_method_weighted(
+  x,
+  aliases,
+  weights,
+  normalize_weights = FALSE,
+  objective_scaling = FALSE
+)
 ```
 
 ## Arguments
 
 - x:
 
-  A planning object (`Data`) or an existing `"MOProblem"`. If a `Data`
-  object is provided, it is promoted to `"MOProblem"` via
-  `.pamo_as_mo()`.
+  A `Problem` object.
 
 - aliases:
 
-  `character`. Objective aliases to combine (e.g. `c("cost","frag")`).
-  Each alias must refer to a registered atomic objective.
+  Character vector of objective aliases to combine. Each alias must
+  correspond to a previously registered atomic objective.
 
 - weights:
 
-  `numeric`. Non-negative weights, same length as `aliases`. If
-  `normalize = TRUE`, these weights are rescaled to sum to 1.
+  Numeric vector of weights, with the same length and order as
+  `aliases`. Weights must be finite. If `normalize_weights = TRUE`, they
+  are rescaled to sum to 1 before being stored.
 
-- normalize:
+- normalize_weights:
 
-  `logical`. If `TRUE`, normalize weights to sum to 1.
+  Logical. If `TRUE`, normalize the supplied weights to sum to 1 before
+  storing them.
+
+- objective_scaling:
+
+  Logical. If `TRUE`, request scaling of the participating objectives
+  before weighted aggregation in the solving layer.
 
 ## Value
 
-The same object `x`, promoted to class `"MOProblem"`, with the method
-configuration stored in `x$method`:
+The updated `Problem` object with the weighted-sum method configuration
+stored in `x$data$method`.
 
-    x$method <- list(
-      name = "weighted",
-      params = list(
-        aliases = <character>,
-        weights = <numeric>,
-        normalize = <logical>
-      )
-    )
+## Details
 
-## Atomic objectives requirement
+**General idea**
 
-Weighted-sum requires that the base planning object contains one or more
-*atomic objectives* registered under unique aliases. Atomic objectives
-are registered by calling objective setters with an `alias` argument,
-for example:
+Suppose that a set of atomic objectives has already been registered in
+the problem under aliases \\k \in \mathcal{K}\\. Let \\f_k(x)\\ denote
+the scalar value of objective \\k\\, and let \\w_k\\ denote its
+user-supplied weight.
+
+The weighted-sum method combines them into a single scalar objective of
+the form:
+
+\$\$ \sum\_{k \in \mathcal{K}} w_k \\ f_k(x). \$\$
+
+In practice, the exact sign convention used internally depends on the
+sense of each registered atomic objective, for example whether it is a
+minimization-type or maximization-type objective. The solving layer is
+therefore responsible for constructing a solver-ready scalar objective
+from the stored objective specifications and the requested weights.
+
+**Atomic objectives requirement**
+
+The weighted-sum method can only be used with atomic objectives that
+have already been registered under aliases. These aliases are typically
+created by calling objective setters with an `alias` argument, for
+example:
 
     x <- x |>
       add_objective_min_cost(alias = "cost") |>
       add_objective_min_fragmentation(alias = "frag")
 
-Internally, atomic objectives are stored (by convention) in
-`x$data$objectives[[alias]]`, each entry including:
+Internally, each atomic objective is stored in
+`x$data$objectives[[alias]]` together with its metadata, such as:
 
-- `objective_id`: stable identifier (e.g., `"min_cost"`,
-  `"min_fragmentation"`)
+- `objective_id`,
 
-- `model_type`: builder identifier (used later when materializing the
-  model)
+- `model_type`,
 
-- `sense`: `"min"` or `"max"`
+- `sense`,
 
-- `objective_args`: objective-specific arguments
+- `objective_args`.
 
-## Objective sense (min vs max)
+The `aliases` argument passed to this function selects which of those
+registered atomic objectives are included in the weighted combination.
 
-Combining objectives with different senses (mixing `"min"` and `"max"`)
-requires a **standardization step** in the multi-objective solving layer
-(e.g., converting maximization terms into minimization terms by negation
-or by shifting/scaling). This function validates that the requested
-`aliases` exist; additional checks (e.g., forbidding mixed senses) can
-be implemented in `.pamo_get_objective_specs()` or enforced later by the
-solver.
+**Weight normalization**
 
-## Weight scaling and normalization
+If `normalize_weights = TRUE`, the supplied weights are rescaled to sum
+to 1:
 
-- Weights must be finite and non-negative.
+\$\$ \tilde{w}\_k = \frac{w_k}{\sum\_{j \in \mathcal{K}} w_j}. \$\$
 
-- If `normalize = TRUE`, weights are rescaled to sum to 1.
+This normalization does not change the optimizer's solution in a pure
+weighted-sum formulation as long as all weights are multiplied by the
+same positive constant, but it can improve interpretability and
+numerical conditioning.
 
-- Multiplying all weights by a positive constant does not change the
-  optimizer’s solution in a pure weighted-sum formulation, but can
-  affect numerical conditioning.
+If `normalize_weights = FALSE`, the supplied weights are stored exactly
+as provided.
 
-## Limitations of weighted sums
+**Objective scaling**
 
-Weighted sums typically recover only **supported** Pareto-optimal
-solutions (on the convex hull of the Pareto front). If the Pareto front
-is non-convex (common in integer programs), some efficient solutions
-cannot be obtained with any weight vector; consider epsilon-constraint
-or AUGMECON methods in those cases.
+If `objective_scaling = TRUE`, the solving layer is expected to scale
+the participating objectives before combining them. The purpose of
+scaling is to reduce distortions caused by objectives being measured on
+very different numerical ranges.
+
+Conceptually, if \\R_k\\ denotes a scale or range associated with
+objective \\k\\, then a scaled weighted sum may be interpreted as:
+
+\$\$ \sum\_{k \in \mathcal{K}} w_k \\ \frac{f_k(x)}{R_k}. \$\$
+
+The exact scaling rule is implemented later in the solving layer. This
+function only stores whether objective scaling has been requested.
+
+**Mixed objective senses**
+
+Weighted sums are straightforward when all participating objectives have
+the same optimization sense. When minimization and maximization
+objectives are mixed, the solving layer must standardize them internally
+before building the scalar objective.
+
+This function validates that the requested aliases exist, but it does
+not itself resolve objective-sense compatibility. That logic is
+delegated to the downstream solving layer.
+
+**Theoretical limitation**
+
+The weighted-sum method typically recovers only *supported* efficient
+solutions, that is, solutions lying on the convex hull of the Pareto
+front in objective space. In non-convex multi-objective problems,
+especially mixed integer problems, some efficient solutions cannot be
+obtained by any weighted combination. In such cases, methods such as
+[`set_method_epsilon_constraint`](https://josesalgr.github.io/mosap/reference/set_method_epsilon_constraint.md)
+or
+[`set_method_augmecon`](https://josesalgr.github.io/mosap/reference/set_method_augmecon.md)
+may be preferable.
+
+**Stored configuration**
+
+This function stores the method definition in `x$data$method` with:
+
+- `name = "weighted"`,
+
+- `aliases`,
+
+- `weights`,
+
+- `normalize_weights`,
+
+- `objective_scaling`.
+
+The actual scalarization is performed later by
+[`solve`](https://josesalgr.github.io/mosap/reference/solve.md).
+
+## See also
+
+[`set_method_epsilon_constraint`](https://josesalgr.github.io/mosap/reference/set_method_epsilon_constraint.md),
+[`set_method_augmecon`](https://josesalgr.github.io/mosap/reference/set_method_augmecon.md),
+[`solve`](https://josesalgr.github.io/mosap/reference/solve.md)
 
 ## Examples
 
 ``` r
-# \donttest{
+if (FALSE) { # \dontrun{
 # ------------------------------------------------------------
-# Example 1: Cost vs Fragmentation (both minimization)
+# Example 1: cost vs fragmentation
 # ------------------------------------------------------------
 pu <- data.frame(id = 1:4, cost = c(1, 2, 2, 3))
 features <- data.frame(id = 1, name = "sp1")
-dist_features <- data.frame(pu = c(1,2,3,4), feature = 1, amount = c(1,1,1,1))
-
-x <- inputData(pu = pu, features = features, dist_features = dist_features)
-
-# (Optional) register a boundary relation used by fragmentation objectives
-bnd <- data.frame(
-  id1 = c(1,2,3,1,2,3,4),
-  id2 = c(1,2,3,2,3,4,4),
-  boundary = c(2,2,2,1,1,1,2)
+dist_features <- data.frame(
+  pu = c(1, 2, 3, 4),
+  feature = 1,
+  amount = c(1, 1, 1, 1)
 )
+
+x <- inputData(
+  pu = pu,
+  features = features,
+  dist_features = dist_features
+)
+
+bnd <- data.frame(
+  id1 = c(1, 2, 3, 1, 2, 3, 4),
+  id2 = c(1, 2, 3, 2, 3, 4, 4),
+  boundary = c(2, 2, 2, 1, 1, 1, 2)
+)
+
 x <- add_spatial_boundary(x, boundary = bnd, name = "boundary")
 
-# targets + atomic objectives
 x <- x |>
-  add_conservation_targets_relative(0.5) |>
+  add_targets_relative(0.5) |>
   add_objective_min_cost(alias = "cost") |>
   add_objective_min_fragmentation(
     alias = "frag",
@@ -139,50 +212,41 @@ x <- x |>
     weight_multiplier = 0.01
   )
 
-# configure weighted sum
-mo <- set_method_weighted(
+x <- set_method_weighted(
   x,
   aliases = c("cost", "frag"),
   weights = c(1, 1),
-  normalize = TRUE
+  normalize_weights = TRUE
 )
 
-# Later (in your MO workflow):
-# sol <- solve(mo)
-
+# sol <- solve(x)
 
 # ------------------------------------------------------------
-# Example 2: Scan weights to explore trade-offs
+# Example 2: scan weights to explore trade-offs
 # ------------------------------------------------------------
 weight_grid <- seq(0, 1, by = 0.25)
-mos <- vector("list", length(weight_grid))
+xs <- vector("list", length(weight_grid))
 
 for (i in seq_along(weight_grid)) {
   w <- weight_grid[i]
-  mos[[i]] <- set_method_weighted(
+  xs[[i]] <- set_method_weighted(
     x,
     aliases = c("cost", "frag"),
     weights = c(1 - w, w),
-    normalize = TRUE
+    normalize_weights = TRUE
   )
-  # sols[[i]] <- solve(mos[[i]])
+  # sols[[i]] <- solve(xs[[i]])
 }
 
-
 # ------------------------------------------------------------
-# Example 3: Mixing max and min objectives (requires solver support)
+# Example 3: request objective scaling
 # ------------------------------------------------------------
-# If your multi-objective solver standardizes senses, you can mix:
-# - a minimization objective (e.g., cost)
-# - a maximization objective (e.g., benefit)
-#
-# Otherwise, use epsilon-constraint or re-encode the objective.
-#
-# x2 <- x |>
-#   add_actions(actions_df) |>
-#   add_benefits(benefits_df) |>
-#   add_objective_min_cost(alias = "cost") |>
-#   add_objective_max_benefit(alias = "benefit")
-# mo2 <- set_method_weighted(x2, aliases = c("cost","benefit"), weights = c(1, 0.2))
-# }
+x <- set_method_weighted(
+  x,
+  aliases = c("cost", "frag"),
+  weights = c(0.7, 0.3),
+  normalize_weights = FALSE,
+  objective_scaling = TRUE
+)
+} # }
 ```

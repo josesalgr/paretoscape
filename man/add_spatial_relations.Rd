@@ -2,7 +2,7 @@
 % Please edit documentation in R/add_spatial_relations.R
 \name{add_spatial_relations}
 \alias{add_spatial_relations}
-\title{Add spatial relations (core)}
+\title{Add spatial relations}
 \usage{
 add_spatial_relations(
   x,
@@ -15,51 +15,114 @@ add_spatial_relations(
 )
 }
 \arguments{
-\item{x}{A \linkS4class{problem} object created with \code{\link[=inputData]{inputData()}} or \code{\link[=inputDataSpatial]{inputDataSpatial()}}.}
+\item{x}{A \code{Problem} object created with \code{\link{inputData}}.}
 
-\item{relations}{A \code{data.frame} describing edges. Must contain either:
+\item{relations}{A \code{data.frame} describing relation edges. It must
+contain either:
 \itemize{
-\item \code{pu1}, \code{pu2}, \code{weight} (external PU ids), or
-\item \code{internal_pu1}, \code{internal_pu2}, \code{weight} (internal indices).
+\item \code{pu1}, \code{pu2}, and \code{weight}, using external
+planning-unit ids, or
+\item \code{internal_pu1}, \code{internal_pu2}, and \code{weight}, using
+internal planning-unit indices.
 }
-Extra columns (e.g., \code{distance}, \code{source}) are allowed and preserved when possible.}
+Extra columns such as \code{distance} or \code{source} are allowed and are
+preserved when possible.}
 
-\item{name}{Character. Name/key under which to store the relation (default \code{"default"}).}
+\item{name}{Character string giving the key under which the relation is
+stored.}
 
-\item{directed}{Logical. If \code{FALSE} (default), treats edges as undirected and collapses duplicates.
-If \code{TRUE}, keeps directed edges as provided.}
+\item{directed}{Logical. If \code{FALSE}, treat edges as undirected and
+collapse duplicate unordered pairs. If \code{TRUE}, keep edges as directed
+ordered pairs.}
 
-\item{allow_self}{Logical. Whether to allow self-edges \code{(i,i)}. Default \code{FALSE}.}
+\item{allow_self}{Logical. If \code{TRUE}, allow self-edges
+\eqn{(i,i)}. Default is \code{FALSE}.}
 
-\item{duplicate_agg}{Aggregation for duplicate undirected edges when \code{directed=FALSE}.
-One of \code{"sum"}, \code{"max"}, \code{"min"}, \code{"mean"}.}
+\item{duplicate_agg}{Character string specifying how to aggregate duplicated
+undirected edges when \code{directed = FALSE}. Must be one of
+\code{"sum"}, \code{"max"}, \code{"min"}, or \code{"mean"}.}
 
-\item{symmetric}{Logical. If \code{TRUE}, expands an undirected relation into a directed one by duplicating
-off-diagonal edges in both directions. Default \code{FALSE}.}
+\item{symmetric}{Logical. If \code{TRUE}, expand an undirected relation into
+a directed representation by duplicating off-diagonal edges in both
+directions. Default is \code{FALSE}.}
 }
 \value{
-Updated \linkS4class{problem} object with \code{x$data$spatial_relations[[name]]}.
+An updated \code{Problem} object with the relation stored in
+\code{x$data$spatial_relations[[name]]}.
 }
 \description{
-Register an externally computed spatial relation inside a \code{Problem} object using the unified
-internal representation. Most users should prefer the convenience wrappers:
-\code{\link{add_spatial_boundary}}, \code{\link{add_spatial_rook}}, \code{\link{add_spatial_queen}},
-\code{\link{add_spatial_knn}}, or \code{\link{add_spatial_distance}}.
+Register an externally computed spatial relation inside a \code{Problem}
+object using the unified internal representation adopted by \code{mosap}.
+
+Most users will typically prefer one of the convenience constructors such as
+\code{\link{add_spatial_boundary}}, \code{\link{add_spatial_rook}},
+\code{\link{add_spatial_queen}}, \code{\link{add_spatial_knn}}, or
+\code{\link{add_spatial_distance}}. This function is the core low-level entry
+point for adding an already computed relation.
 }
 \details{
-The input can be given in external PU ids (\code{pu1}, \code{pu2}) or in internal PU indices
-(\code{internal_pu1}, \code{internal_pu2}). If external ids are provided, they are mapped using
-\code{x$data$pu$id} and \code{x$data$pu$internal_id}.
+The input relation may be provided either in terms of external planning-unit
+identifiers or in terms of internal planning-unit indices.
 
-If \code{directed = FALSE}, edges are treated as undirected and duplicates are collapsed using
-\code{duplicate_agg}. If \code{symmetric = TRUE}, the relation is expanded to a directed edge list
-by adding swapped copies for off-diagonal edges.
+Specifically, the input \code{relations} table must contain either:
+\itemize{
+\item \code{pu1}, \code{pu2}, and \code{weight}, or
+\item \code{internal_pu1}, \code{internal_pu2}, and \code{weight}.
+}
+
+If external ids are supplied, they are mapped to internal indices using
+\code{x$data$pu$id} and \code{x$data$index$pu}.
+
+Let \eqn{E} denote the set of rows supplied in \code{relations}. If
+\code{directed = FALSE}, each edge is treated as undirected, so pairs
+\eqn{(i,j)} and \eqn{(j,i)} are interpreted as the same edge. In that case,
+duplicated undirected edges are collapsed according to
+\code{duplicate_agg}.
+
+If \code{directed = TRUE}, edges are preserved as ordered pairs, so
+\eqn{(i,j)} and \eqn{(j,i)} are distinct unless the user provides both.
+
+If \code{symmetric = TRUE} and \code{directed = FALSE}, the final undirected
+relation is expanded into a directed representation by duplicating each
+off-diagonal edge:
+\deqn{
+(i,j,\omega_{ij}) \mapsto (i,j,\omega_{ij}), (j,i,\omega_{ij}).
+}
+
+Self-edges \eqn{(i,i)} are permitted only if \code{allow_self = TRUE}.
+
+The final relation is stored in \code{x$data$spatial_relations[[name]]}.
 }
 \examples{
-\dontrun{
-# Register an externally computed adjacency list:
-rel <- data.frame(pu1 = c(1, 1, 2), pu2 = c(2, 3, 3), weight = 1)
-x <- x |> add_spatial_relations(relations = rel, name = "my_adj")
-}
+pu <- data.frame(id = 1:3, cost = c(1, 2, 3))
+features <- data.frame(id = "sp1")
+dist_features <- data.frame(pu = 1:3, feature = "sp1", amount = c(1, 1, 1))
 
+p <- inputData(
+  pu = pu,
+  features = features,
+  dist_features = dist_features
+)
+
+rel <- data.frame(
+  pu1 = c(1, 1, 2),
+  pu2 = c(2, 3, 3),
+  weight = c(1, 1, 2)
+)
+
+p <- add_spatial_relations(
+  x = p,
+  relations = rel,
+  name = "my_relation"
+)
+
+p$data$spatial_relations$my_relation
+
+}
+\seealso{
+\code{\link{add_spatial_boundary}},
+\code{\link{add_spatial_rook}},
+\code{\link{add_spatial_queen}},
+\code{\link{add_spatial_knn}},
+\code{\link{add_spatial_distance}}
 }

@@ -1,169 +1,271 @@
 #' @include internal.R
 #'
-#' @title Add effects (benefit/loss) to a planning problem
+#' @title Add action effects to a planning problem
 #'
 #' @description
-#' Define the effects of implementing actions on features in planning units.
-#' Effects are stored in \code{x$data$dist_effects} using a canonical representation with
-#' two non-negative columns for each feasible \code{(pu, action, feature)} triple:
+#' Define the effects of management actions on features across planning units.
+#'
+#' Effects are stored in a canonical representation in
+#' \code{x$data$dist_effects}, with one row per
+#' \code{(pu, action, feature)} triple and two non-negative columns:
 #' \itemize{
-#'   \item \code{benefit} \eqn{\ge 0}: the positive component of the effect,
-#'   \item \code{loss} \eqn{\ge 0}: the magnitude of the negative component of the effect.
+#'   \item \code{benefit}: the positive component of the effect,
+#'   \item \code{loss}: the magnitude of the negative component of the effect.
 #' }
 #'
-#' For any stored row, the net effect is understood as
-#' \deqn{\mathrm{delta} = \mathrm{benefit} - \mathrm{loss}.}
+#' The net effect is therefore interpreted as
+#' \deqn{
+#' \Delta_{i a f} = \mathrm{benefit}_{i a f} - \mathrm{loss}_{i a f},
+#' }
+#' where \eqn{i} indexes planning units, \eqn{a} indexes actions, and
+#' \eqn{f} indexes features.
 #'
-#' In the standard interpretation adopted by this function, each \code{(pu, action, feature)}
-#' triple represents a single net change. Therefore, after validation, a row in
-#' \code{dist_effects} cannot have both \code{benefit > 0} and \code{loss > 0} at the same time.
-#' In other words, a given effect is either beneficial, harmful, or zero for a specific
-#' planning unit, action, and feature combination.
+#' Under the semantics adopted by this package, each
+#' \code{(pu, action, feature)} triple represents a single net effect.
+#' Consequently, after validation and aggregation, a stored row cannot have both
+#' \code{benefit > 0} and \code{loss > 0} at the same time.
 #'
 #' @details
-#' This function provides a single entry point for specifying action effects while enforcing a
-#' clear internal semantics. Users may supply effects as signed deltas, after-action amounts,
-#' multipliers relative to baseline feature amounts, or explicit non-negative \code{benefit}/\code{loss}
-#' columns. Regardless of the input format, the stored output always follows the same canonical
-#' structure.
+#' This function provides a unified interface for specifying action effects from
+#' several input formats while enforcing a single internal representation.
+#' Regardless of how the user supplies the effects, the stored output always
+#' follows the same canonical structure based on non-negative
+#' \code{benefit}/\code{loss} components.
 #'
-#' \strong{Core semantic rule.}
-#' The package interprets each \code{(pu, action, feature)} triple as a single effect with a single
-#' net change. Accordingly:
+#' Let \eqn{b_{if}} denote the baseline amount of feature \eqn{f} in planning
+#' unit \eqn{i}, taken from \code{x$data$dist_features$amount}. Let
+#' \eqn{\Delta_{i a f}} denote the net change caused by applying action
+#' \eqn{a} in planning unit \eqn{i} to feature \eqn{f}. The canonical stored
+#' representation is:
+#'
+#' \deqn{
+#' \mathrm{benefit}_{i a f} = \max(\Delta_{i a f}, 0),
+#' }
+#'
+#' \deqn{
+#' \mathrm{loss}_{i a f} = \max(-\Delta_{i a f}, 0).
+#' }
+#'
+#' Hence:
 #' \itemize{
-#'   \item if the net effect is positive, it is stored as \code{benefit > 0} and \code{loss = 0},
-#'   \item if the net effect is negative, it is stored as \code{benefit = 0} and \code{loss > 0},
-#'   \item if there is no change, both values are 0.
+#'   \item if \eqn{\Delta_{i a f} > 0}, then \code{benefit > 0} and \code{loss = 0},
+#'   \item if \eqn{\Delta_{i a f} < 0}, then \code{benefit = 0} and \code{loss > 0},
+#'   \item if \eqn{\Delta_{i a f} = 0}, then both are zero.
 #' }
-#' Inputs that explicitly provide both \code{benefit > 0} and \code{loss > 0} for the same row are
-#' rejected because they are ambiguous under this interpretation. Likewise, if duplicated rows are
-#' provided for the same \code{(pu, action, feature)} triple, they are aggregated before final
-#' validation, and the resulting triple must still satisfy the same rule.
 #'
-#' \strong{Why store benefit and loss instead of a signed delta?}
-#' The split representation avoids ambiguity in downstream optimization models. It allows the
-#' package to support objectives and constraints that separately account for positive effects and
-#' damages, such as maximizing gains, minimizing damages, enforcing no-net-loss conditions, or
-#' combining these criteria in multi-objective settings.
+#' \strong{Why split effects into benefit and loss?}
 #'
-#' \strong{Baseline and after-action amounts.}
-#' If \code{effect_type = "after"}, supplied values are interpreted as after-action amounts and
-#' converted internally to signed net changes by comparing them with the baseline amounts stored in
-#' \code{x$data$dist_features$amount}:
-#' \deqn{\mathrm{delta} = \mathrm{after} - \mathrm{baseline}.}
-#' Missing baseline values are treated as 0.
+#' This representation avoids ambiguity in downstream optimization models. It
+#' allows the package to support, for example, objectives that maximize
+#' beneficial effects, minimize damages, impose no-net-loss conditions, or
+#' combine both components differently in multi-objective formulations.
 #'
-#' \strong{Supported effect specifications.}
+#' \strong{Supported effect specifications}
+#'
+#' The \code{effects} argument may be provided in one of the following forms:
+#'
 #' \enumerate{
-#'   \item \emph{NULL}: create an empty effects table. This is useful when actions exist but effects
-#'   are not yet available.
-#'   \item \emph{Multipliers}: a \code{data.frame(action, feature, multiplier)} where the multiplier is
-#'   applied to the baseline amount of each feature in each planning unit, so that
-#'   \eqn{\mathrm{delta} = \mathrm{amount} \times \mathrm{multiplier}}.
-#'   \item \emph{Explicit rows}: a \code{data.frame(pu, action, feature, ...)} providing one of the following:
-#'   \itemize{
-#'     \item \code{delta} or \code{effect}: a signed net change,
-#'     \item \code{after}: an after-action amount, interpreted according to \code{effect_type},
-#'     \item \code{benefit} and/or \code{loss}: already split non-negative components. Under the package
-#'     semantics, both cannot be strictly positive in the same row or after aggregation by triple,
-#'     \item legacy signed \code{benefit} without \code{loss}: interpreted as a signed net change for backwards compatibility.
+#'   \item \code{NULL}. An empty effects table is stored.
+#'
+#'   \item A \code{data.frame(action, feature, multiplier)}. In this case,
+#'   effects are constructed by multiplying baseline feature amounts by the
+#'   supplied multiplier:
+#'   \deqn{
+#'   \Delta_{i a f} = b_{if} \times m_{a f},
 #'   }
-#'   \item \emph{Rasters per action}: a named list of \code{terra::SpatRaster} objects where names are
-#'   action ids and layers correspond to features. Raster values are aggregated to the planning-unit
-#'   level and interpreted as signed deltas or after-action amounts depending on \code{effect_type}.
+#'   where \eqn{m_{a f}} is the multiplier associated with action \eqn{a} and
+#'   feature \eqn{f}. This specification is expanded over all feasible
+#'   \code{(pu, action)} pairs.
+#'
+#'   \item A \code{data.frame(pu, action, feature, ...)} giving explicit effects
+#'   for individual triples. The table may contain:
+#'   \itemize{
+#'     \item \code{delta} or \code{effect}: interpreted as signed net changes,
+#'     \item \code{after}: interpreted as after-action amounts if
+#'     \code{effect_type = "after"},
+#'     \item \code{benefit} and/or \code{loss}: explicit non-negative split
+#'     components,
+#'     \item legacy signed \code{benefit} without \code{loss}: interpreted as a
+#'     signed net effect for backwards compatibility.
+#'   }
+#'
+#'   \item A named list of \code{terra::SpatRaster} objects, one per action. In
+#'   this case, names must match action ids, and each raster must contain one
+#'   layer per feature. Raster values are aggregated to planning-unit level
+#'   using \code{effect_aggregation}.
 #' }
 #'
-#' \strong{Feasibility and locks.}
-#' Effects are retained only for feasible \code{(pu, action)} pairs listed in \code{x$data$dist_actions}.
-#' If \code{drop_locked_out = TRUE} and \code{x$data$dist_actions$status} exists, rows with
-#' \code{status == 3} are removed before effects are stored.
+#' \strong{Interpretation of \code{effect_type}}
 #'
-#' \strong{Filtering.}
-#' After validation and canonicalization, you can keep all non-zero effects, only beneficial effects,
-#' or only losses using \code{filter}. By default, rows with both \code{benefit == 0} and
-#' \code{loss == 0} are removed unless \code{keep_zero = TRUE}.
+#' If \code{effect_type = "delta"}, supplied values are interpreted as net
+#' changes directly.
 #'
-#' \strong{Interpretation in optimization models.}
-#' \code{dist_effects} is best understood as an inventory of consequences of actions, not as a complete
-#' optimization preference by itself. Downstream model components may choose to maximize benefits,
-#' minimize losses, combine them into net effects, or constrain one component while optimizing the other.
+#' If \code{effect_type = "after"}, supplied values are interpreted as
+#' after-action amounts and converted internally to net effects using:
 #'
-#' @param x A \code{Problem} object created with \code{\link{inputData}} or \code{\link{inputDataSpatial}}.
-#'   Must contain \code{x$data$dist_actions} (run \code{\link{add_actions}} first).
+#' \deqn{
+#' \Delta_{i a f} = \mathrm{after}_{i a f} - b_{if}.
+#' }
+#'
+#' Missing baseline values are treated as zero.
+#'
+#' \strong{Feasibility and locked-out decisions}
+#'
+#' Effects are only retained for feasible \code{(pu, action)} pairs listed in
+#' \code{x$data$dist_actions}. Thus, \code{add_actions()} must be called first.
+#' If \code{drop_locked_out = TRUE} and \code{x$data$dist_actions$status}
+#' exists, rows associated with \code{status == 3} are removed before storing
+#' the final effects table.
+#'
+#' \strong{Duplicate rows and semantic validation}
+#'
+#' If multiple rows are supplied for the same \code{(pu, action, feature)}
+#' triple, they are aggregated by summing \code{benefit} and \code{loss}
+#' separately. The resulting triple must still respect the package semantics,
+#' namely that both components cannot be strictly positive simultaneously.
+#' Inputs violating this rule are rejected.
+#'
+#' \strong{Filtering}
+#'
+#' After canonicalization and validation, rows can be filtered using
+#' \code{filter = "any"}, \code{"benefit"}, or \code{"loss"}. By default,
+#' zero-effect rows are removed unless \code{keep_zero = TRUE}.
+#'
+#' \strong{Stored output}
+#'
+#' The resulting table \code{x$data$dist_effects} contains user-facing ids,
+#' internal integer ids, and optional labels for actions and features. Metadata
+#' describing the stored representation and input interpretation are written to
+#' \code{x$data$effects_meta}.
+#'
+#' @param x A \code{Problem} object created with \code{\link{inputData}} or
+#'   \code{\link{inputDataSpatial}}. It must already contain
+#'   \code{x$data$dist_actions}; run \code{\link{add_actions}} first.
+#'
 #' @param effects Effect specification. One of:
 #' \itemize{
-#'   \item \code{NULL}: store an empty effects table.
-#'   \item \code{data.frame(action, feature, multiplier)}: apply signed multipliers to baseline amounts.
-#'     \code{feature} may be feature ids or feature names (matching \code{x$data$features$name}).
-#'   \item \code{data.frame(pu, action, feature, ...)}: explicit effects with one of:
-#'     \itemize{
-#'       \item \code{delta} (signed) or \code{effect} (signed),
-#'       \item \code{after} (after-action amount; set \code{effect_type = "after"}),
-#'       \item \code{benefit} and/or \code{loss} (both non-negative; missing component treated as 0),
-#'       \item legacy signed \code{benefit} without \code{loss} (treated as signed delta).
-#'     }
-#'   \item A named list of \code{terra::SpatRaster} objects: names = action ids; one layer per feature.
+#'   \item \code{NULL}, to store an empty effects table,
+#'   \item a \code{data.frame(action, feature, multiplier)},
+#'   \item a \code{data.frame(pu, action, feature, ...)} with explicit effects,
+#'   \item a named list of \code{terra::SpatRaster} objects, one per action.
 #' }
-#' @param effect_type Character. How to interpret provided values for explicit tables or raster lists:
+#'
+#' @param effect_type Character string indicating how supplied effect values are
+#'   interpreted. Must be one of:
 #'   \itemize{
-#'     \item \code{"delta"}: values represent signed deltas (default),
-#'     \item \code{"after"}: values represent after-action amounts (converted to deltas using baseline).
+#'     \item \code{"delta"}: values represent signed net changes,
+#'     \item \code{"after"}: values represent after-action amounts and are
+#'     converted to net changes relative to baseline feature amounts.
 #'   }
-#' @param effect_aggregation Character. Aggregation used to compute PU-level values from rasters.
-#'   One of \code{"sum"} or \code{"mean"}.
-#' @param align_rasters Logical. If \code{TRUE}, attempt to align effect rasters to the PU raster grid
-#'   before zonal operations (default \code{TRUE}).
-#' @param keep_zero Logical. If \code{TRUE}, keep rows where \code{benefit == 0} and \code{loss == 0}.
-#'   Default \code{FALSE}.
-#' @param drop_locked_out Logical. If \code{TRUE}, drop rows for \code{(pu, action)} pairs with
-#'   \code{status == 3} in \code{x$data$dist_actions} (if the column exists). Default \code{TRUE}.
-#' @param na_to_zero Logical. If \code{TRUE}, treat missing values as 0 when computing benefit/loss.
-#'   Default \code{TRUE}.
-#' @param filter Character. Filter rows by non-zero component:
+#'
+#' @param effect_aggregation Character string giving the aggregation used when
+#'   converting raster values to planning-unit level. Must be one of
+#'   \code{"sum"} or \code{"mean"}.
+#'
+#' @param align_rasters Logical. If \code{TRUE}, effect rasters are aligned to
+#'   the planning-unit raster grid before raster extraction or zonal
+#'   aggregation.
+#'
+#' @param keep_zero Logical. If \code{TRUE}, keep rows for which both
+#'   \code{benefit == 0} and \code{loss == 0}. Default is \code{FALSE}.
+#'
+#' @param drop_locked_out Logical. If \code{TRUE}, rows associated with
+#'   \code{(pu, action)} pairs marked as locked out (\code{status == 3}) in
+#'   \code{x$data$dist_actions} are removed before storing effects.
+#'
+#' @param na_to_zero Logical. If \code{TRUE}, missing values are interpreted as
+#'   zero when constructing or validating effects.
+#'
+#' @param filter Character string controlling which rows are retained after
+#'   canonicalization. Must be one of:
 #'   \itemize{
-#'     \item \code{"any"}: keep both benefit and loss rows (default),
+#'     \item \code{"any"}: keep all non-zero rows,
 #'     \item \code{"benefit"}: keep only rows with \code{benefit > 0},
 #'     \item \code{"loss"}: keep only rows with \code{loss > 0}.
 #'   }
 #'
-#' @return The updated \code{Problem} object with \code{x$data$dist_effects} created/updated, and
-#'   metadata stored in \code{x$data$effects_meta}.
-#'
-#' @examples
-#' \dontrun{
-#' # 1) Empty effects (default)
-#' p <- add_effects(p, effects = NULL)
-#'
-#' # 2) Multipliers (action x feature): delta = amount * multiplier
-#' mult <- data.frame(
-#'   action = c("harvest", "harvest", "restoration"),
-#'   feature = c("sp1", "sp2", "sp1"),      # feature names (requires x$data$features$name)
-#'   multiplier = c(-0.2, -0.1, 0.3)
-#' )
-#' p <- add_effects(p, effects = mult, effect_type = "delta")
-#'
-#' # 3) Explicit deltas by (pu, action, feature)
-#' eff <- data.frame(
-#'   pu = c(1, 1, 2),
-#'   action = c("harvest", "harvest", "restoration"),
-#'   feature = c(1, 2, 1),
-#'   delta = c(-0.5, 0.2, 1.0)
-#' )
-#' p <- add_effects(p, effects = eff)
-#'
-#' # 4) After-action amounts (converted to delta = after - baseline)
-#' after_tbl <- transform(eff, after = delta) # example only; typically after is an absolute amount
-#' p <- add_effects(p, effects = after_tbl, effect_type = "after")
-#'
-#' # 5) Raster effects per action (one layer per feature)
-#' # effects_rasters <- list(harvest = r_harv, restoration = r_rest) # terra::SpatRaster
-#' # p <- add_effects(p, effects = effects_rasters, effect_type = "delta", effect_aggregation = "sum")
-#'
-#' # Keep only beneficial effects
-#' p <- add_effects(p, effects = eff, filter = "benefit")
+#' @return An updated \code{Problem} object with:
+#' \describe{
+#'   \item{\code{x$data$dist_effects}}{A canonical effects table with columns
+#'   \code{pu}, \code{action}, \code{feature}, \code{benefit}, \code{loss},
+#'   \code{internal_pu}, \code{internal_action}, \code{internal_feature}, and
+#'   optional labels such as \code{feature_name} and \code{action_name}.}
+#'   \item{\code{x$data$effects_meta}}{Metadata describing how effects were
+#'   interpreted and stored.}
 #' }
 #'
-#' @seealso \code{\link{add_benefits}}, \code{\link{add_losses}}
+#' @examples
+#' # Minimal problem
+#' pu <- data.frame(
+#'   id = 1:3,
+#'   cost = c(1, 2, 3)
+#' )
+#'
+#' features <- data.frame(
+#'   id = 1:2,
+#'   name = c("sp1", "sp2")
+#' )
+#'
+#' dist_features <- data.frame(
+#'   pu = c(1, 1, 2, 3),
+#'   feature = c(1, 2, 1, 2),
+#'   amount = c(10, 5, 8, 4)
+#' )
+#'
+#' p <- inputData(
+#'   pu = pu,
+#'   features = features,
+#'   dist_features = dist_features
+#' )
+#'
+#' actions <- data.frame(
+#'   id = c("conservation", "restoration")
+#' )
+#'
+#' p <- add_actions(
+#'   x = p,
+#'   actions = actions,
+#'   cost = c(conservation = 2, restoration = 4)
+#' )
+#'
+#' # 1) Empty effects
+#' p0 <- add_effects(p, effects = NULL)
+#' p0$data$dist_effects
+#'
+#' # 2) Multipliers by action and feature
+#' mult <- data.frame(
+#'   action = c("conservation", "restoration"),
+#'   feature = c("sp1", "sp2"),
+#'   multiplier = c(0.10, -0.25)
+#' )
+#'
+#' p1 <- add_effects(
+#'   x = p,
+#'   effects = mult,
+#'   effect_type = "delta"
+#' )
+#'
+#' p1$data$dist_effects
+#'
+#' # 3) Explicit net effects
+#' eff <- data.frame(
+#'   pu = c(1, 2, 3),
+#'   action = c("conservation", "restoration", "restoration"),
+#'   feature = c(1, 1, 2),
+#'   delta = c(2, -3, 1)
+#' )
+#'
+#' p2 <- add_effects(p, effects = eff)
+#' p2$data$dist_effects
+#'
+#' # 4) Keep only beneficial effects
+#' p3 <- add_effects(p, effects = eff, filter = "benefit")
+#' p3$data$dist_effects
+#'
+#' @seealso
+#' \code{\link{add_actions}},
+#' \code{\link{add_benefits}},
+#' \code{\link{add_losses}}
 #'
 #' @export
 add_effects <- function(
@@ -184,7 +286,7 @@ add_effects <- function(
 
   # ---- checks: x
   assertthat::assert_that(!is.null(x), msg = "x is NULL")
-  assertthat::assert_that(!is.null(x$data), msg = "x does not look like a prioriactions Problem object")
+  assertthat::assert_that(!is.null(x$data), msg = "x does not look like a mosap Problem object")
   assertthat::assert_that(
     !is.null(x$data$pu), !is.null(x$data$features), !is.null(x$data$dist_features),
     msg = "x must be created with inputData()/inputDataSpatial()"
@@ -643,20 +745,52 @@ add_effects <- function(
   x
 }
 
-#' @title Add benefits (positive effects)
+#' @title Add benefits
 #'
 #' @description
-#' Convenience wrapper around \code{\link{add_effects}} that keeps only rows with
-#' \code{benefit > 0} (i.e., positive changes). For backwards compatibility, the argument
-#' \code{benefits} is an alias of \code{effects}.
+#' Convenience wrapper around \code{\link{add_effects}} that keeps only positive
+#' effects, that is, rows with \code{benefit > 0}.
 #'
-#' In addition to writing \code{x$data$dist_effects}, this function also writes a
-#' backward-compatible table \code{x$data$dist_benefit} containing only the benefit component.
+#' This function is useful when the user wants to work only with beneficial
+#' consequences of actions. Internally, it calls \code{add_effects()} with
+#' \code{filter = "benefit"} and stores the resulting canonical effects table in
+#' \code{x$data$dist_effects}.
+#'
+#' For backwards compatibility, a mirror table containing only the benefit
+#' component is also written to \code{x$data$dist_benefit}.
 #'
 #' @inheritParams add_effects
-#' @param benefits Alias of \code{effects} for backwards compatibility.
+#' @param benefits Alias of \code{effects}, kept for backwards compatibility.
 #'
-#' @return The updated \code{Problem} object.
+#' @return An updated \code{Problem} object with:
+#' \describe{
+#'   \item{\code{x$data$dist_effects}}{The canonical filtered effects table,
+#'   containing only rows with \code{benefit > 0}.}
+#'   \item{\code{x$data$dist_benefit}}{A backwards-compatible table containing
+#'   only the benefit component.}
+#' }
+#'
+#' @examples
+#' pu <- data.frame(id = 1:2, cost = c(1, 2))
+#' features <- data.frame(id = 1, name = "sp1")
+#' dist_features <- data.frame(pu = 1:2, feature = 1, amount = c(5, 10))
+#'
+#' p <- inputData(pu = pu, features = features, dist_features = dist_features)
+#' p <- add_actions(p, data.frame(id = "restoration"))
+#'
+#' eff <- data.frame(
+#'   pu = c(1, 2),
+#'   action = c("restoration", "restoration"),
+#'   feature = c(1, 1),
+#'   delta = c(2, -1)
+#' )
+#'
+#' p <- add_benefits(p, benefits = eff)
+#' p$data$dist_benefit
+#'
+#' @seealso
+#' \code{\link{add_effects}},
+#' \code{\link{add_losses}}
 #'
 #' @export
 add_benefits <- function(
@@ -697,16 +831,54 @@ add_benefits <- function(
   x
 }
 
-#' @title Add losses (negative effects magnitude)
+#' @title Add losses
 #'
 #' @description
-#' Convenience wrapper around \code{\link{add_effects}} that keeps only rows with
-#' \code{loss > 0} (i.e., the magnitude of negative changes). Also writes
-#' \code{x$data$dist_loss} containing only the loss component.
+#' Convenience wrapper around \code{\link{add_effects}} that keeps only negative
+#' effects, represented by rows with \code{loss > 0}.
+#'
+#' This function is useful when the user wants to work only with the damaging
+#' consequences of actions. Internally, it calls \code{add_effects()} with
+#' \code{filter = "loss"} and stores the resulting canonical effects table in
+#' \code{x$data$dist_effects}.
+#'
+#' In addition, a mirror table containing only the loss component is stored in
+#' \code{x$data$dist_loss}.
 #'
 #' @inheritParams add_effects
+#' @param losses Alias of \code{effects}, used for symmetry with
+#'   \code{add_benefits()}.
 #'
-#' @return The updated \code{Problem} object.
+#' @return An updated \code{Problem} object with:
+#' \describe{
+#'   \item{\code{x$data$dist_effects}}{The canonical filtered effects table,
+#'   containing only rows with \code{loss > 0}.}
+#'   \item{\code{x$data$dist_loss}}{A convenience table containing only the loss
+#'   component.}
+#'   \item{\code{x$data$losses_meta}}{Metadata for the stored loss table.}
+#' }
+#'
+#' @examples
+#' pu <- data.frame(id = 1:2, cost = c(1, 2))
+#' features <- data.frame(id = 1, name = "sp1")
+#' dist_features <- data.frame(pu = 1:2, feature = 1, amount = c(5, 10))
+#'
+#' p <- inputData(pu = pu, features = features, dist_features = dist_features)
+#' p <- add_actions(p, data.frame(id = "harvest"))
+#'
+#' eff <- data.frame(
+#'   pu = c(1, 2),
+#'   action = c("harvest", "harvest"),
+#'   feature = c(1, 1),
+#'   delta = c(2, -4)
+#' )
+#'
+#' p <- add_losses(p, losses = eff)
+#' p$data$dist_loss
+#'
+#' @seealso
+#' \code{\link{add_effects}},
+#' \code{\link{add_benefits}}
 #'
 #' @export
 add_losses <- function(

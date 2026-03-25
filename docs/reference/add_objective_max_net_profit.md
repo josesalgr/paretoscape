@@ -1,22 +1,7 @@
 # Add objective: maximize net profit
 
-Specify an objective that maximizes net profit, defined as total profit
-from selected `(pu, action)` pairs minus total costs: \$\$\sum
-\mathrm{profit}\\x \\-\\ \left(\sum \mathrm{pu\\cost}\\w + \sum
-\mathrm{action\\cost}\\x\right).\$\$
-
-Profit is taken from `x$data$dist_profit` (created with
-[`add_profit`](https://josesalgr.github.io/mosap/reference/add_profit.md)).
-Planning-unit costs are taken from `x$data$pu`; action costs are taken
-from `x$data$dist_actions`.
-
-This function is **data-only**: it stores the objective specification
-inside the `Data` object so it can be materialized later when the
-optimization model is built.
-
-If `alias` is provided, the objective is also registered in
-`x$data$objectives` as an atomic objective for multi-objective
-workflows.
+Define an objective that maximizes net profit by combining profits with
+optional planning-unit and action-cost penalties.
 
 ## Usage
 
@@ -26,6 +11,7 @@ add_objective_max_net_profit(
   profit_col = "profit",
   include_pu_cost = TRUE,
   include_action_cost = TRUE,
+  actions = NULL,
   alias = NULL
 )
 ```
@@ -34,15 +20,11 @@ add_objective_max_net_profit(
 
 - x:
 
-  A `Data` object created with
-  [`inputData`](https://josesalgr.github.io/mosap/reference/inputData.md)
-  or
-  [`inputDataSpatial`](https://josesalgr.github.io/mosap/reference/inputDataSpatial.md).
+  A `Problem` object.
 
 - profit_col:
 
-  Character. Column name in `x$data$dist_profit` containing numeric
-  profits. Default `"profit"`.
+  Character string giving the profit column in `x$data$dist_profit`.
 
 - include_pu_cost:
 
@@ -52,30 +34,61 @@ add_objective_max_net_profit(
 
   Logical. If `TRUE`, subtract action costs.
 
+- actions:
+
+  Optional subset of actions to include in the profit and action-cost
+  terms. Values may match `x$data$actions$id` and, if present,
+  `x$data$actions$action_set`.
+
 - alias:
 
-  Character scalar or `NULL`. Optional identifier to register this
-  objective as an atomic objective for multi-objective workflows.
+  Optional identifier used to register this objective for
+  multi-objective workflows.
 
 ## Value
 
-The updated `Data` object.
+An updated `Problem` object.
 
 ## Details
 
-The function updates `x$data$model_args` with:
+Let:
 
-- `model_type`:
+- \\x\_{ia} \in \\0,1\\\\ denote whether action \\a\\ is selected in
+  planning unit \\i\\,
 
-  `"maximizeNetProfit"`
+- \\w_i \in \\0,1\\\\ denote whether planning unit \\i\\ is selected,
 
-- `objective_id`:
+- \\\pi\_{ia}\\ denote the profit associated with decision \\(i,a)\\,
 
-  `"max_net_profit"`
+- \\c_i^{PU} \ge 0\\ denote the planning-unit cost,
 
-- `objective_args`:
+- \\c\_{ia}^{A} \ge 0\\ denote the action cost.
 
-  a list with `profit_col`, `include_pu_cost`, and `include_action_cost`
+In its most general form, the objective is:
 
-If another objective setter is called afterwards, it overwrites the
-active single-objective specification in `x$data$model_args`.
+\$\$ \max \left( \sum\_{(i,a) \in \mathcal{F}^{\star}} \pi\_{ia}
+x\_{ia} - \sum\_{i \in \mathcal{P}} c_i^{PU} w_i - \sum\_{(i,a) \in
+\mathcal{F}^{\star}} c\_{ia}^{A} x\_{ia} \right), \$\$
+
+where \\\mathcal{F}^{\star}\\ denotes the subset of feasible planning
+unit–action pairs included in the objective.
+
+If `actions = NULL`, all feasible actions contribute to both the profit
+term and the action-cost term.
+
+If `actions` is provided, the profit term and the action-cost term are
+restricted to that subset. The planning-unit cost term, if included,
+remains global.
+
+If `include_pu_cost = FALSE`, the planning-unit cost term is omitted.
+
+If `include_action_cost = FALSE`, the action-cost term is omitted.
+
+This objective is appropriate when decisions generate revenues or
+returns and the analyst wishes to optimize the resulting net balance
+after accounting for selected cost components.
+
+## See also
+
+[`add_objective_max_profit`](https://josesalgr.github.io/mosap/reference/add_objective_max_profit.md),
+[`add_objective_min_cost`](https://josesalgr.github.io/mosap/reference/add_objective_min_cost.md)

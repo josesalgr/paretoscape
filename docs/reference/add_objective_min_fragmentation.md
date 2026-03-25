@@ -1,21 +1,12 @@
-# Add objective: minimize fragmentation (PU cut)
+# Add objective: minimize fragmentation
 
-Specify an objective that minimizes spatial fragmentation measured as
-the weighted cut between selected and non-selected planning units over a
-spatial relation: \$\$\sum\_{(i,j)} w\_{ij}\\\|z_i - z_j\|.\$\$
+Define an objective that minimizes planning-unit fragmentation over a
+stored spatial relation.
 
-In the model builder, this objective is linearized using auxiliary edge
-variables. Relation weights \\w\_{ij}\\ are read from
-`x$data$spatial_relations[[relation_name]]` and can be scaled by
-`weight_multiplier` (BLM-like scaling).
-
-This function is **data-only**: it stores the objective specification
-inside the `Data` object so it can be materialized later when the
-optimization model is built.
-
-If `alias` is provided, the objective is also registered in
-`x$data$objectives` as an atomic objective for multi-objective
-workflows.
+This objective acts on the planning-unit selection pattern through the
+binary planning-unit variables \\w_i\\. It is therefore appropriate when
+spatial cohesion is to be encouraged at the level of the selected
+planning-unit set as a whole.
 
 ## Usage
 
@@ -32,27 +23,98 @@ add_objective_min_fragmentation(
 
 - x:
 
-  A `Data` object created with
-  [`inputData`](https://josesalgr.github.io/mosap/reference/inputData.md)
-  or
-  [`inputDataSpatial`](https://josesalgr.github.io/mosap/reference/inputDataSpatial.md).
+  A `Problem` object.
 
 - relation_name:
 
-  Character. Name of the spatial relation in `x$data$spatial_relations`
-  (e.g., `"boundary"`, `"rook"`, `"queen"`, `"knn"`). Default
-  `"boundary"`.
+  Character string giving the name of the spatial relation to use. The
+  relation must already exist in `x$data$spatial_relations`.
 
 - weight_multiplier:
 
-  Numeric \\\ge 0\\. Multiplier applied to all relation weights. Default
-  `1`.
+  Numeric scalar greater than or equal to zero. Global multiplier
+  applied to the relation weights when the objective is built.
 
 - alias:
 
-  Character scalar or `NULL`. Optional identifier to register this
-  objective as an atomic objective for multi-objective workflows.
+  Optional identifier used to register this objective for
+  multi-objective workflows.
 
 ## Value
 
-The updated `Data` object.
+An updated `Problem` object.
+
+## Details
+
+Let \\\mathcal{P}\\ denote the set of planning units and let \\w_i \in
+\\0,1\\\\ indicate whether planning unit \\i \in \mathcal{P}\\ is
+selected.
+
+Let the chosen spatial relation
+`x$data$spatial_relations[[relation_name]]` define a set of weighted
+pairs with weights \\\omega\_{ij} \ge 0\\. These relation weights are
+interpreted by the model builder after scaling by \\\lambda =
+\code{weight_multiplier}\\.
+
+The internal preparation step constructs one auxiliary variable
+\\y\_{ij} \in \[0,1\]\\ for each unique non-diagonal undirected edge
+\\(i,j)\\ with \\i \< j\\. Diagonal entries of the relation, if present,
+are not used to create auxiliary variables.
+
+Each auxiliary variable is constrained to represent the logical
+conjunction of the two incident planning-unit selections: \$\$ y\_{ij} =
+w_i \land w_j. \$\$
+
+This is enforced by the standard linearization: \$\$ y\_{ij} \le w_i,
+\$\$ \$\$ y\_{ij} \le w_j, \$\$ \$\$ y\_{ij} \ge w_i + w_j - 1. \$\$
+
+Thus, \\y\_{ij}=1\\ if and only if both planning units \\i\\ and \\j\\
+are selected, and \\y\_{ij}=0\\ otherwise.
+
+The exact objective coefficients are assembled later by the model
+builder from:
+
+- the planning-unit variables \\w_i\\,
+
+- the edge-conjunction variables \\y\_{ij}\\,
+
+- the stored relation weights \\\omega\_{ij}\\,
+
+- and the multiplier \\\lambda\\.
+
+Conceptually, the resulting objective is a boundary- or relation-based
+compactness functional that penalizes exposed or weakly connected
+selected patterns while rewarding adjacency among selected planning
+units.
+
+In the common case where `relation_name = "boundary"` and the relation
+was built with
+[`add_spatial_boundary`](https://josesalgr.github.io/mosap/reference/add_spatial_boundary.md),
+the objective corresponds to a boundary-length-style fragmentation
+penalty. In that setting:
+
+- off-diagonal relation rows encode shared boundary,
+
+- diagonal relation rows may encode exposed boundary,
+
+- the objective is evaluated from the combination of selected planning
+  units and selected adjacent pairs.
+
+A key implementation detail is that symmetric duplicates in the relation
+are canonicalized internally before the auxiliary block is created. For
+each unordered non-diagonal pair \\\\i,j\\\\, only one edge is retained,
+using the maximum weight among duplicates.
+
+Setting `weight_multiplier = 0` removes the contribution of the spatial
+relation from the objective after scaling.
+
+This objective does not distinguish between different actions within the
+same planning unit. If action-specific spatial cohesion is required, use
+[`add_objective_min_action_fragmentation`](https://josesalgr.github.io/mosap/reference/add_objective_min_action_fragmentation.md)
+instead.
+
+## See also
+
+[`add_spatial_boundary`](https://josesalgr.github.io/mosap/reference/add_spatial_boundary.md),
+[`add_spatial_relations`](https://josesalgr.github.io/mosap/reference/add_spatial_relations.md),
+[`add_objective_min_action_fragmentation`](https://josesalgr.github.io/mosap/reference/add_objective_min_action_fragmentation.md)

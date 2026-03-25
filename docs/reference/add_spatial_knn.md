@@ -1,8 +1,11 @@
-# Add k-nearest-neighbours spatial relations from coordinates
+# Add k-nearest-neighbours spatial relations
 
-Build and register a k-nearest-neighbours (kNN) graph between planning
-units based on coordinates. This constructor does not require `sf`. If
-the `RANN` package is available, it is used for speed.
+Build and register a k-nearest-neighbours graph between planning units
+using coordinates.
+
+This constructor does not require polygon geometry. It uses
+planning-unit coordinates supplied explicitly or stored in the `Problem`
+object.
 
 ## Usage
 
@@ -21,60 +24,89 @@ add_spatial_knn(
 
 - x:
 
-  A [data](https://josesalgr.github.io/mosap/reference/data-class.md)
-  object created with
-  [`inputData()`](https://josesalgr.github.io/mosap/reference/inputData.md)
-  or
-  [`inputDataSpatial()`](https://josesalgr.github.io/mosap/reference/inputDataSpatial.md).
+  A `Problem` object created with
+  [`inputData`](https://josesalgr.github.io/mosap/reference/inputData.md).
 
 - coords:
 
-  Optional coordinates specification:
+  Optional coordinates specification. This may be:
 
   - a `data.frame(id, x, y)`, or
 
-  - a matrix with two columns `(x,y)` aligned to the PU order.
+  - a numeric matrix with two columns `(x, y)` aligned to the order of
+    planning units.
 
-  If `NULL`, uses `x$data$pu_coords` or `x$data$pu$x/y`.
+  If `NULL`, coordinates are taken from `x$data$pu_coords` or from
+  columns `x$data$pu$x` and `x$data$pu$y`.
 
 - k:
 
-  Integer. Number of neighbours per planning unit (must be `>= 1` and
-  `< n_pu`).
+  Integer giving the number of neighbours per planning unit. Must be at
+  least 1 and strictly less than the number of planning units.
 
 - name:
 
-  Character name/key under which to store the relation.
+  Character string giving the key under which the relation is stored.
 
 - weight_fn:
 
-  Character. How to convert distance to weight: `"constant"`,
-  `"inverse"`, or `"inverse_sq"`.
+  Character string indicating how distance is converted to weight. Must
+  be one of `"constant"`, `"inverse"`, or `"inverse_sq"`.
 
 - eps:
 
-  Small numeric constant to avoid division by zero when using inverse
-  weights.
+  Small positive numeric constant used to avoid division by zero in
+  inverse-distance weighting.
 
 ## Value
 
-Updated
-[data](https://josesalgr.github.io/mosap/reference/data-class.md)
-object.
+An updated `Problem` object.
 
 ## Details
 
-Coordinates can be supplied explicitly via `coords`, stored in
-`x$data$pu_coords`, or stored as columns `x$data$pu$x` and
-`x$data$pu$y`.
+Let \\s_i = (x_i, y_i)\\ denote the coordinates of planning unit \\i\\.
+For each planning unit, this function identifies the `k` nearest
+distinct planning units under Euclidean distance.
 
-Edge weights can be constant or derived from distance using `weight_fn`.
-The stored relation is undirected by default (duplicates are collapsed).
+If \\d\_{ij}\\ denotes the Euclidean distance between units \\i\\ and
+\\j\\, then the k-nearest-neighbours relation is constructed by adding
+an edge from \\i\\ to each of its `k` nearest neighbours.
+
+Edge weights are then assigned according to `weight_fn`:
+
+- `"constant"`: \$\$\omega\_{ij} = 1,\$\$
+
+- `"inverse"`: \$\$\omega\_{ij} = \frac{1}{\max(d\_{ij},
+  \varepsilon)},\$\$
+
+- `"inverse_sq"`: \$\$\omega\_{ij} = \frac{1}{\max(d\_{ij},
+  \varepsilon)^2},\$\$
+
+where \\\varepsilon = \code{eps}\\ is a small constant to avoid division
+by zero.
+
+The raw k-nearest-neighbours structure is directional by construction,
+but the stored relation is registered as undirected by default through
+[`add_spatial_relations`](https://josesalgr.github.io/mosap/reference/add_spatial_relations.md),
+which collapses duplicate unordered pairs.
+
+If the RANN package is available, it is used for efficient nearest
+neighbour search. Otherwise, a full distance matrix is computed.
+
+## See also
+
+[`add_spatial_distance`](https://josesalgr.github.io/mosap/reference/add_spatial_distance.md),
+[`add_spatial_relations`](https://josesalgr.github.io/mosap/reference/add_spatial_relations.md)
 
 ## Examples
 
 ``` r
 if (FALSE) { # \dontrun{
-x <- x |> add_spatial_knn(k = 8, name = "knn8", weight_fn = "inverse")
+p <- add_spatial_knn(
+  x = p,
+  k = 8,
+  name = "knn8",
+  weight_fn = "inverse"
+)
 } # }
 ```

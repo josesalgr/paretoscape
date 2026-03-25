@@ -1,63 +1,69 @@
 # Add objective: maximize profit
 
-Specify an objective that maximizes economic profit from selected
-`(pu, action)` pairs. Profit values are taken from `x$data$dist_profit`,
-typically created with
-[`add_profit`](https://josesalgr.github.io/mosap/reference/add_profit.md).
-
-This function is **data-only**: it stores the objective specification
-inside the `Data` object so it can be materialized later when the
-optimization model is built (typically when calling
-[`solve()`](https://josesalgr.github.io/mosap/reference/solve.md)).
-
-If `alias` is provided, the objective is also registered in
-`x$data$objectives` as an atomic objective for multi-objective
-workflows.
+Define an objective that maximizes total profit from selected planning
+unit–action decisions.
 
 ## Usage
 
 ``` r
-add_objective_max_profit(x, profit_col = "profit", alias = NULL)
+add_objective_max_profit(
+  x,
+  profit_col = "profit",
+  actions = NULL,
+  alias = NULL
+)
 ```
 
 ## Arguments
 
 - x:
 
-  A `Data` object created with
-  [`inputData`](https://josesalgr.github.io/mosap/reference/inputData.md)
-  or
-  [`inputDataSpatial`](https://josesalgr.github.io/mosap/reference/inputDataSpatial.md).
+  A `Problem` object.
 
 - profit_col:
 
-  Character. Column name in `x$data$dist_profit` containing numeric
-  profits. Default `"profit"`.
+  Character string giving the profit column in `x$data$dist_profit`.
+
+- actions:
+
+  Optional subset of actions to include. Values may match
+  `x$data$actions$id` and, if present, `x$data$actions$action_set`. If
+  `NULL`, all actions are included.
 
 - alias:
 
-  Character scalar or `NULL`. Optional identifier to register this
-  objective as an atomic objective for multi-objective workflows.
+  Optional identifier used to register this objective for
+  multi-objective workflows.
 
 ## Value
 
-The updated `Data` object.
+An updated `Problem` object.
 
 ## Details
 
-The function updates `x$data$model_args` with:
+Let \\x\_{ia} \in \\0,1\\\\ denote whether action \\a\\ is selected in
+planning unit \\i\\, and let \\\pi\_{ia}\\ denote the profit associated
+with that decision, as taken from column `profit_col` in
+`x$data$dist_profit`.
 
-- `model_type`:
+If all actions are included, the objective is:
 
-  `"maximizeProfit"`
+\$\$ \max \sum\_{(i,a) \in \mathcal{F}} \pi\_{ia} x\_{ia}, \$\$
 
-- `objective_id`:
+where \\\mathcal{F}\\ denotes the set of feasible planning unit–action
+pairs.
 
-  `"max_profit"`
+If `actions` is provided, only the selected subset contributes to the
+objective. Letting \\\mathcal{F}^{\star}\\ denote the feasible pairs
+whose action belongs to the selected subset, the objective becomes:
 
-- `objective_args`:
+\$\$ \max \sum\_{(i,a) \in \mathcal{F}^{\star}} \pi\_{ia} x\_{ia}. \$\$
 
-  a list with `profit_col`
+This objective considers profit only. It does not subtract planning-unit
+costs or action costs. For a net-profit formulation, use
+[`add_objective_max_net_profit`](https://josesalgr.github.io/mosap/reference/add_objective_max_net_profit.md).
 
-If another objective setter is called afterwards, it overwrites the
-active single-objective specification in `x$data$model_args`.
+## See also
+
+[`add_objective_min_cost`](https://josesalgr.github.io/mosap/reference/add_objective_min_cost.md),
+[`add_objective_max_net_profit`](https://josesalgr.github.io/mosap/reference/add_objective_max_net_profit.md)

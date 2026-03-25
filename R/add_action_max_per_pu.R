@@ -1,6 +1,7 @@
 #' @include internal.R
 #'
 #' @title Limit the number of actions per planning unit (maximum)
+#' @name add_action_max_per_pu
 #'
 #' @description
 #' Store a constraint that limits the number of actions that can be selected within each
@@ -71,7 +72,8 @@
 #'
 #' @seealso \code{\link{add_actions}}
 #'
-#' @export
+NULL
+
 add_action_max_per_pu <- function(
     x,
     max = 1L,

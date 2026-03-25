@@ -1,8 +1,10 @@
-# Add rook adjacency from sf polygons
+# Add rook adjacency from polygons
 
-Build and register a rook adjacency relation (shared edge) from
-planning-unit polygons. Rook adjacency detects pairs of polygons that
-share a non-zero-length boundary segment.
+Build and register a rook adjacency relation from planning-unit
+polygons.
+
+Two planning units are rook-adjacent if they share a boundary segment of
+positive length. Corner-only contact does not count as rook adjacency.
 
 ## Usage
 
@@ -14,33 +16,54 @@ add_spatial_rook(x, pu_sf = NULL, name = "default", weight = 1)
 
 - x:
 
-  A [data](https://josesalgr.github.io/mosap/reference/data-class.md)
-  object created with
-  [`inputDataSpatial()`](https://josesalgr.github.io/mosap/reference/inputDataSpatial.md).
+  A `Problem` object created with
+  [`inputData`](https://josesalgr.github.io/mosap/reference/inputData.md)
+  or another object containing aligned planning-unit polygons.
 
 - pu_sf:
 
-  Optional `sf` object with PU polygons and an `id` column. If `NULL`,
-  uses `x$data$pu_sf`.
+  Optional `sf` object with planning-unit polygons and an `id` column.
+  If `NULL`, `x$data$pu_sf` is used.
 
 - name:
 
-  Character name/key under which to store the relation.
+  Character string giving the key under which the relation is stored.
 
 - weight:
 
-  Numeric edge weight assigned to each rook adjacency (default 1).
+  Numeric scalar giving the edge weight assigned to each rook adjacency.
 
 ## Value
 
-Updated
-[data](https://josesalgr.github.io/mosap/reference/data-class.md)
-object.
+An updated `Problem` object.
+
+## Details
+
+This constructor derives an adjacency graph from polygon geometry using
+a rook criterion. If planning units \\i\\ and \\j\\ share a common edge
+of non-zero length, then an edge \\(i,j)\\ is added to the relation.
+
+Let \\G = (V,E)\\ denote the resulting graph. Then: \$\$ (i,j) \in E
+\quad \Longleftrightarrow \quad \mathrm{length}(\partial i \cap \partial
+j) \> 0. \$\$
+
+All edges receive the same user-supplied weight.
+
+The resulting relation is stored as an undirected spatial relation.
+
+## See also
+
+[`add_spatial_queen`](https://josesalgr.github.io/mosap/reference/add_spatial_queen.md),
+[`add_spatial_boundary`](https://josesalgr.github.io/mosap/reference/add_spatial_boundary.md)
 
 ## Examples
 
 ``` r
 if (FALSE) { # \dontrun{
-x <- x |> add_spatial_rook(name = "rook", weight = 1)
+p <- add_spatial_rook(
+  x = p,
+  name = "rook",
+  weight = 1
+)
 } # }
 ```

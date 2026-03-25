@@ -1,8 +1,10 @@
 # Add maximum selected area constraint
 
-Add a linear constraint enforcing a maximum total selected area using
-only planning unit selection variables \\w_i\\: \$\$\sum_i
-\mathrm{area}\_i \\ w_i \le A\_{\max}.\$\$
+Add an upper bound on the total selected area in a planning problem.
+
+This function stores a maximum-area constraint in the `Problem` object
+so that it can be incorporated later by the model builder when the
+optimization model is assembled.
 
 ## Usage
 
@@ -12,7 +14,8 @@ add_area_max_constraint(
   area_max,
   area_col = NULL,
   area_unit = c("m2", "ha", "km2"),
-  name = "area_max"
+  name = "area_max",
+  overwrite = FALSE
 )
 ```
 
@@ -20,57 +23,103 @@ add_area_max_constraint(
 
 - x:
 
-  A `Data` object.
+  A `Problem` object.
 
 - area_max:
 
-  Numeric scalar \\\ge 0\\. Maximum area to select (expressed in
-  `area_unit`).
+  Numeric scalar greater than or equal to zero. Maximum total selected
+  area allowed in the solution.
 
 - area_col:
 
-  Optional character. Name of the column in `x$data$pu` containing
-  areas. If `NULL`, areas are obtained using internal defaults (see
-  Details).
+  Optional character string giving the name of the area column in
+  `x$data$pu`. If `NULL`, the area source is resolved later by the model
+  builder.
 
 - area_unit:
 
-  Character. Units for `area_max`. One of `"m2"`, `"ha"`, or `"km2"`.
+  Character string indicating the unit of `area_max`. Must be one of
+  `"m2"`, `"ha"`, or `"km2"`.
 
 - name:
 
-  Character. Name for the constraint in the model. Default `"area_max"`.
+  Character string used as a label for the stored constraint.
+
+- overwrite:
+
+  Logical. If `TRUE`, replace an existing stored maximum area
+  constraint.
 
 ## Value
 
-The updated `Data` object with the new linear constraint added to the
-model and metadata stored in `x$data$constraints$area_max`.
+An updated `Problem` object with a stored maximum-area constraint in
+`x$data$constraints$area_max`.
 
 ## Details
 
-This function adds a linear constraint to the current optimization model
-snapshot. Areas are retrieved from the planning unit table (`x$data$pu`)
-via `area_col` or via the package defaults implemented in
-`.pa_get_area_vec()`, and are converted to the requested `area_unit`.
-The coefficient vector is aligned with the model's planning unit order
-(`n_pu` and the internal \\w\\ variable offset stored in
-`x$data$model_list`).
+Let \\\mathcal{P}\\ denote the set of planning units and let \\a_i \ge
+0\\ be the area associated with planning unit \\i \in \mathcal{P}\\. Let
+\\w_i \in \\0,1\\\\ denote the binary variable indicating whether
+planning unit \\i\\ is selected by at least one decision in the model.
 
-Constraint metadata is also stored in `x$data$constraints$area_max` for
-printing/reporting.
+This function stores the following constraint:
+
+\$\$ \sum\_{i \in \mathcal{P}} a_i w_i \le A\_{\max}, \$\$
+
+where \\A\_{\max}\\ is the value supplied through `area_max`.
+
+Areas are obtained from `x$data$pu`. If `area_col` is provided, that
+column is used. Otherwise, the model builder will later determine the
+default area source according to the internal rules of the package. The
+value of `area_unit` indicates the unit in which `area_max` is expressed
+and therefore how the stored threshold should be interpreted.
+
+This function only stores the constraint specification in
+`x$data$constraints$area_max`; it does not validate the feasibility of
+the threshold against the available planning units at this stage.
+
+If a maximum-area constraint has already been stored, it is replaced
+only when `overwrite = TRUE`.
 
 ## See also
 
-[`add_area_min_constraint`](https://josesalgr.github.io/mosap/reference/add_area_min_constraint.md)
+[`add_area_min_constraint`](https://josesalgr.github.io/mosap/reference/add_area_min_constraint.md),
+[`inputData`](https://josesalgr.github.io/mosap/reference/inputData.md),
 
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
-# Enforce selecting at most 500 km2
-p <- add_area_max_constraint(p, area_max = 500, area_unit = "km2")
+pu <- data.frame(
+  id = 1:4,
+  cost = c(2, 3, 1, 4),
+  area_ha = c(10, 15, 8, 20)
+)
 
-# Use a custom area column stored in x$data$pu$area_m2
-p <- add_area_max_constraint(p, area_max = 2e6, area_unit = "m2", area_col = "area_m2")
-} # }
+features <- data.frame(
+  id = c("sp1", "sp2")
+)
+
+dist_features <- data.frame(
+  pu = c(1, 1, 2, 3, 4, 4),
+  feature = c("sp1", "sp2", "sp1", "sp2", "sp1", "sp2"),
+  amount = c(1, 2, 1, 3, 2, 1)
+)
+
+p <- inputData(
+  pu = pu,
+  features = features,
+  dist_features = dist_features
+)
+#> Error: features$id must be numeric/integer ids (got non-numeric strings).
+
+p <- add_area_max_constraint(
+  x = p,
+  area_max = 30,
+  area_col = "area_ha",
+  area_unit = "ha"
+)
+#> Error: object 'p' not found
+
+p$data$constraints$area_max
+#> Error: object 'p' not found
 ```

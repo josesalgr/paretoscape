@@ -2,7 +2,7 @@
 % Please edit documentation in R/add_spatial_relations.R
 \name{add_spatial_distance}
 \alias{add_spatial_distance}
-\title{Add distance-threshold spatial relations from coordinates}
+\title{Add distance-threshold spatial relations}
 \usage{
 add_spatial_distance(
   x,
@@ -14,33 +14,73 @@ add_spatial_distance(
 )
 }
 \arguments{
-\item{x}{A \linkS4class{problem} object created with \code{\link[=inputData]{inputData()}} or \code{\link[=inputDataSpatial]{inputDataSpatial()}}.}
+\item{x}{A \code{Problem} object created with \code{\link{inputData}}.}
 
-\item{coords}{Optional coordinates specification (see \code{\link{add_spatial_knn}}).}
+\item{coords}{Optional coordinates specification, following the same rules as
+in \code{\link{add_spatial_knn}}.}
 
-\item{dmax}{Numeric. Maximum distance for an edge (must be finite and positive).}
+\item{dmax}{Positive numeric scalar giving the maximum distance for an edge.}
 
-\item{name}{Character name/key under which to store the relation.}
+\item{name}{Character string giving the key under which the relation is
+stored.}
 
-\item{weight_fn}{Character. How to convert distance to weight:
-\code{"constant"}, \code{"inverse"}, or \code{"inverse_sq"}.}
+\item{weight_fn}{Character string indicating how distance is converted to
+weight. Must be one of \code{"constant"}, \code{"inverse"}, or
+\code{"inverse_sq"}.}
 
-\item{eps}{Small numeric constant to avoid division by zero when using inverse weights.}
+\item{eps}{Small positive numeric constant used to avoid division by zero in
+inverse-distance weighting.}
 }
 \value{
-Updated \linkS4class{problem} object.
+An updated \code{Problem} object.
 }
 \description{
-Build and register edges between planning units whose Euclidean distance is less than or equal to
-\code{dmax}, based on coordinates. This constructor does not require \code{sf}.
+Build and register a spatial relation connecting planning units whose
+Euclidean distance is less than or equal to a user-defined threshold.
+
+This constructor does not require polygon geometry and instead uses
+planning-unit coordinates.
 }
 \details{
-This constructor uses an \eqn{O(n^2)} distance computation and is therefore best suited to small or
-moderate numbers of planning units. For large instances, consider \code{\link{add_spatial_knn}} instead.
+Let \eqn{s_i = (x_i, y_i)} denote the coordinates of planning unit
+\eqn{i}. Let \eqn{d_{ij}} be the Euclidean distance between planning units
+\eqn{i} and \eqn{j}.
+
+For a user-supplied threshold \eqn{d_{\max}}, this constructor creates an
+edge between \eqn{i} and \eqn{j} whenever:
+\deqn{
+d_{ij} \le d_{\max}.
+}
+
+Edge weights are assigned according to \code{weight_fn}:
+\itemize{
+\item \code{"constant"}:
+\deqn{\omega_{ij} = 1,}
+\item \code{"inverse"}:
+\deqn{\omega_{ij} = \frac{1}{\max(d_{ij}, \varepsilon)},}
+\item \code{"inverse_sq"}:
+\deqn{\omega_{ij} = \frac{1}{\max(d_{ij}, \varepsilon)^2},}
+}
+where \eqn{\varepsilon = \code{eps}} is a small constant.
+
+The implementation computes an \eqn{O(n^2)} distance matrix and is therefore
+best suited to small or moderate numbers of planning units. For large
+problems, \code{\link{add_spatial_knn}} is often more scalable.
+
+The resulting relation is registered as undirected.
 }
 \examples{
 \dontrun{
-x <- x |> add_spatial_distance(dmax = 1000, name = "within_1km", weight_fn = "constant")
+p <- add_spatial_distance(
+  x = p,
+  dmax = 1000,
+  name = "within_1km",
+  weight_fn = "constant"
+)
 }
 
+}
+\seealso{
+\code{\link{add_spatial_knn}},
+\code{\link{add_spatial_relations}}
 }

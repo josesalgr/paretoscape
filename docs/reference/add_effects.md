@@ -1,14 +1,25 @@
-# Add effects (benefit/loss) to a planning problem
+# Add action effects to a planning problem
 
-Define the ecological (or any feature-based) effects of implementing
-actions in planning units. Effects are stored in `x$data$dist_effects`
-as two non-negative components per feasible `(pu, action, feature)`
-triple:
+Define the effects of management actions on features across planning
+units.
 
-- `benefit` \\\ge 0\\: positive change (improvement),
+Effects are stored in a canonical representation in
+`x$data$dist_effects`, with one row per `(pu, action, feature)` triple
+and two non-negative columns:
 
-- `loss` \\\ge 0\\: magnitude of negative change (damage), computed as
-  `loss = -min(delta, 0)`.
+- `benefit`: the positive component of the effect,
+
+- `loss`: the magnitude of the negative component of the effect.
+
+The net effect is therefore interpreted as \$\$ \Delta\_{i a f} =
+\mathrm{benefit}\_{i a f} - \mathrm{loss}\_{i a f}, \$\$ where \\i\\
+indexes planning units, \\a\\ indexes actions, and \\f\\ indexes
+features.
+
+Under the semantics adopted by this package, each
+`(pu, action, feature)` triple represents a single net effect.
+Consequently, after validation and aggregation, a stored row cannot have
+both `benefit > 0` and `loss > 0` at the same time.
 
 ## Usage
 
@@ -30,81 +41,69 @@ add_effects(
 
 - x:
 
-  A `Data` object created with
+  A `Problem` object created with
   [`inputData`](https://josesalgr.github.io/mosap/reference/inputData.md)
-  or
-  [`inputDataSpatial`](https://josesalgr.github.io/mosap/reference/inputDataSpatial.md).
-  Must contain `x$data$dist_actions` (run
+  or `inputDataSpatial`. It must already contain `x$data$dist_actions`;
+  run
   [`add_actions`](https://josesalgr.github.io/mosap/reference/add_actions.md)
-  first).
+  first.
 
 - effects:
 
   Effect specification. One of:
 
-  - `NULL`: store an empty effects table.
+  - `NULL`, to store an empty effects table,
 
-  - `data.frame(action, feature, multiplier)`: apply signed multipliers
-    to baseline amounts. `feature` may be feature ids or feature names
-    (matching `x$data$features$name`).
+  - a `data.frame(action, feature, multiplier)`,
 
-  - `data.frame(pu, action, feature, ...)`: explicit effects with one
-    of:
+  - a `data.frame(pu, action, feature, ...)` with explicit effects,
 
-    - `delta` (signed) or `effect` (signed),
-
-    - `after` (after-action amount; set `effect_type = "after"`),
-
-    - `benefit` and/or `loss` (both non-negative; missing component
-      treated as 0),
-
-    - legacy signed `benefit` without `loss` (treated as signed delta).
-
-  - A named list of
+  - a named list of
     [`terra::SpatRaster`](https://rspatial.github.io/terra/reference/SpatRaster-class.html)
-    objects: names = action ids; one layer per feature.
+    objects, one per action.
 
 - effect_type:
 
-  Character. How to interpret provided values for explicit tables or
-  raster lists:
+  Character string indicating how supplied effect values are
+  interpreted. Must be one of:
 
-  - `"delta"`: values represent signed deltas (default),
+  - `"delta"`: values represent signed net changes,
 
-  - `"after"`: values represent after-action amounts (converted to
-    deltas using baseline).
+  - `"after"`: values represent after-action amounts and are converted
+    to net changes relative to baseline feature amounts.
 
 - effect_aggregation:
 
-  Character. Aggregation used to compute PU-level values from rasters.
-  One of `"sum"` or `"mean"`.
+  Character string giving the aggregation used when converting raster
+  values to planning-unit level. Must be one of `"sum"` or `"mean"`.
 
 - align_rasters:
 
-  Logical. If `TRUE`, attempt to align effect rasters to the PU raster
-  grid before zonal operations (default `TRUE`).
+  Logical. If `TRUE`, effect rasters are aligned to the planning-unit
+  raster grid before raster extraction or zonal aggregation.
 
 - keep_zero:
 
-  Logical. If `TRUE`, keep rows where `benefit == 0` and `loss == 0`.
-  Default `FALSE`.
+  Logical. If `TRUE`, keep rows for which both `benefit == 0` and
+  `loss == 0`. Default is `FALSE`.
 
 - drop_locked_out:
 
-  Logical. If `TRUE`, drop rows for `(pu, action)` pairs with
-  `status == 3` in `x$data$dist_actions` (if the column exists). Default
-  `TRUE`.
+  Logical. If `TRUE`, rows associated with `(pu, action)` pairs marked
+  as locked out (`status == 3`) in `x$data$dist_actions` are removed
+  before storing effects.
 
 - na_to_zero:
 
-  Logical. If `TRUE`, treat missing values as 0 when computing
-  benefit/loss. Default `TRUE`.
+  Logical. If `TRUE`, missing values are interpreted as zero when
+  constructing or validating effects.
 
 - filter:
 
-  Character. Filter rows by non-zero component:
+  Character string controlling which rows are retained after
+  canonicalization. Must be one of:
 
-  - `"any"`: keep both benefit and loss rows (default),
+  - `"any"`: keep all non-zero rows,
 
   - `"benefit"`: keep only rows with `benefit > 0`,
 
@@ -112,90 +111,227 @@ add_effects(
 
 ## Value
 
-The updated `Data` object with `x$data$dist_effects` created/updated,
-and metadata stored in `x$data$effects_meta`.
+An updated `Problem` object with:
+
+- `x$data$dist_effects`:
+
+  A canonical effects table with columns `pu`, `action`, `feature`,
+  `benefit`, `loss`, `internal_pu`, `internal_action`,
+  `internal_feature`, and optional labels such as `feature_name` and
+  `action_name`.
+
+- `x$data$effects_meta`:
+
+  Metadata describing how effects were interpreted and stored.
 
 ## Details
 
-Internally, effects may originate from signed values (deltas) or from
-after-action amounts. Regardless of input, `dist_effects` always stores
-`benefit` and `loss` as non-negative values to avoid ambiguity and to
-support models that separately account for gains and damages.
+This function provides a unified interface for specifying action effects
+from several input formats while enforcing a single internal
+representation. Regardless of how the user supplies the effects, the
+stored output always follows the same canonical structure based on
+non-negative `benefit`/`loss` components.
 
-**Baseline and after-action amounts.** If `effect_type = "after"`,
-provided values are interpreted as after-action amounts and converted to
-signed deltas using the baseline amounts in
-`x$data$dist_features$amount`: \$\$\mathrm{delta} = \mathrm{after} -
-\mathrm{baseline}.\$\$ Missing baseline values are treated as 0.
+Let \\b\_{if}\\ denote the baseline amount of feature \\f\\ in planning
+unit \\i\\, taken from `x$data$dist_features$amount`. Let \\\Delta\_{i a
+f}\\ denote the net change caused by applying action \\a\\ in planning
+unit \\i\\ to feature \\f\\. The canonical stored representation is:
 
-**Supported effect specifications.**
+\$\$ \mathrm{benefit}\_{i a f} = \max(\Delta\_{i a f}, 0), \$\$
 
-1.  *NULL*: store an empty effects table (recommended default when
-    effects are not available yet).
+\$\$ \mathrm{loss}\_{i a f} = \max(-\Delta\_{i a f}, 0). \$\$
 
-2.  *Multipliers*: a `data.frame(action, feature, multiplier)` that
-    applies a signed multiplier to baseline amounts: \\\mathrm{delta} =
-    \mathrm{amount} \times \mathrm{multiplier}\\.
+Hence:
 
-3.  *Explicit rows*: a `data.frame(pu, action, feature, ...)` providing
-    either signed deltas (`delta` or `effect`, or legacy signed
-    `benefit`), after-action amounts (`after`), or already split
-    non-negative `benefit`/`loss`.
+- if \\\Delta\_{i a f} \> 0\\, then `benefit > 0` and `loss = 0`,
 
-4.  *Rasters per action*: a named list of
+- if \\\Delta\_{i a f} \< 0\\, then `benefit = 0` and `loss > 0`,
+
+- if \\\Delta\_{i a f} = 0\\, then both are zero.
+
+**Why split effects into benefit and loss?**
+
+This representation avoids ambiguity in downstream optimization models.
+It allows the package to support, for example, objectives that maximize
+beneficial effects, minimize damages, impose no-net-loss conditions, or
+combine both components differently in multi-objective formulations.
+
+**Supported effect specifications**
+
+The `effects` argument may be provided in one of the following forms:
+
+1.  `NULL`. An empty effects table is stored.
+
+2.  A `data.frame(action, feature, multiplier)`. In this case, effects
+    are constructed by multiplying baseline feature amounts by the
+    supplied multiplier: \$\$ \Delta\_{i a f} = b\_{if} \times m\_{a f},
+    \$\$ where \\m\_{a f}\\ is the multiplier associated with action
+    \\a\\ and feature \\f\\. This specification is expanded over all
+    feasible `(pu, action)` pairs.
+
+3.  A `data.frame(pu, action, feature, ...)` giving explicit effects for
+    individual triples. The table may contain:
+
+    - `delta` or `effect`: interpreted as signed net changes,
+
+    - `after`: interpreted as after-action amounts if
+      `effect_type = "after"`,
+
+    - `benefit` and/or `loss`: explicit non-negative split components,
+
+    - legacy signed `benefit` without `loss`: interpreted as a signed
+      net effect for backwards compatibility.
+
+4.  A named list of
     [`terra::SpatRaster`](https://rspatial.github.io/terra/reference/SpatRaster-class.html)
-    objects (names are action ids), each with one layer per feature.
-    Raster values are aggregated by planning unit using
-    `effect_aggregation` and then interpreted as deltas or after-action
-    amounts depending on `effect_type`.
+    objects, one per action. In this case, names must match action ids,
+    and each raster must contain one layer per feature. Raster values
+    are aggregated to planning-unit level using `effect_aggregation`.
 
-**Feasibility and locks.** Effects are retained only for feasible
-`(pu, action)` pairs present in `x$data$dist_actions`. If
-`drop_locked_out = TRUE` and `x$data$dist_actions$status` exists, pairs
-with `status == 3` are excluded before effects are processed.
+**Interpretation of `effect_type`**
 
-**Filtering.** You can keep only beneficial effects (`benefit > 0`) or
-only losses (`loss > 0`) using `filter`. By default, rows with both
-`benefit == 0` and `loss == 0` are dropped unless `keep_zero = TRUE`.
+If `effect_type = "delta"`, supplied values are interpreted as net
+changes directly.
+
+If `effect_type = "after"`, supplied values are interpreted as
+after-action amounts and converted internally to net effects using:
+
+\$\$ \Delta\_{i a f} = \mathrm{after}\_{i a f} - b\_{if}. \$\$
+
+Missing baseline values are treated as zero.
+
+**Feasibility and locked-out decisions**
+
+Effects are only retained for feasible `(pu, action)` pairs listed in
+`x$data$dist_actions`. Thus,
+[`add_actions()`](https://josesalgr.github.io/mosap/reference/add_actions.md)
+must be called first. If `drop_locked_out = TRUE` and
+`x$data$dist_actions$status` exists, rows associated with `status == 3`
+are removed before storing the final effects table.
+
+**Duplicate rows and semantic validation**
+
+If multiple rows are supplied for the same `(pu, action, feature)`
+triple, they are aggregated by summing `benefit` and `loss` separately.
+The resulting triple must still respect the package semantics, namely
+that both components cannot be strictly positive simultaneously. Inputs
+violating this rule are rejected.
+
+**Filtering**
+
+After canonicalization and validation, rows can be filtered using
+`filter = "any"`, `"benefit"`, or `"loss"`. By default, zero-effect rows
+are removed unless `keep_zero = TRUE`.
+
+**Stored output**
+
+The resulting table `x$data$dist_effects` contains user-facing ids,
+internal integer ids, and optional labels for actions and features.
+Metadata describing the stored representation and input interpretation
+are written to `x$data$effects_meta`.
 
 ## See also
 
+[`add_actions`](https://josesalgr.github.io/mosap/reference/add_actions.md),
 [`add_benefits`](https://josesalgr.github.io/mosap/reference/add_benefits.md),
 [`add_losses`](https://josesalgr.github.io/mosap/reference/add_losses.md)
 
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
-# 1) Empty effects (default)
-p <- add_effects(p, effects = NULL)
+# Minimal problem
+pu <- data.frame(
+  id = 1:3,
+  cost = c(1, 2, 3)
+)
 
-# 2) Multipliers (action x feature): delta = amount * multiplier
+features <- data.frame(
+  id = 1:2,
+  name = c("sp1", "sp2")
+)
+
+dist_features <- data.frame(
+  pu = c(1, 1, 2, 3),
+  feature = c(1, 2, 1, 2),
+  amount = c(10, 5, 8, 4)
+)
+
+p <- inputData(
+  pu = pu,
+  features = features,
+  dist_features = dist_features
+)
+
+actions <- data.frame(
+  id = c("conservation", "restoration")
+)
+
+p <- add_actions(
+  x = p,
+  actions = actions,
+  cost = c(conservation = 2, restoration = 4)
+)
+
+# 1) Empty effects
+p0 <- add_effects(p, effects = NULL)
+#> Warning: All effect values are zero after filtering.
+p0$data$dist_effects
+#>  [1] pu               action           feature          benefit         
+#>  [5] loss             internal_pu      internal_action  internal_feature
+#>  [9] feature_name     action_name     
+#> <0 rows> (or 0-length row.names)
+
+# 2) Multipliers by action and feature
 mult <- data.frame(
-  action = c("harvest", "harvest", "restoration"),
-  feature = c("sp1", "sp2", "sp1"),      # feature names (requires x$data$features$name)
-  multiplier = c(-0.2, -0.1, 0.3)
+  action = c("conservation", "restoration"),
+  feature = c("sp1", "sp2"),
+  multiplier = c(0.10, -0.25)
 )
-p <- add_effects(p, effects = mult, effect_type = "delta")
 
-# 3) Explicit deltas by (pu, action, feature)
+p1 <- add_effects(
+  x = p,
+  effects = mult,
+  effect_type = "delta"
+)
+
+p1$data$dist_effects
+#>   pu       action feature benefit loss internal_pu internal_action
+#> 1  1 conservation       1     1.0 0.00           1               1
+#> 2  2 conservation       1     0.8 0.00           2               1
+#> 7  1  restoration       2     0.0 1.25           1               2
+#> 8  3  restoration       2     0.0 1.00           3               2
+#>   internal_feature feature_name  action_name
+#> 1                1          sp1 conservation
+#> 2                1          sp1 conservation
+#> 7                2          sp2  restoration
+#> 8                2          sp2  restoration
+
+# 3) Explicit net effects
 eff <- data.frame(
-  pu = c(1, 1, 2),
-  action = c("harvest", "harvest", "restoration"),
-  feature = c(1, 2, 1),
-  delta = c(-0.5, 0.2, 1.0)
+  pu = c(1, 2, 3),
+  action = c("conservation", "restoration", "restoration"),
+  feature = c(1, 1, 2),
+  delta = c(2, -3, 1)
 )
-p <- add_effects(p, effects = eff)
 
-# 4) After-action amounts (converted to delta = after - baseline)
-after_tbl <- transform(eff, after = delta) # example only; typically after is an absolute amount
-p <- add_effects(p, effects = after_tbl, effect_type = "after")
+p2 <- add_effects(p, effects = eff)
+p2$data$dist_effects
+#>   pu       action feature benefit loss internal_pu internal_action
+#> 1  1 conservation       1       2    0           1               1
+#> 2  2  restoration       1       0    3           2               2
+#> 3  3  restoration       2       1    0           3               2
+#>   internal_feature feature_name  action_name
+#> 1                1          sp1 conservation
+#> 2                1          sp1  restoration
+#> 3                2          sp2  restoration
 
-# 5) Raster effects per action (one layer per feature)
-# effects_rasters <- list(harvest = r_harv, restoration = r_rest) # terra::SpatRaster
-# p <- add_effects(p, effects = effects_rasters, effect_type = "delta", effect_aggregation = "sum")
-
-# Keep only beneficial effects
-p <- add_effects(p, effects = eff, filter = "benefit")
-} # }
+# 4) Keep only beneficial effects
+p3 <- add_effects(p, effects = eff, filter = "benefit")
+p3$data$dist_effects
+#>   pu       action feature benefit loss internal_pu internal_action
+#> 1  1 conservation       1       2    0           1               1
+#> 3  3  restoration       2       1    0           3               2
+#>   internal_feature feature_name  action_name
+#> 1                1          sp1 conservation
+#> 3                2          sp2  restoration
 ```

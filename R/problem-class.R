@@ -4,81 +4,187 @@
 if (!methods::isClass("Problem")) methods::setOldClass("Problem")
 NULL
 
-#' Problem class
+#' @name problem-class
+#' @aliases Problem
+#' @title Problem class
 #'
 #' @description
-#' The \code{Problem} class is the core container used by \pkg{mosap} to store the
-#' information required to define and solve a spatial action planning problem.
+#' The \code{Problem} class is the central container used by \pkg{mosap} to
+#' represent a planning problem before, during, and after model construction.
 #'
-#' It stores planning units, features, actions, feasibility and cost tables,
-#' feature effects and profits, optional spatial inputs (geometry, coordinates,
-#' and spatial relations), user-defined targets and constraints, solver settings,
-#' and, when available, a built optimization model snapshot.
+#' A \code{Problem} object stores the full problem specification in a modular
+#' way. This includes the baseline planning data, optional spatial metadata,
+#' action definitions, effects, profit, targets, constraints, objective
+#' registrations, solver settings, and, when available, a built optimization
+#' model or model snapshot.
 #'
-#' Objects of this class are typically created by [inputData()] or
-#' [inputDataSpatial()]. Downstream functions such as [add_actions()],
-#' [add_effects()], [add_profit()], [add_targets_absolute()],
-#' [add_targets_relative()], spatial relation builders, and objective setters
-#' enrich the internal \code{data} list by adding or updating the relevant tables.
+#' In other words, \code{Problem} is the persistent object that connects the full
+#' \code{mosap} workflow:
+#' \preformatted{
+#' inputData()
+#' -> add_*() / set_*()
+#' -> solve()
+#' }
 #'
-#' @section Storage:
+#' @details
+#' \strong{Conceptual role}
+#'
+#' The \code{Problem} class is designed for a data-first and modular workflow.
+#' User-facing functions do not usually modify a solver object directly. Instead,
+#' they enrich the \code{Problem} object by storing new specifications in its
+#' internal \code{data} field.
+#'
+#' Thus, a \code{Problem} object should be understood as a structured container
+#' for the mathematical planning problem, not necessarily as a built
+#' optimization model.
+#'
+#' Before \code{\link{solve}} is called, the object may contain only input data
+#' and user specifications. During or after solving, it may additionally contain
+#' a built model pointer, model metadata, and solver-related information.
+#'
+#' \strong{Core mathematical interpretation}
+#'
+#' At a high level, the \code{Problem} object stores the ingredients required to
+#' define an optimization problem over:
+#' \itemize{
+#'   \item planning units \eqn{i \in \mathcal{P}},
+#'   \item features \eqn{f \in \mathcal{F}},
+#'   \item actions \eqn{a \in \mathcal{A}},
+#'   \item optional spatial relations over planning units,
+#'   \item and user-defined objectives and constraints.
+#' }
+#'
+#' The baseline ecological state is typically stored through a planning
+#' unit--feature table of amounts:
+#' \deqn{
+#' a_{if} \ge 0,
+#' }
+#' where \eqn{a_{if}} is the baseline amount of feature \eqn{f} in planning unit
+#' \eqn{i}.
+#'
+#' Subsequent functions then add action feasibility, effects, profit, targets,
+#' spatial relations, and optimization settings to this baseline representation.
+#'
+#' \strong{How objects are created}
+#'
+#' \code{Problem} objects are usually created by \code{\link{inputData}}.
+#'
+#' After creation, downstream functions such as \code{\link{add_actions}},
+#' \code{\link{add_effects}}, \code{\link{add_profit}},
+#' \code{\link{add_targets_absolute}}, \code{\link{add_targets_relative}},
+#' spatial relation constructors, objective setters, and solver setters extend
+#' the internal \code{data} list.
+#'
+#' \strong{Internal storage}
+#'
 #' The class contains a single field:
 #' \describe{
-#'   \item{data}{A named \code{list} holding all tables and metadata used by the
-#'   workflow. Common elements include \code{pu}, \code{features}, \code{actions},
-#'   \code{dist_features}, \code{dist_actions}, \code{dist_effects},
-#'   \code{dist_profit}, \code{pu_sf}, \code{pu_coords},
-#'   \code{spatial_relations}, \code{targets}, solver settings in
-#'   \code{solve_args}, and model-related entries such as \code{model_ptr},
-#'   \code{model_list}, and \code{model_args}.}
+#'   \item{\code{data}}{A named \code{list} storing the full problem
+#'   specification, metadata, and, when available, built-model information.}
 #' }
+#'
+#' Common entries of \code{data} include:
+#' \describe{
+#'   \item{\code{pu}}{Planning-unit table.}
+#'   \item{\code{features}}{Feature table.}
+#'   \item{\code{actions}}{Action catalog.}
+#'   \item{\code{dist_features}}{Planning unit--feature baseline amounts.}
+#'   \item{\code{dist_actions}}{Feasible planning unit--action pairs.}
+#'   \item{\code{dist_effects}}{Action effects by planning unit, action, and
+#'   feature.}
+#'   \item{\code{dist_profit}}{Profit by planning unit--action pair.}
+#'   \item{\code{pu_sf}}{Planning-unit geometry when available.}
+#'   \item{\code{pu_coords}}{Planning-unit coordinates when available.}
+#'   \item{\code{spatial_relations}}{Registered spatial relations.}
+#'   \item{\code{targets}}{Stored target specifications.}
+#'   \item{\code{constraints}}{Stored user-defined constraints.}
+#'   \item{\code{objectives}}{Registered atomic objectives for single- or
+#'   multi-objective workflows.}
+#'   \item{\code{method}}{Stored multi-objective method configuration, when
+#'   applicable.}
+#'   \item{\code{solve_args}}{Stored solver settings.}
+#'   \item{\code{model_ptr}}{Pointer to a built optimization model, when
+#'   available.}
+#'   \item{\code{model_args}}{Metadata describing model construction.}
+#'   \item{\code{model_list}}{Optional exported model snapshot or representation.}
+#'   \item{\code{meta}}{Auxiliary metadata, including model-dirty flags and other
+#'   bookkeeping fields.}
+#' }
+#'
+#' Not every \code{Problem} object contains all of these entries. The content of
+#' \code{data} depends on how far the workflow has progressed.
+#'
+#' \strong{Lifecycle}
+#'
+#' A \code{Problem} object typically moves through the following stages:
+#' \enumerate{
+#'   \item input stage: baseline planning units, features, and feature
+#'   distributions are stored,
+#'   \item specification stage: actions, effects, targets, objectives,
+#'   constraints, and spatial relations are added,
+#'   \item model stage: an optimization model is built from the stored
+#'   specification,
+#'   \item solve stage: the model is solved and results are returned in a
+#'   separate \code{Solution} or \code{SolutionSet} object.
+#' }
+#'
+#' The \code{Problem} object itself is not the solution. It is the structured
+#' problem definition from which a solution can be obtained.
 #'
 #' @section Methods:
 #' \describe{
-#'   \item{\code{print()}}{Print a concise summary of the stored data, actions and
-#'   effects, spatial inputs, targets and constraints, and the optimization model
-#'   state. If a model has already been built, the print method also shows basic
-#'   dimensions and auxiliary variables.}
+#'   \item{\code{print()}}{Print a structured summary of the stored problem
+#'   specification, including data, actions and effects, spatial inputs, targets
+#'   and constraints, and model status. If a model has already been built,
+#'   additional dimensions and auxiliary-variable information are displayed.}
 #'
 #'   \item{\code{show()}}{Alias of \code{print()}.}
 #'
-#'   \item{\code{repr()}}{Return a short string representation.}
+#'   \item{\code{repr()}}{Return a short one-line representation of the object.}
 #'
-#'   \item{\code{getData(name)}}{Retrieve an element stored in \code{data} by name.}
+#'   \item{\code{getData(name)}}{Return a named entry from \code{self$data}.}
 #'
 #'   \item{\code{getPlanningUnitsAmount()}}{Return the number of planning units
 #'   stored in \code{x$data$pu}.}
 #'
-#'   \item{\code{getMonitoringCosts()}}{Return the planning-unit cost vector.
-#'   Prefers column \code{cost} in \code{x$data$pu}.}
+#'   \item{\code{getMonitoringCosts()}}{Return the planning-unit cost vector,
+#'   typically taken from \code{x$data$pu$cost}.}
 #'
-#'   \item{\code{getFeatureAmount()}}{Return the number of features stored in
-#'   \code{x$data$features}.}
+#'   \item{\code{getFeatureAmount()}}{Return the number of stored features.}
 #'
 #'   \item{\code{getFeatureNames()}}{Return feature names from
-#'   \code{x$data$features$name}, or feature ids if \code{name} is missing.}
+#'   \code{x$data$features$name}, or feature ids if names are unavailable.}
 #'
 #'   \item{\code{getActionCosts()}}{Return action-level costs from
 #'   \code{x$data$dist_actions$cost} when available.}
 #'
-#'   \item{\code{getActionsAmount()}}{Return the number of actions stored in
-#'   \code{x$data$actions}.}
+#'   \item{\code{getActionsAmount()}}{Return the number of stored actions.}
 #' }
 #'
-#' @details
-#' The \code{Problem} class is designed for a data-first workflow. Most user-facing
-#' functions store specifications such as actions, effects, targets, spatial
-#' relations, objectives, and solver settings in \code{x$data}. The optimization
-#' model is typically built later, usually when calling \code{solve()}.
+#' @section Printing and diagnostics:
+#' The \code{print()} method is intended as a quick diagnostic summary. It helps
+#' users understand:
+#' \itemize{
+#'   \item what data have already been loaded,
+#'   \item whether actions, effects, spatial relations, targets, and constraints
+#'   have been registered,
+#'   \item whether objectives and methods have been configured,
+#'   \item whether a model has already been built,
+#'   \item and whether the object appears ready to be solved.
+#' }
 #'
-#' The print method is intended to help users quickly understand what has already
-#' been configured, what is still missing, and whether a model has already been
-#' materialized.
+#' In particular, the model section of the printed output summarizes whether the
+#' current problem specification is incomplete, ready, or already materialized as
+#' a built optimization model.
 #'
-#' @return No return value (class definition).
+#' @return No return value. This page documents the \code{Problem} class.
 #'
-#' @name problem-class
-#' @aliases Problem
+#' @seealso
+#' \code{\link{inputData}},
+#' \code{\link{add_actions}},
+#' \code{\link{add_effects}},
+#' \code{\link{add_targets_absolute}},
+#' \code{\link{solve}}
 NULL
 
 .pa_data_status_text <- function(self) {

@@ -1,0 +1,99 @@
+# Configure CPLEX solver settings
+
+Convenience wrapper around
+[`set_solver`](https://josesalgr.github.io/mosap/reference/set_solver.md)
+that sets `solver = "cplex"`.
+
+## Usage
+
+``` r
+set_solver_cplex(
+  x,
+  ...,
+  solver_params = list(),
+  gap_limit = NULL,
+  time_limit = NULL,
+  solution_limit = NULL,
+  cores = NULL,
+  verbose = FALSE,
+  log_file = NULL,
+  write_log = NULL
+)
+```
+
+## Arguments
+
+- x:
+
+  A `Problem` object.
+
+- ...:
+
+  Additional named solver-specific parameters. These are merged into
+  `solver_params`. For example, `MIPFocus = 1` for Gurobi.
+
+- solver_params:
+
+  Named list of solver-specific parameters. These are merged with
+  previously stored backend-specific parameters rather than replacing
+  them completely.
+
+- gap_limit:
+
+  Optional numeric value in \\\[0,1\]\\ giving the relative optimality
+  gap for mixed-integer optimization. If `NULL`, the previously stored
+  value is kept unchanged.
+
+- time_limit:
+
+  Optional non-negative numeric value giving the maximum solving time in
+  seconds. If `NULL`, the previously stored value is kept unchanged.
+
+- solution_limit:
+
+  Optional logical flag controlling backend-specific early stopping
+  after feasible solution discovery. If `NULL`, the previously stored
+  value is kept unchanged.
+
+- cores:
+
+  Optional positive integer giving the number of CPU cores to use. If
+  `NULL`, the previously stored value is kept unchanged.
+
+- verbose:
+
+  Optional logical flag indicating whether the solver should print log
+  output. If `NULL`, the previously stored value is kept unchanged.
+
+- log_file:
+
+  Optional character string giving the name of the solver log file. If
+  `NULL`, the previously stored value is kept unchanged.
+
+- write_log:
+
+  Optional logical flag indicating whether solver output should be
+  written to a file. If `NULL`, the previously stored value is kept
+  unchanged.
+
+## Value
+
+An updated `Problem` object with CPLEX solver settings.
+
+## See also
+
+[`set_solver`](https://josesalgr.github.io/mosap/reference/set_solver.md),
+[`solve`](https://josesalgr.github.io/mosap/reference/solve.md)
+
+## Examples
+
+``` r
+if (FALSE) { # \dontrun{
+x <- set_solver_cplex(
+  x,
+  gap_limit = 0.001,
+  time_limit = 1200,
+  cores = 8
+)
+} # }
+```

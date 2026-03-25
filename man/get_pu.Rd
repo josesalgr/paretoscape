@@ -2,40 +2,66 @@
 % Please edit documentation in R/get_solution.R
 \name{get_pu}
 \alias{get_pu}
-\title{Get planning unit results from a Solution}
+\title{Get planning-unit results from a solution}
 \usage{
 get_pu(x, only_selected = FALSE, run = NULL)
 }
 \arguments{
-\item{x}{A \linkS4class{solution} object returned by \code{\link[=solve]{solve()}}.}
+\item{x}{A \code{Solution} or \code{SolutionSet} object returned by
+\code{\link{solve}}.}
 
-\item{only_selected}{Logical. If \code{TRUE}, return only rows where \code{selected == 1}.
-Default \code{FALSE}.}
+\item{only_selected}{Logical. If \code{TRUE}, return only rows where
+\code{selected == 1}. Default is \code{FALSE}.}
 
-\item{run}{Integer. For multi-run objects, the run index to extract. Default \code{1L}.}
+\item{run}{Optional positive integer giving the run index to extract from a
+\code{SolutionSet}. If \code{NULL}, all runs are returned when available.}
 }
 \value{
-A \code{data.frame} with planning-unit information stored in the solution summary and
-a \code{selected} column.
+A \code{data.frame} containing the stored planning-unit summary.
+Typical columns include planning-unit identifiers, optional labels, and a
+\code{selected} indicator.
 }
 \description{
-Extract the planning-unit summary table from a \linkS4class{solution} object returned by \code{\link[=solve]{solve()}}.
-The returned table includes a \code{selected} indicator (typically \code{0/1}) showing
-whether each planning unit is selected in the solution.
+Extract the planning-unit summary table from a \code{Solution} or
+\code{SolutionSet} object returned by \code{\link{solve}}.
+
+The returned table summarizes solution values at the planning-unit level and
+typically includes a \code{selected} indicator showing whether each planning
+unit is selected in the solution.
 }
 \details{
-This function expects the solution object to store a planning-unit summary table at
-\code{x$summary$pu}. It errors if the table is missing. If \code{only_selected = TRUE},
-it also errors when the \code{selected} column is not present.
+This function reads the planning-unit summary stored in
+\code{x$summary$pu}. It does not reconstruct the table from the raw decision
+vector; it simply returns the stored summary after optional filtering.
+
+Let \eqn{w_i} denote the planning-unit selection variable for planning unit
+\eqn{i}. In standard \code{mosap} workflows, the \code{selected} column is the
+user-facing representation of that planning-unit decision, typically coded as
+\code{0} or \code{1}.
+
+If \code{x} is a \code{SolutionSet} and \code{run} is provided, only rows
+belonging to that run are returned. This requires the summary table to
+contain a \code{run_id} column.
+
+If \code{only_selected = TRUE}, only rows with \code{selected == 1} are
+returned. This requires the summary table to contain a \code{selected}
+column.
+
+This function is intended for user-facing inspection of planning-unit results.
+For the raw model variable vector, use \code{\link{get_solution_vector}}.
 }
 \examples{
 \dontrun{
 sol <- solve(problem)
+
 pu_tbl <- get_pu(sol)
 pu_sel <- get_pu(sol, only_selected = TRUE)
 }
 
 }
 \seealso{
-\code{\link[=get_actions]{get_actions()}}, \code{\link[=get_features]{get_features()}}, \code{\link[=get_targets]{get_targets()}}, \code{\link[=get_solution_vector]{get_solution_vector()}}
+\code{\link{get_actions}},
+\code{\link{get_features}},
+\code{\link{get_targets}},
+\code{\link{get_solution_vector}}
 }

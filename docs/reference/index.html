@@ -13,7 +13,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">mosap</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -23,7 +23,7 @@
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
-      </ul><ul class="navbar-nav"><li class="nav-item"><a class="external-link nav-link" href="https://github.com/josesalgr/mosap"><span class="fa fa-github"></span></a></li>
+      </ul><ul class="navbar-nav"><li class="nav-item"><a class="external-link nav-link" href="https://github.com/josesalgr/mosap" aria-label="GitHub repository"><span class="fa fa-github"></span></a></li>
       </ul></div>
 
 
@@ -35,9 +35,9 @@
     </div>
 
     <div class="section level2">
-      <h2 id="create-and-solve-problems">Create and solve problems<a class="anchor" aria-label="anchor" href="#create-and-solve-problems"></a></h2>
+      <h2 id="build-and-solve-problems">Build and solve problems<a class="anchor" aria-label="anchor" href="#build-and-solve-problems"></a></h2>
 
-      <div class="section-desc"><p>Core workflow to build a planning problem and solve it.</p></div>
+      <div class="section-desc"><p>Core workflow to create a planning problem, configure it, and solve it.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -56,18 +56,11 @@
           <code><a href="solve.html">solve()</a></code>
 
         </dt>
-        <dd>Solve optimization model</dd>
-
-        <dt>
-
-          <code><a href="mosap.html">mosap()</a></code>
-
-        </dt>
-        <dd>Create and solve multi-actions planning problems</dd>
+        <dd>Solve a planning problem</dd>
       </dl></div><div class="section level2">
-      <h2 id="actions-effects-targets-and-profits">Actions, effects, targets and profits<a class="anchor" aria-label="anchor" href="#actions-effects-targets-and-profits"></a></h2>
+      <h2 id="actions-effects-profits-and-locks">Actions, effects, profits and locks<a class="anchor" aria-label="anchor" href="#actions-effects-profits-and-locks"></a></h2>
 
-      <div class="section-desc"><p>Define actions/effects (benefits), targets, and optional profit layers used by objectives/constraints.</p></div>
+      <div class="section-desc"><p>Define feasible actions, their effects, optional profits, and fixed decisions.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -79,21 +72,28 @@
           <code><a href="add_actions.html">add_actions()</a></code>
 
         </dt>
-        <dd>Add actions to a planning problem</dd>
+        <dd>Add management actions to a planning problem</dd>
 
         <dt>
 
           <code><a href="add_effects.html">add_effects()</a></code>
 
         </dt>
-        <dd>Add effects (benefit/loss) to a planning problem</dd>
+        <dd>Add action effects to a planning problem</dd>
 
         <dt>
 
           <code><a href="add_benefits.html">add_benefits()</a></code>
 
         </dt>
-        <dd>Add benefits (positive effects)</dd>
+        <dd>Add benefits</dd>
+
+        <dt>
+
+          <code><a href="add_losses.html">add_losses()</a></code>
+
+        </dt>
+        <dd>Add losses</dd>
 
         <dt>
 
@@ -104,49 +104,58 @@
 
         <dt>
 
-          <code><a href="add_conservation_targets_absolute.html">add_conservation_targets_absolute()</a></code>
+          <code><a href="add_locked_actions.html">add_locked_actions()</a></code>
 
         </dt>
-        <dd>Add conservation targets (absolute)</dd>
+        <dd>Add locked action decisions to a planning problem</dd>
 
         <dt>
 
-          <code><a href="add_conservation_targets_relative.html">add_conservation_targets_relative()</a></code>
+          <code><a href="add_locked_pu.html">add_locked_pu()</a></code>
 
         </dt>
-        <dd>Add conservation targets (relative to baseline)</dd>
+        <dd>Add locked planning units to a problem</dd>
+      </dl></div><div class="section level2">
+      <h2 id="targets-and-constraints">Targets and constraints<a class="anchor" aria-label="anchor" href="#targets-and-constraints"></a></h2>
+
+      <div class="section-desc"><p>Define target requirements and area-related constraints.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="add_targets_absolute.html">add_targets_absolute()</a></code>
+
+        </dt>
+        <dd>Add absolute targets</dd>
 
         <dt>
 
-          <code><a href="add_recovery_targets_absolute.html">add_recovery_targets_absolute()</a></code>
+          <code><a href="add_targets_relative.html">add_targets_relative()</a></code>
 
         </dt>
-        <dd>Add recovery targets (absolute)</dd>
+        <dd>Add relative targets</dd>
 
         <dt>
 
-          <code><a href="add_recovery_targets_relative.html">add_recovery_targets_relative()</a></code>
+          <code><a href="add_area_min_constraint.html">add_area_min_constraint()</a></code>
 
         </dt>
-        <dd>Add recovery targets (relative)</dd>
+        <dd>Add minimum selected area constraint</dd>
 
         <dt>
 
-          <code><a href="add_mixed_targets_total_absolute.html">add_mixed_targets_total_absolute()</a></code>
+          <code><a href="add_area_max_constraint.html">add_area_max_constraint()</a></code>
 
         </dt>
-        <dd>Add mixed total targets (absolute)</dd>
-
-        <dt>
-
-          <code><a href="add_mixed_targets_total_relative.html">add_mixed_targets_total_relative()</a></code>
-
-        </dt>
-        <dd>Add mixed total targets (relative to baseline)</dd>
+        <dd>Add maximum selected area constraint</dd>
       </dl></div><div class="section level2">
       <h2 id="spatial-relations">Spatial relations<a class="anchor" aria-label="anchor" href="#spatial-relations"></a></h2>
 
-      <div class="section-desc"><p>Register adjacency/boundary relations (from tables, polygons, or coordinates) used by spatial objectives.</p></div>
+      <div class="section-desc"><p>Register boundary and graph-based spatial relations from tables, polygons, or coordinates.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -158,46 +167,46 @@
           <code><a href="add_spatial_relations.html">add_spatial_relations()</a></code>
 
         </dt>
-        <dd>Add spatial relations (core)</dd>
+        <dd>Add spatial relations</dd>
 
         <dt>
 
           <code><a href="add_spatial_boundary.html">add_spatial_boundary()</a></code>
 
         </dt>
-        <dd>Add spatial boundary-length relations from sf polygons or a boundary table</dd>
+        <dd>Add spatial boundary-length relations</dd>
 
         <dt>
 
           <code><a href="add_spatial_rook.html">add_spatial_rook()</a></code>
 
         </dt>
-        <dd>Add rook adjacency from sf polygons</dd>
+        <dd>Add rook adjacency from polygons</dd>
 
         <dt>
 
           <code><a href="add_spatial_queen.html">add_spatial_queen()</a></code>
 
         </dt>
-        <dd>Add queen adjacency from sf polygons</dd>
+        <dd>Add queen adjacency from polygons</dd>
 
         <dt>
 
           <code><a href="add_spatial_knn.html">add_spatial_knn()</a></code>
 
         </dt>
-        <dd>Add k-nearest-neighbours spatial relations from coordinates</dd>
+        <dd>Add k-nearest-neighbours spatial relations</dd>
 
         <dt>
 
           <code><a href="add_spatial_distance.html">add_spatial_distance()</a></code>
 
         </dt>
-        <dd>Add distance-threshold spatial relations from coordinates</dd>
+        <dd>Add distance-threshold spatial relations</dd>
       </dl></div><div class="section level2">
       <h2 id="atomic-objectives">Atomic objectives<a class="anchor" aria-label="anchor" href="#atomic-objectives"></a></h2>
 
-      <div class="section-desc"><p>Register objectives that can be solved alone or combined in multi-objective methods.</p></div>
+      <div class="section-desc"><p>Register objectives that can be solved individually or combined in multi-objective workflows.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -206,6 +215,13 @@
 
       <dl><dt>
 
+          <code><a href="add_objective_min_cost.html">add_objective_min_cost()</a></code>
+
+        </dt>
+        <dd>Add objective: minimize cost</dd>
+
+        <dt>
+
           <code><a href="add_objective_max_benefit.html">add_objective_max_benefit()</a></code>
 
         </dt>
@@ -213,10 +229,10 @@
 
         <dt>
 
-          <code><a href="add_objective_max_net_profit.html">add_objective_max_net_profit()</a></code>
+          <code><a href="add_objective_min_loss.html">add_objective_min_loss()</a></code>
 
         </dt>
-        <dd>Add objective: maximize net profit</dd>
+        <dd>Add objective: minimize loss</dd>
 
         <dt>
 
@@ -227,10 +243,17 @@
 
         <dt>
 
-          <code><a href="add_objective_max_representation.html">add_objective_max_representation()</a></code>
+          <code><a href="add_objective_max_net_profit.html">add_objective_max_net_profit()</a></code>
 
         </dt>
-        <dd>Add objective: maximize representation</dd>
+        <dd>Add objective: maximize net profit</dd>
+
+        <dt>
+
+          <code><a href="add_objective_min_fragmentation.html">add_objective_min_fragmentation()</a></code>
+
+        </dt>
+        <dd>Add objective: minimize fragmentation</dd>
 
         <dt>
 
@@ -241,21 +264,44 @@
 
         <dt>
 
-          <code><a href="add_objective_min_fragmentation.html">add_objective_min_fragmentation()</a></code>
+          <code><a href="add_objective_min_intervention_impact.html">add_objective_min_intervention_impact()</a></code>
 
         </dt>
-        <dd>Add objective: minimize fragmentation (PU cut)</dd>
+        <dd>Add objective: minimize intervention impact</dd>
+      </dl></div><div class="section level2">
+      <h2 id="multi-objective-methods">Multi-objective methods<a class="anchor" aria-label="anchor" href="#multi-objective-methods"></a></h2>
+
+      <div class="section-desc"><p>Configure weighted-sum, epsilon-constraint, and AUGMECON workflows.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="set_method_weighted.html">set_method_weighted()</a></code>
+
+        </dt>
+        <dd>Set the weighted-sum multi-objective method</dd>
 
         <dt>
 
-          <code><a href="add_objective_min_intervention_fragmentation.html">add_objective_min_intervention_fragmentation()</a></code>
+          <code><a href="set_method_epsilon_constraint.html">set_method_epsilon_constraint()</a></code>
 
         </dt>
-        <dd>Add objective: minimize intervention fragmentation</dd>
+        <dd>Set the epsilon-constraint multi-objective method</dd>
+
+        <dt>
+
+          <code><a href="set_method_augmecon.html">set_method_augmecon()</a></code>
+
+        </dt>
+        <dd>Set the AUGMECON multi-objective method</dd>
       </dl></div><div class="section level2">
       <h2 id="solver-configuration">Solver configuration<a class="anchor" aria-label="anchor" href="#solver-configuration"></a></h2>
 
-      <div class="section-desc"><p>Configure solver and runtime options before calling solve().</p></div>
+      <div class="section-desc"><p>Store solver and runtime options before calling solve().</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -271,226 +317,35 @@
 
         <dt>
 
-          <code><a href="add_actions.html">add_actions()</a></code>
+          <code><a href="set_solver_gurobi.html">set_solver_gurobi()</a></code>
 
         </dt>
-        <dd>Add actions to a planning problem</dd>
+        <dd>Configure Gurobi solver settings</dd>
 
         <dt>
 
-          <code><a href="add_action_max_per_pu.html">add_action_max_per_pu()</a></code>
+          <code><a href="set_solver_cplex.html">set_solver_cplex()</a></code>
 
         </dt>
-        <dd>Limit the number of actions per planning unit (maximum)</dd>
+        <dd>Configure CPLEX solver settings</dd>
 
         <dt>
 
-          <code><a href="add_area_max_constraint.html">add_area_max_constraint()</a></code>
+          <code><a href="set_solver_cbc.html">set_solver_cbc()</a></code>
 
         </dt>
-        <dd>Add maximum selected area constraint</dd>
+        <dd>Configure CPLEX solver settings</dd>
 
         <dt>
 
-          <code><a href="add_area_min_constraint.html">add_area_min_constraint()</a></code>
+          <code><a href="set_solver_symphony.html">set_solver_symphony()</a></code>
 
         </dt>
-        <dd>Add minimum selected area constraint</dd>
-
-        <dt>
-
-          <code><a href="add_benefits.html">add_benefits()</a></code>
-
-        </dt>
-        <dd>Add benefits (positive effects)</dd>
-
-        <dt>
-
-          <code><a href="add_conservation_targets_absolute.html">add_conservation_targets_absolute()</a></code>
-
-        </dt>
-        <dd>Add conservation targets (absolute)</dd>
-
-        <dt>
-
-          <code><a href="add_conservation_targets_relative.html">add_conservation_targets_relative()</a></code>
-
-        </dt>
-        <dd>Add conservation targets (relative to baseline)</dd>
-
-        <dt>
-
-          <code><a href="add_effects.html">add_effects()</a></code>
-
-        </dt>
-        <dd>Add effects (benefit/loss) to a planning problem</dd>
-
-        <dt>
-
-          <code><a href="add_losses.html">add_losses()</a></code>
-
-        </dt>
-        <dd>Add losses (negative effects magnitude)</dd>
-
-        <dt>
-
-          <code><a href="add_mixed_targets_total_absolute.html">add_mixed_targets_total_absolute()</a></code>
-
-        </dt>
-        <dd>Add mixed total targets (absolute)</dd>
-
-        <dt>
-
-          <code><a href="add_mixed_targets_total_relative.html">add_mixed_targets_total_relative()</a></code>
-
-        </dt>
-        <dd>Add mixed total targets (relative to baseline)</dd>
-
-        <dt>
-
-          <code><a href="add_objective_max_benefit.html">add_objective_max_benefit()</a></code>
-
-        </dt>
-        <dd>Add objective: maximize benefit</dd>
-
-        <dt>
-
-          <code><a href="add_objective_max_net_profit.html">add_objective_max_net_profit()</a></code>
-
-        </dt>
-        <dd>Add objective: maximize net profit</dd>
-
-        <dt>
-
-          <code><a href="add_objective_max_profit.html">add_objective_max_profit()</a></code>
-
-        </dt>
-        <dd>Add objective: maximize profit</dd>
-
-        <dt>
-
-          <code><a href="add_objective_max_representation.html">add_objective_max_representation()</a></code>
-
-        </dt>
-        <dd>Add objective: maximize representation</dd>
-
-        <dt>
-
-          <code><a href="add_objective_min_action_fragmentation.html">add_objective_min_action_fragmentation()</a></code>
-
-        </dt>
-        <dd>Add objective: minimize action fragmentation</dd>
-
-        <dt>
-
-          <code><a href="add_objective_min_fragmentation.html">add_objective_min_fragmentation()</a></code>
-
-        </dt>
-        <dd>Add objective: minimize fragmentation (PU cut)</dd>
-
-        <dt>
-
-          <code><a href="add_objective_min_intervention_fragmentation.html">add_objective_min_intervention_fragmentation()</a></code>
-
-        </dt>
-        <dd>Add objective: minimize intervention fragmentation</dd>
-
-        <dt>
-
-          <code><a href="add_profit.html">add_profit()</a></code>
-
-        </dt>
-        <dd>Add profit to a planning problem</dd>
-
-        <dt>
-
-          <code><a href="add_recovery_targets_absolute.html">add_recovery_targets_absolute()</a></code>
-
-        </dt>
-        <dd>Add recovery targets (absolute)</dd>
-
-        <dt>
-
-          <code><a href="add_recovery_targets_relative.html">add_recovery_targets_relative()</a></code>
-
-        </dt>
-        <dd>Add recovery targets (relative)</dd>
-
-        <dt>
-
-          <code><a href="add_spatial_boundary.html">add_spatial_boundary()</a></code>
-
-        </dt>
-        <dd>Add spatial boundary-length relations from sf polygons or a boundary table</dd>
-
-        <dt>
-
-          <code><a href="add_spatial_distance.html">add_spatial_distance()</a></code>
-
-        </dt>
-        <dd>Add distance-threshold spatial relations from coordinates</dd>
-
-        <dt>
-
-          <code><a href="add_spatial_knn.html">add_spatial_knn()</a></code>
-
-        </dt>
-        <dd>Add k-nearest-neighbours spatial relations from coordinates</dd>
-
-        <dt>
-
-          <code><a href="add_spatial_queen.html">add_spatial_queen()</a></code>
-
-        </dt>
-        <dd>Add queen adjacency from sf polygons</dd>
-
-        <dt>
-
-          <code><a href="add_spatial_relations.html">add_spatial_relations()</a></code>
-
-        </dt>
-        <dd>Add spatial relations (core)</dd>
-
-        <dt>
-
-          <code><a href="add_spatial_rook.html">add_spatial_rook()</a></code>
-
-        </dt>
-        <dd>Add rook adjacency from sf polygons</dd>
+        <dd>Configure SYMPHONY solver settings</dd>
       </dl></div><div class="section level2">
-      <h2 id="multi-objective-methods">Multi-objective methods<a class="anchor" aria-label="anchor" href="#multi-objective-methods"></a></h2>
+      <h2 id="results-and-extraction">Results and extraction<a class="anchor" aria-label="anchor" href="#results-and-extraction"></a></h2>
 
-      <div class="section-desc"><p>Configure and solve multi-objective problems (e.g., weighted sum).</p></div>
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="set_method_weighted.html">set_method_weighted()</a></code>
-
-        </dt>
-        <dd>Set multi-objective method: weighted sum</dd>
-
-        <dt>
-
-          <code><a href="set_method_epsilon_constraint.html">set_method_epsilon_constraint()</a></code>
-
-        </dt>
-        <dd>Configure epsilon-constraint multi-objective method</dd>
-
-        <dt>
-
-          <code><a href="solve.html">solve()</a></code>
-
-        </dt>
-        <dd>Solve optimization model</dd>
-      </dl></div><div class="section level2">
-      <h2 id="results-and-solution-helpers">Results and solution helpers<a class="anchor" aria-label="anchor" href="#results-and-solution-helpers"></a></h2>
-
-      <div class="section-desc"><p>Extract tables and diagnostics from a Solution object.</p></div>
+      <div class="section-desc"><p>Extract user-facing summaries and raw solution vectors.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -502,35 +357,58 @@
           <code><a href="get_pu.html">get_pu()</a></code>
 
         </dt>
-        <dd>Get planning unit results from a Solution</dd>
+        <dd>Get planning-unit results from a solution</dd>
 
         <dt>
 
           <code><a href="get_actions.html">get_actions()</a></code>
 
         </dt>
-        <dd>Get action results from a Solution</dd>
+        <dd>Get action results from a solution</dd>
 
         <dt>
 
           <code><a href="get_features.html">get_features()</a></code>
 
         </dt>
-        <dd>Get feature achievement summary from a Solution</dd>
+        <dd>Get feature summary from a solution</dd>
 
         <dt>
 
           <code><a href="get_targets.html">get_targets()</a></code>
 
         </dt>
-        <dd>Get target achievement table from a Solution</dd>
+        <dd>Get target achievement summary from a solution</dd>
 
         <dt>
 
           <code><a href="get_solution_vector.html">get_solution_vector()</a></code>
 
         </dt>
-        <dd>Get raw solution vector from a Solution</dd>
+        <dd>Get raw solution vector from a solution</dd>
+      </dl></div><div class="section level2">
+      <h2 id="plotting">Plotting<a class="anchor" aria-label="anchor" href="#plotting"></a></h2>
+
+      <div class="section-desc"><p>Visualize spatial outputs and multi-objective trade-offs.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="plot_spatial.html">plot_spatial()</a></code>
+
+        </dt>
+        <dd>Plot spatial outputs from a solution or solution set</dd>
+
+        <dt>
+
+          <code><a href="plot_tradeoff.html">plot_tradeoff()</a></code>
+
+        </dt>
+        <dd>Plot trade-offs from a multi-objective solution set</dd>
       </dl></div><div class="section level2">
       <h2 id="classes">Classes<a class="anchor" aria-label="anchor" href="#classes"></a></h2>
 
@@ -543,17 +421,10 @@
 
       <dl><dt>
 
-          <code><a href="data-class.html">data-class</a></code> <code><a href="data-class.html">Data</a></code>
+          <code><a href="problem-class.html">problem-class</a></code> <code><a href="problem-class.html">Problem</a></code>
 
         </dt>
-        <dd>Data class</dd>
-
-        <dt>
-
-          <code><a href="mo-problem-class.html">mo-problem-class</a></code> <code><a href="mo-problem-class.html">MOProblem</a></code>
-
-        </dt>
-        <dd>MOProblem class</dd>
+        <dd>Problem class</dd>
 
         <dt>
 
@@ -561,6 +432,13 @@
 
         </dt>
         <dd>Solution class</dd>
+
+        <dt>
+
+          <code><a href="solutionset-class.html">solutionset-class</a></code> <code><a href="solutionset-class.html">SolutionSet</a></code>
+
+        </dt>
+        <dd>SolutionSet class</dd>
       </dl></div><div class="section level2">
       <h2 id="data">Data<a class="anchor" aria-label="anchor" href="#data"></a></h2>
 
@@ -577,36 +455,13 @@
 
         </dt>
         <dd>Simulated multi-action planning data</dd>
-      </dl></div><div class="section level2">
-      <h2 id="miscellaneous">Miscellaneous<a class="anchor" aria-label="anchor" href="#miscellaneous"></a></h2>
-
-      <div class="section-desc"><p>Utilities and print methods.</p></div>
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="print.html">print(<i>&lt;Data&gt;</i>)</a></code> <code><a href="print.html">print(<i>&lt;Solution&gt;</i>)</a></code> <code><a href="print.html">print(<i>&lt;MOProblem&gt;</i>)</a></code>
-
-        </dt>
-        <dd>Print</dd>
-
-        <dt>
-
-          <code><a href="show.html">show(<i>&lt;Data&gt;</i>)</a></code> <code><a href="show.html">show(<i>&lt;MOProblem&gt;</i>)</a></code>
-
-        </dt>
-        <dd>Show</dd>
       </dl></div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by <a href="https://scholar.google.com/citations?user=Z3F-9DgAAAAJ&amp;hl=en" class="external-link">Jose Salgado-Rojas</a>, <a href="https://www.ctfc.cat/personal24_det.php?id=148" class="external-link">Matias Moreno-Faguett</a>, <a href="https://scholar.google.com/citations?user=OLJaCsYAAAAJ&amp;hl=en" class="external-link">Nuria Aquilue</a>.</p>
+  <p>Developed by Jose Salgado-Rojas, Matias Moreno-Faguett, Nuria Aquilue.</p>
 </div>
 
 <div class="pkgdown-footer-right">

@@ -16,19 +16,93 @@ add_area_max_constraint(
 \arguments{
 \item{x}{A \code{Problem} object.}
 
-\item{area_max}{Numeric scalar \eqn{\ge 0}. Maximum area to select.}
+\item{area_max}{Numeric scalar greater than or equal to zero. Maximum total
+selected area allowed in the solution.}
 
-\item{area_col}{Optional character. Name of area column in \code{x$data$pu}.}
+\item{area_col}{Optional character string giving the name of the area column
+in \code{x$data$pu}. If \code{NULL}, the area source is resolved later by
+the model builder.}
 
-\item{area_unit}{Character. One of \code{"m2"}, \code{"ha"}, or \code{"km2"}.}
+\item{area_unit}{Character string indicating the unit of \code{area_max}.
+Must be one of \code{"m2"}, \code{"ha"}, or \code{"km2"}.}
 
-\item{name}{Character. Constraint name.}
+\item{name}{Character string used as a label for the stored constraint.}
 
-\item{overwrite}{Logical. Replace existing stored area_max constraint if present.}
+\item{overwrite}{Logical. If \code{TRUE}, replace an existing stored maximum
+area constraint.}
 }
 \value{
-Updated \code{Problem} object.
+An updated \code{Problem} object with a stored maximum-area
+constraint in \code{x$data$constraints$area_max}.
 }
 \description{
-Store a maximum selected area constraint to be applied later by the model builder.
+Add an upper bound on the total selected area in a planning problem.
+
+This function stores a maximum-area constraint in the \code{Problem} object
+so that it can be incorporated later by the model builder when the
+optimization model is assembled.
+}
+\details{
+Let \eqn{\mathcal{P}} denote the set of planning units and let
+\eqn{a_i \ge 0} be the area associated with planning unit \eqn{i \in \mathcal{P}}.
+Let \eqn{w_i \in \{0,1\}} denote the binary variable indicating whether
+planning unit \eqn{i} is selected by at least one decision in the model.
+
+This function stores the following constraint:
+
+\deqn{
+\sum_{i \in \mathcal{P}} a_i w_i \le A_{\max},
+}
+
+where \eqn{A_{\max}} is the value supplied through \code{area_max}.
+
+Areas are obtained from \code{x$data$pu}. If \code{area_col} is provided, that
+column is used. Otherwise, the model builder will later determine the default
+area source according to the internal rules of the package. The value of
+\code{area_unit} indicates the unit in which \code{area_max} is expressed and
+therefore how the stored threshold should be interpreted.
+
+This function only stores the constraint specification in
+\code{x$data$constraints$area_max}; it does not validate the feasibility of
+the threshold against the available planning units at this stage.
+
+If a maximum-area constraint has already been stored, it is replaced only when
+\code{overwrite = TRUE}.
+}
+\examples{
+pu <- data.frame(
+  id = 1:4,
+  cost = c(2, 3, 1, 4),
+  area_ha = c(10, 15, 8, 20)
+)
+
+features <- data.frame(
+  id = c("sp1", "sp2")
+)
+
+dist_features <- data.frame(
+  pu = c(1, 1, 2, 3, 4, 4),
+  feature = c("sp1", "sp2", "sp1", "sp2", "sp1", "sp2"),
+  amount = c(1, 2, 1, 3, 2, 1)
+)
+
+p <- inputData(
+  pu = pu,
+  features = features,
+  dist_features = dist_features
+)
+
+p <- add_area_max_constraint(
+  x = p,
+  area_max = 30,
+  area_col = "area_ha",
+  area_unit = "ha"
+)
+
+p$data$constraints$area_max
+
+}
+\seealso{
+\code{\link{add_area_min_constraint}},
+\code{\link{inputData}},
 }

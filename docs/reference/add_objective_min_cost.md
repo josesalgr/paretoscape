@@ -1,35 +1,10 @@
-# Register an atomic objective (internal)
+# Add objective: minimize cost
 
-Internal helper used by objective setter functions to optionally
-register an objective as an *atomic objective* for multi-objective
-workflows.
+Define an objective that minimizes the total cost of the solution.
 
-If `alias` is non-`NULL`, the objective definition is stored in
-`x$data$objectives[[alias]]`. This allows external multi-objective
-orchestration (e.g., weighted sum, \\\epsilon\\-constraint, AUGMECON,
-interactive methods) to refer to objectives by a stable user-facing
-identifier.
-
-The function is fully backward compatible with single-objective
-workflows: when `alias` is `NULL`, no entry is added to
-`x$data$objectives` and only the active single-objective specification
-stored in `x$data$model_args` (set by the calling objective setter) is
-used.
-
-Specify an objective that minimizes total costs associated with the
-solution. Costs may include planning-unit costs and/or action costs
-depending on the flags provided.
-
-This function is **data-only**: it stores the objective specification
-inside the `Data` object so it can be materialized later when the
-optimization model is built (typically when calling
-[`solve()`](https://josesalgr.github.io/mosap/reference/solve.md)).
-
-If `alias` is provided, the objective is also registered in
-`x$data$objectives` as an atomic objective for multi-objective
-workflows, while preserving the legacy single-objective behavior (the
-most recently set objective remains the active one in
-`x$data$model_args`).
+Depending on the function arguments, the objective may include
+planning-unit costs, action costs, or both. Action costs can optionally
+be restricted to a subset of actions.
 
 ## Usage
 
@@ -38,6 +13,7 @@ add_objective_min_cost(
   x,
   include_pu_cost = TRUE,
   include_action_cost = TRUE,
+  actions = NULL,
   alias = NULL
 )
 ```
@@ -46,10 +22,7 @@ add_objective_min_cost(
 
 - x:
 
-  A `Data` object created with
-  [`inputData`](https://josesalgr.github.io/mosap/reference/inputData.md)
-  or
-  [`inputDataSpatial`](https://josesalgr.github.io/mosap/reference/inputDataSpatial.md).
+  A `Problem` object.
 
 - include_pu_cost:
 
@@ -59,62 +32,85 @@ add_objective_min_cost(
 
   Logical. If `TRUE`, include action costs in the objective.
 
+- actions:
+
+  Optional subset of actions to include in the action-cost component.
+  Values may match `x$data$actions$id` and, if present,
+  `x$data$actions$action_set`. If `NULL`, all feasible actions are
+  included in the action-cost term.
+
 - alias:
 
-  Character scalar or `NULL`. Optional identifier to register this
-  objective as an atomic objective for multi-objective workflows.
-
-- objective_id:
-
-  Character. Stable objective identifier (e.g., `"min_cost"`).
-
-- model_type:
-
-  Character. Model type label used by the model builder (e.g.,
-  `"minimizeCosts"`).
-
-- objective_args:
-
-  List. Objective-specific arguments to be stored with the objective.
-
-- sense:
-
-  Character. Either `"min"` or `"max"`.
+  Optional identifier used to register this objective for
+  multi-objective workflows.
 
 ## Value
 
-The updated `Data` object.
-
-The updated `Data` object.
+An updated `Problem` object.
 
 ## Details
 
-The function updates `x$data$model_args` with:
+Let \\\mathcal{P}\\ be the set of planning units and let
+\\\mathcal{A}\_i\\ be the set of feasible actions in planning unit \\i
+\in \mathcal{P}\\.
 
-- `model_type`:
+Let:
 
-  `"minimizeCosts"`
+- \\w_i \in \\0,1\\\\ denote whether planning unit \\i\\ is selected,
 
-- `objective_id`:
+- \\x\_{ia} \in \\0,1\\\\ denote whether action \\a\\ is selected in
+  planning unit \\i\\,
 
-  `"min_cost"`
+- \\c_i^{PU} \ge 0\\ denote the planning-unit cost of unit \\i\\,
 
-- `objective_args`:
+- \\c\_{ia}^{A} \ge 0\\ denote the cost of selecting action \\a\\ in
+  planning unit \\i\\.
 
-  a list with `include_pu_cost` and `include_action_cost`
+The most general form of this objective is:
 
-The model builder must interpret these fields to set the objective
-coefficients.
+\$\$ \min \left( \sum\_{i \in \mathcal{P}} c_i^{PU} w_i + \sum\_{i \in
+\mathcal{P}} \sum\_{a \in \mathcal{A}\_i^\star} c\_{ia}^{A} x\_{ia}
+\right), \$\$
+
+where \\\mathcal{A}\_i^\star\\ denotes the subset of feasible actions
+that contribute to the action-cost term.
+
+If `include_pu_cost = FALSE`, the planning-unit cost term is omitted.
+
+If `include_action_cost = FALSE`, the action-cost term is omitted.
+
+If `actions = NULL`, all feasible actions contribute to the action-cost
+term. If `actions` is supplied, only the selected subset contributes to
+that term. Planning-unit costs are never subset by `actions`; they are
+always global whenever `include_pu_cost = TRUE`.
+
+This objective is useful when the decision problem is framed primarily
+as a cost-minimization problem, optionally combining fixed planning-unit
+costs with action-specific implementation costs.
+
+## See also
+
+[`add_objective_max_profit`](https://josesalgr.github.io/mosap/reference/add_objective_max_profit.md),
+[`add_objective_max_net_profit`](https://josesalgr.github.io/mosap/reference/add_objective_max_net_profit.md)
 
 ## Examples
 
 ``` r
 if (FALSE) { # \dontrun{
-x <- inputDataSpatial(pu = pu_sf, cost = "cost", features = feat_sf, pu_id_col = "id") |>
-  add_actions(actions_df) |>
-  add_objective_min_cost()
+# Minimize both planning-unit and action costs
+p <- add_objective_min_cost(p)
 
-# Register as atomic objective for multi-objective workflows
-x <- x |> add_objective_min_cost(alias = "cost")
+# Minimize only action costs
+p <- add_objective_min_cost(
+  p,
+  include_pu_cost = FALSE,
+  include_action_cost = TRUE
+)
+
+# Minimize costs considering only a subset of actions
+p <- add_objective_min_cost(
+  p,
+  actions = c("restoration", "conservation")
+)
 } # }
 ```

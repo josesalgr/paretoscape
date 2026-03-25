@@ -15,21 +15,23 @@ add_targets_relative(
 \arguments{
 \item{x}{A \code{Problem} object.}
 
-\item{targets}{Target specification as proportions in \eqn{[0,1]}. See Details.}
+\item{targets}{Target specification as proportions in \eqn{[0,1]}. See
+Details.}
 
 \item{subset}{Optional character vector indicating which actions count toward
 target achievement. Entries may match action ids, \code{action_set} labels,
 or both. If \code{NULL}, all actions count.}
 
-\item{overwrite}{Logical. If \code{TRUE}, replace existing targets for the same
-feature/subset combination. If \code{FALSE}, new rows are appended and any
-overlap is handled by \code{.pa_store_targets()}.}
+\item{overwrite}{Logical. If \code{TRUE}, replace existing stored targets for
+the same feature and subset combination. If \code{FALSE}, new rows are
+appended and overlap handling is delegated to \code{.pa_store_targets()}.}
 
-\item{label}{Optional character label stored with the targets for reporting
+\item{label}{Optional character string stored with the targets for reporting
 and bookkeeping.}
 }
 \value{
-Updated \code{Problem} object.
+An updated \code{Problem} object with relative targets stored in
+\code{x$data$targets}.
 }
 \description{
 Add feature-level relative targets to a planning problem.
@@ -38,11 +40,49 @@ These targets are stored in \code{x$data$targets} and later translated into
 linear constraints when the optimization model is built.
 
 Relative targets are supplied as proportions in \eqn{[0,1]} and are converted
-internally to absolute thresholds using the current total amount of each feature
-in the landscape (via \code{.pa_feature_totals()}).
+internally into absolute thresholds using the current total amount of each
+feature in the landscape.
 }
 \details{
-The \code{targets} argument is parsed by \code{.pa_parse_targets()} and can be
+Let \eqn{\mathcal{F}} denote the set of features. For each feature
+\eqn{f \in \mathcal{F}}, let \eqn{B_f} denote the current baseline total
+amount of that feature in the landscape, as computed by
+\code{.pa_feature_totals()}.
+
+If the user supplies a relative target \eqn{r_f \in [0,1]}, then this
+function converts it to an absolute threshold:
+\deqn{
+T_f = r_f \times B_f.
+}
+
+The absolute threshold \eqn{T_f} is stored in \code{target_value}, while:
+\itemize{
+\item the original user-supplied proportion \eqn{r_f} is stored in
+\code{target_raw},
+\item the baseline total \eqn{B_f} is stored in \code{basis_total}.
+}
+
+When the optimization model is built, the resulting target is interpreted as:
+\deqn{
+\sum_{(i,a) \in \mathcal{S}_f} c_{iaf} x_{ia} \ge T_f,
+}
+where:
+\itemize{
+\item \eqn{x_{ia}} indicates whether action \eqn{a} is selected in planning
+unit \eqn{i},
+\item \eqn{c_{iaf}} is the contribution of that action to feature
+\eqn{f},
+\item \eqn{\mathcal{S}_f} is the set of planning unit--action pairs allowed
+to count toward achievement of the target.
+}
+
+The \code{subset} argument restricts which actions may contribute toward
+target achievement, but it does not affect the baseline amount \eqn{B_f} used
+to compute the threshold. In other words, relative targets are always scaled
+against the current full landscape baseline computed by
+\code{.pa_feature_totals()}.
+
+The \code{targets} argument is parsed by \code{.pa_parse_targets()} and may be
 supplied in several equivalent forms, including:
 \itemize{
 \item a single numeric value recycled to all features,
@@ -53,27 +93,37 @@ supplied in several equivalent forms, including:
 
 Relative targets must lie in \eqn{[0,1]}.
 
-The \code{subset} argument optionally restricts which actions count toward target
-achievement. It may contain action ids, values of \code{action_set}, or a mixture
-of both. If \code{NULL}, all actions count.
-
-Relative targets are always transformed using \code{.pa_feature_totals()}.
-The resulting basis is stored in \code{basis_total}, and the absolute threshold
-is stored in \code{target_value}.
+Internally, targets added by this function are stored with:
+\itemize{
+\item \code{type = "actions"},
+\item \code{sense = "ge"},
+\item \code{target_unit = "relative_baseline"},
+\item \code{target_raw = r_f},
+\item \code{basis_total = B_f},
+\item \code{target_value}, equal to \eqn{r_f B_f}.
+}
 }
 \examples{
 \dontrun{
-# Require 30\% of current feature totals for all features
+# Require 30\% of the current baseline total for all features
 p <- add_targets_relative(p, 0.3)
 
-# Require 20\% of current feature totals, counting only recovery actions
-p <- add_targets_relative(p, 0.2, subset = "recovery")
+# Require 20\% of baseline totals, counting only recovery actions
+p <- add_targets_relative(
+  p,
+  0.2,
+  subset = "recovery"
+)
 
-# Require 50\% of current feature totals, counting a mix of groups/actions
-p <- add_targets_relative(p, 0.5, subset = c("recovery", "conservation_action"))
+# Require 50\% of baseline totals, counting a mix of groups and actions
+p <- add_targets_relative(
+  p,
+  0.5,
+  subset = c("recovery", "conservation_action")
+)
 }
 
 }
 \seealso{
-\code{\link[=add_targets_absolute]{add_targets_absolute()}}
+\code{\link{add_targets_absolute}}
 }

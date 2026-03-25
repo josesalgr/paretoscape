@@ -1,76 +1,104 @@
 # Add objective: maximize benefit
 
-Specify an objective that maximizes total benefit delivered by selected
-actions. Benefit values are taken from the benefit table produced by
-[`add_benefits`](https://josesalgr.github.io/mosap/reference/add_benefits.md)
-(stored in `x$data$dist_benefit` and/or its model-ready variant).
+Define an objective that maximizes the total positive effects generated
+by selected actions on selected features.
 
-This function is **data-only**: it stores the objective specification
-inside the `Data` object so it can be materialized later when the
-optimization model is built (typically when calling
-[`solve()`](https://josesalgr.github.io/mosap/reference/solve.md)).
-
-If `alias` is provided, the objective is also registered in
-`x$data$objectives` as an atomic objective for multi-objective
-workflows.
+This objective is based on the canonical effects table stored in
+`x$data$dist_effects` and uses only the non-negative `benefit`
+component.
 
 ## Usage
 
 ``` r
-add_objective_max_benefit(x, benefit_col = "benefit", alias = NULL)
+add_objective_max_benefit(x, actions = NULL, features = NULL, alias = NULL)
 ```
 
 ## Arguments
 
 - x:
 
-  A `Data` object created with
-  [`inputData`](https://josesalgr.github.io/mosap/reference/inputData.md)
-  or
-  [`inputDataSpatial`](https://josesalgr.github.io/mosap/reference/inputDataSpatial.md).
+  A `Problem` object.
 
-- benefit_col:
+- actions:
 
-  Character. Column name in the model-ready benefit table containing
-  numeric benefits. Default `"benefit"`.
+  Optional subset of actions to include in the objective. Values may
+  match `x$data$actions$id` and, if present,
+  `x$data$actions$action_set`. If `NULL`, all actions are included.
+
+- features:
+
+  Optional subset of features to include in the objective. Values may
+  match `x$data$features$id` and, if present, `x$data$features$name`. If
+  `NULL`, all features are included.
 
 - alias:
 
-  Character scalar or `NULL`. Optional identifier to register this
-  objective as an atomic objective for multi-objective workflows.
+  Optional identifier used to register this objective for
+  multi-objective workflows.
 
 ## Value
 
-The updated `Data` object.
+An updated `Problem` object.
 
 ## Details
 
-The function updates `x$data$model_args` with:
+Let \\\mathcal{E}\\ denote the set of rows in `x$data$dist_effects`. For
+each row associated with planning unit \\i\\, action \\a\\, and feature
+\\f\\, let \\b\_{iaf} \ge 0\\ denote the stored value in the `benefit`
+column.
 
-- `model_type`:
+Since `dist_effects` is already expressed in canonical form,
+\\b\_{iaf}\\ represents the positive part of the net effect associated
+with the corresponding selected action decision.
 
-  `"maximizeBenefits"`
+If no subsets are supplied, the objective can be written as:
 
-- `objective_id`:
+\$\$ \max \sum\_{(i,a,f) \in \mathcal{E}} b\_{iaf} \\ x\_{ia}, \$\$
 
-  `"max_benefit"`
+where \\x\_{ia} \in \\0,1\\\\ indicates whether action \\a\\ is selected
+in planning unit \\i\\.
 
-- `objective_args`:
+If `actions` is provided, only rows whose action belongs to the selected
+subset contribute to the objective.
 
-  a list with `benefit_col`
+If `features` is provided, only rows whose feature belongs to the
+selected subset contribute to the objective.
 
-The model builder will require benefit data to exist and will error if
-benefits are missing. If another objective setter is called afterwards,
-it overwrites the active single-objective specification in
-`x$data$model_args`.
+More generally, letting \\\mathcal{E}^{\star}\\ be the subset induced by
+the selected actions and features, the objective is:
+
+\$\$ \max \sum\_{(i,a,f) \in \mathcal{E}^{\star}} b\_{iaf} \\ x\_{ia}.
+\$\$
+
+This objective maximizes gains only. It does not subtract losses. If the
+user wishes to account for harmful effects as well, losses should be
+handled separately through additional objectives or constraints.
+
+## See also
+
+[`add_objective_min_loss`](https://josesalgr.github.io/mosap/reference/add_objective_min_loss.md),
+[`add_effects`](https://josesalgr.github.io/mosap/reference/add_effects.md)
 
 ## Examples
 
 ``` r
 if (FALSE) { # \dontrun{
-x <- inputDataSpatial(pu = pu_sf, cost = "cost", features = feat_sf, pu_id_col = "id") |>
-  add_actions(actions_df) |>
-  add_benefits(benefits_df) |>
-  add_objective_max_benefit(alias = "benefit")
+p <- add_objective_max_benefit(p)
+
+p <- add_objective_max_benefit(
+  p,
+  actions = c("restoration", "conservation")
+)
+
+p <- add_objective_max_benefit(
+  p,
+  features = c("sp1", "sp3")
+)
+
+p <- add_objective_max_benefit(
+  p,
+  actions = "restoration",
+  features = c("sp1", "sp2")
+)
 } # }
 ```

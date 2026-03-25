@@ -1,71 +1,88 @@
-Contributing to prioriactions
+Contributing to mosap
 ================
 
-First of all, thanks for considering contributing to `prioriactions`. We
-greatly appreciate your interest in improving and expanding the package.
-`prioriactions` is the result of collaborative work between programmers
-and experts in different disciplines. Since successful modelling
-projects involve long-term investments and the participation of multiple
-teams, we are open to further expanding the set of people contributing
-to the project. All people are very much welcome to **contribute to
-code**, **documentation**, **testing** and **suggestions**.
+`mosap` is being developed as a modular framework for spatial action
+planning and multi-objective optimization in R. Its development benefits
+from collaboration across programming, optimization, ecology,
+conservation planning, and spatial analysis. Because robust
+decision-support tools require sustained development and
+interdisciplinary input, contributions from different backgrounds are
+very welcome. We welcome **contributions to code**, **documentation**,
+**testing**, **examples**, and **methodological suggestions**.
 
-## Fixing typos and documentation
+## Improving documentation
 
-The contents of this website have been produced through the utilization
-of the [pkgdown R package](https://pkgdown.r-lib.org/). This implies
-that there’s no need for manual HTML coding; the website’s content is
-automatically aggregated from various sources including code
-documentation, vignettes, and Markdown files. If you’re familiar with
-using [pkgdown](https://pkgdown.r-lib.org/), you’re welcome to suggest
-modifications to enhance the documentation by submitting a file change.
-If you’re not acquainted with [pkgdown](https://pkgdown.r-lib.org/),
-feel free to raise an
-[issue](https://github.com/prioriactions/prioriactions/issues).
+The package documentation and website are generated automatically from
+package documentation, articles, examples, and markdown sources. This
+means there is no need to edit HTML manually. If you are familiar with
+package documentation workflows in R, you are welcome to propose
+improvements by editing .R, .Rmd, or .md source files and opening a pull
+request. Documentation improvements may include:
 
-## Report a bug
+- fixing typos or unclear wording,
+- improving function documentation,
+- adding examples,
+- clarifying methodological details,
+- improving vignettes or contribution guides.
 
-If you want to report a bug or suggest an enhancement, it’s a good idea
-to file an issue to the `prioriactions` repository at GitHub. If you’ve
-found a bug, please file an
-[issue](https://github.com/prioriactions/prioriactions/issues) that
-illustrates the bug with a minimal
-[reprex](https://www.tidyverse.org/help/#reprex).
+If you are not sure how to implement a documentation change yourself,
+feel free to open an [issue](https://github.com/josesalgr/mosap/issues).
 
-## Ask a question
+## Reporting bugs
 
-Using `prioriactions` and got stuck? Browse the documentation to see if
-you can find a solution. Still stuck? Post your question as an
-[issue](https://github.com/prioriactions/prioriactions/issues) on
-GitHub. While we cannot offer user support, we’ll try our best to
-address it, as questions often lead to better documentation or the
-discovery of bugs.
+If you find a bug, please open an
+[issue](https://github.com/josesalgr/mosap/issues) in the GitHub
+repository.
 
-If you want to ask a question in private, you can contact to the package
-maintainer [José Salgado-Rojas](mailto:jose.salgroj@gmail.com).
+A good bug report should include:
 
-## Propose an idea
+- a clear description of the problem,
+- the function or workflow involved,
+- a minimal reproducible example whenever possible,
+- the expected behaviour,
+- the observed behaviour,
+- and session information if relevant.
 
-Have an idea for a new feature in `prioriactions`? Take a look at the
-documentation and issue list to see if it isn’t already included or
-suggested. If not, suggest your idea as an
-[issue](https://github.com/prioriactions/prioriactions/issues) on
-GitHub. While we can’t promise to implement every idea, it certainly
-helps to:
+Minimal reproducible examples are especially helpful because they make
+it much easier to diagnose and fix the problem.
 
-- Explain in detail how your proposed feature would work.
-- Keep the scope as narrow as possible to ensure feasibility.
-- See below if you want to contribute code for your idea as well.
+## Asking questions
 
-## Code contributions
+If you are using `mosap` and get stuck, first check the function
+documentation, examples, and available articles or package materials. If
+your question is still unresolved, you can open an
+[issue](https://github.com/josesalgr/mosap/issues) on GitHub. While user
+support cannot always be guaranteed, questions often help improve the
+documentation, reveal edge cases, or identify bugs.
+
+## Proposing ideas and enhancements
+
+If you have an idea for a new feature, method, or improvement in
+`mosap`, please first check whether it has already been discussed in the
+issue tracker.
+
+If not, feel free to open an
+[issue](https://github.com/josesalgr/mosap/issues) describing your
+proposal. It is especially helpful if you explain:
+
+- the motivation for the feature,
+- the intended use case,
+- how it would fit the current modular workflow,
+- and whether it affects the public API, optimization model, or output
+  classes.
+
+Well-scoped proposals are usually easier to evaluate and discuss than
+very broad ones.
+
+## Contributing code
 
 Before making contributions to the package R or C++ code, make sure
-someone from the `prioriactions` team agrees that the change you suggest
-is needed.
+someone from the `mosap` team agrees that the change you suggest is
+needed.
 
 - Fork the package and clone onto your computer. If you haven’t done
   this before, we recommend using
-  `usethis::create_from_github("prioriactions/prioriactions", fork = TRUE)`.
+  `usethis::create_from_github("josesalgr/mosap", fork = TRUE)`.
 
 - Install all development dependences with
   `devtools::install_dev_deps()`, and then make sure the package passes
@@ -80,6 +97,37 @@ is needed.
   title of your PR should briefly describe the change. The body of your
   PR should contain Fixes \#issue-number.
 
-- For user-facing changes, add a bullet to the top of NEWS.md (i.e. just
-  below the first header). Follow the style described in
+- For user-facing changes, add a bullet to the top of
+  [NEWS.md](https://github.com/josesalgr/mosap/blob/main/NEWS.md)
+  (i.e. just below the first header). Follow the style described in
   <https://style.tidyverse.org/news.html>.
+
+## Pull requests
+
+When opening a pull request, please make sure that:
+
+- the proposed change is focused and clearly described,
+- the package still passes `devtools::check()`,
+- new functionality includes tests when appropriate,
+- user-facing changes include documentation updates,
+- and the pull request body references the related issue when
+  applicable.
+
+If the change affects package behaviour from a user perspective, please
+also add a short bullet point to
+[NEWS.md](https://github.com/josesalgr/mosap/blob/main/NEWS.md) under
+the most recent development section.
+
+## Style and scope
+
+Please try to keep contributions consistent with the current design of
+`mosap`, especially its modular structure:
+
+- `inputData()` builds the problem object,
+- `add_*()` functions enrich the problem,
+- `set_*()` functions configure methods or solver settings,
+- `solve()` executes the optimization workflow,
+- `get_*()` and plotting functions expose results.
+
+Changes that preserve and strengthen this modular structure are usually
+preferred over monolithic shortcuts or tightly coupled additions.

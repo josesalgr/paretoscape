@@ -2,43 +2,83 @@
 % Please edit documentation in R/get_solution.R
 \name{get_targets}
 \alias{get_targets}
-\title{Get target achievement table from a Solution}
+\title{Get target achievement summary from a solution}
 \usage{
 get_targets(x, run = NULL)
 }
 \arguments{
-\item{x}{A \linkS4class{solution} object returned by \code{\link[=solve]{solve()}}.}
+\item{x}{A \code{Solution} or \code{SolutionSet} object returned by
+\code{\link{solve}}.}
 
-\item{run}{Integer. For multi-run objects, the run index to extract. Default \code{NULL}
-(all runs if present).}
+\item{run}{Optional positive integer giving the run index to extract from a
+\code{SolutionSet}. If \code{NULL}, all runs are returned when available.}
 }
 \value{
-A \code{data.frame} with a simplified target summary, or \code{NULL} if the solution
-does not contain a targets summary table.
+A simplified \code{data.frame} target summary, or \code{NULL} if the
+solution does not contain targets. Typical columns include
+\code{feature}, \code{feature_name}, \code{target_level},
+\code{total_available}, \code{target}, \code{achieved}, \code{gap}, and
+\code{met}.
 }
 \description{
-Extract the target achievement summary table from a \linkS4class{solution} object returned by \code{\link[=solve]{solve()}}.
+Extract a user-facing target-achievement table from a \code{Solution} or
+\code{SolutionSet} object returned by \code{\link{solve}}.
 
-This function returns a simplified user-facing table with the most relevant target
-information: feature id, feature name, target level, total available amount, target value,
-achieved value, gap, and whether the target was met.
+The returned table summarizes, for each stored target, the target level, the
+achieved value in the solution, the gap between achieved and required values,
+and whether the target was met.
 }
 \details{
-Targets are optional. If the solution does not include \code{x$summary$targets},
-this function returns \code{NULL} without error.
+Targets are optional in \code{mosap}. If the solution object does not contain
+a targets summary table at \code{x$summary$targets}, this function returns
+\code{NULL} without error.
 
-The returned table typically includes:
+This function reads the stored targets summary and returns a simplified
+user-facing table. If the summary contains \code{achieved} and
+\code{target_value}, target satisfaction is evaluated as follows.
+
+For lower-bound targets:
+\deqn{
+\mathrm{met} = (\mathrm{achieved} \ge \mathrm{target}),
+}
+
+and for upper-bound targets:
+\deqn{
+\mathrm{met} = (\mathrm{achieved} \le \mathrm{target}).
+}
+
+The interpretation of the target direction is taken from the \code{sense}
+column when available:
 \itemize{
-\item \code{feature}: feature id,
-\item \code{feature_name}: feature name (if available),
-\item \code{target_level}: relative or absolute target level as stored in the target definition,
-\item \code{total_available}: total amount available in the landscape for that feature,
-\item \code{target}: target value,
-\item \code{achieved}: achieved value in the solution,
-\item \code{gap}: \code{achieved - target},
-\item \code{met}: logical indicator of whether the target was met.
+\item \code{"ge"}, \code{">="}, or \code{"min"} are treated as lower-bound
+targets,
+\item \code{"le"}, \code{"<="}, or \code{"max"} are treated as upper-bound
+targets,
+\item if \code{sense} is missing, the target is treated as a lower bound by
+default.
+}
+
+The returned table is simplified and renames some internal fields for
+readability:
+\itemize{
+\item \code{target_raw} is returned as \code{target_level},
+\item \code{basis_total} is returned as \code{total_available},
+\item \code{target_value} is returned as \code{target}.
+}
+
+If \code{x} is a \code{SolutionSet} and \code{run} is provided, only rows
+belonging to that run are returned. If the result contains a \code{run_id}
+column but only a single run is present and \code{run} was not requested
+explicitly, the \code{run_id} column is removed for convenience.
+
+The \code{gap} column is expected to be part of the stored summary. When
+present, it typically represents:
+\deqn{
+\mathrm{gap} = \mathrm{achieved} - \mathrm{target}.
 }
 }
 \seealso{
-\code{\link[=get_pu]{get_pu()}}, \code{\link[=get_actions]{get_actions()}}, \code{\link[=get_features]{get_features()}}
+\code{\link{get_pu}},
+\code{\link{get_actions}},
+\code{\link{get_features}}
 }

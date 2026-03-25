@@ -14,7 +14,7 @@ NULL
 #'
 #' @name show
 #'
-#' @aliases show,Data-method show,OptimizationProblem-method show,Solution-method show,Portfolio-method show
+#' @aliases show,Problem-method show,Solution-method show,SolutionSet-method show
 NULL
 
 #' @name show

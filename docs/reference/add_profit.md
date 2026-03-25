@@ -1,11 +1,15 @@
 # Add profit to a planning problem
 
-Define (economic) profit values for feasible `(pu, action)` pairs and
-store them in `x$data$dist_profit`. Profit is intentionally stored
-separately from ecological `benefit`/`loss` (see
-[`add_effects`](https://josesalgr.github.io/mosap/reference/add_effects.md)
-/
-[`add_benefits`](https://josesalgr.github.io/mosap/reference/add_benefits.md)).
+Define economic profit values for feasible planning unit–action pairs
+and store them in `x$data$dist_profit`.
+
+Profit is stored separately from ecological effects. In particular,
+`profit` is not the same as ecological `benefit` or `loss` as
+represented in
+[`add_effects`](https://josesalgr.github.io/mosap/reference/add_effects.md).
+This separation allows the package to distinguish economic returns from
+ecological consequences when building objectives, constraints, and
+reporting summaries.
 
 ## Usage
 
@@ -17,96 +21,204 @@ add_profit(x, profit = NULL, keep_zero = FALSE, na_to_zero = TRUE)
 
 - x:
 
-  A `Data` object created with
-  [`inputData`](https://josesalgr.github.io/mosap/reference/inputData.md)
-  or
-  [`inputDataSpatial`](https://josesalgr.github.io/mosap/reference/inputDataSpatial.md).
-  Must contain `x$data$dist_actions` and `x$data$actions` (run
+  A `Problem` object created with
+  [`inputData`](https://josesalgr.github.io/mosap/reference/inputData.md).
+  It must already contain `x$data$dist_actions` and `x$data$actions`;
+  run
   [`add_actions`](https://josesalgr.github.io/mosap/reference/add_actions.md)
-  first).
+  first.
 
 - profit:
 
   Profit specification. One of:
 
-  - `NULL`: profit is set to 0 for all feasible `(pu, action)` pairs.
+  - `NULL`: profit is set to 0 for all feasible `(pu, action)` pairs,
 
-  - A numeric scalar: recycled to all feasible `(pu, action)` pairs.
+  - a numeric scalar: recycled to all feasible pairs,
 
-  - A named numeric vector: names are action ids; assigns a global
-    profit per action.
+  - a named numeric vector: names are action ids and values define
+    action-level profit,
 
-  - A `data.frame(action, profit)`: assigns a global profit per action.
+  - a `data.frame(action, profit)` defining action-level profit,
 
-  - A `data.frame(pu, action, profit)`: assigns explicit profit values
-    by pair.
+  - a `data.frame(pu, action, profit)` defining pair-specific profit.
 
 - keep_zero:
 
-  Logical. If `TRUE`, keep rows with `profit == 0` in the stored table.
-  Default `FALSE` (zero-profit rows are dropped).
+  Logical. If `TRUE`, rows with `profit == 0` are kept in the stored
+  table. If `FALSE`, zero-profit rows are dropped before storing.
+  Default is `FALSE`.
 
 - na_to_zero:
 
-  Logical. If `TRUE`, treat missing profit values as 0 after
-  joins/matching. Default `TRUE`.
+  Logical. If `TRUE`, missing profit values produced during matching or
+  joins are treated as zero. Default is `TRUE`.
 
 ## Value
 
-The updated `Data` object with `x$data$dist_profit` created/updated.
+An updated `Problem` object with `x$data$dist_profit` created or
+replaced. The stored table contains columns `pu`, `action`, `profit`,
+`internal_pu`, and `internal_action`.
 
 ## Details
 
-This function creates a profit table aligned to the current feasibility
-table `x$data$dist_actions`. The resulting `x$data$dist_profit`
-contains:
+Let \\\mathcal{F} \subseteq \mathcal{P} \times \mathcal{A}\\ denote the
+set of feasible planning unit–action pairs currently stored in
+`x$data$dist_actions`, where \\\mathcal{P}\\ is the set of planning
+units and \\\mathcal{A}\\ is the set of actions.
 
-- `pu`: external planning unit id,
+This function assigns to each feasible pair \\(i,a) \in \mathcal{F}\\ a
+numeric profit value \\\pi\_{ia} \in \mathbb{R}\\ and stores the result
+in `x$data$dist_profit`.
+
+Thus, the stored table can be interpreted as a mapping \$\$ \pi :
+\mathcal{F} \to \mathbb{R}, \$\$ where \\\pi\_{ia}\\ represents the
+economic return associated with selecting action \\a\\ in planning unit
+\\i\\.
+
+Profit values may be positive, zero, or negative. Positive values
+represent gains or revenues, zero represents no net profit contribution,
+and negative values can be used to encode penalties or net economic
+losses.
+
+The resulting table `x$data$dist_profit` contains:
+
+- `pu`: external planning-unit id,
 
 - `action`: action id,
 
 - `profit`: numeric profit value,
 
-- `internal_pu`: internal PU index,
+- `internal_pu`: internal planning-unit index,
 
 - `internal_action`: internal action index.
 
-Profit values can later be used to build objectives (e.g., maximize
-profit or maximize net profit), budget constraints (e.g., net cost =
-cost - profit), or reporting summaries.
+**Supported input formats**
 
-The function is **data-only**: it does not build or modify the
-optimization model. It also does not change feasibility; it simply
-assigns profits to rows currently present in `dist_actions`. Any
-additional filtering (e.g., dropping locked-out pairs) should be applied
-when preparing model-ready tables (typically inside the model builder
-invoked by
-[`solve()`](https://josesalgr.github.io/mosap/reference/solve.md)).
+The `profit` argument may be specified in several ways:
+
+- `NULL`: assign profit 0 to all feasible `(pu, action)` pairs,
+
+- a numeric scalar: assign the same profit value to all feasible pairs,
+
+- a named numeric vector: names are action ids, assigning one global
+  profit value per action,
+
+- a `data.frame(action, profit)`: assign one global profit value per
+  action,
+
+- a `data.frame(pu, action, profit)`: assign pair-specific profit
+  values.
+
+When action-level profit is supplied, the same profit value is assigned
+to all feasible planning units for that action. When pair-specific
+profit is supplied, only the listed `(pu, action)` pairs receive
+explicit values; unmatched feasible pairs are set to zero if
+`na_to_zero = TRUE`.
+
+**Data-only behaviour**
+
+This function is purely data-oriented. It does not build or modify the
+optimization model, and it does not change feasibility. It simply
+assigns profit values to rows already present in `x$data$dist_actions`.
+
+In particular:
+
+- it does not add new feasible `(pu, action)` pairs,
+
+- it does not remove infeasible pairs,
+
+- it does not apply solver-side filtering such as dropping locked-out
+  decisions.
+
+Any such filtering is expected to occur later when model-ready tables
+are prepared, typically during the build stage invoked by
+[`solve()`](https://josesalgr.github.io/mosap/reference/solve.md).
+
+**Use in optimization**
+
+Profit values stored by this function can later be used in objectives
+such as
+[`add_objective_max_profit`](https://josesalgr.github.io/mosap/reference/add_objective_max_profit.md)
+or
+[`add_objective_max_net_profit`](https://josesalgr.github.io/mosap/reference/add_objective_max_net_profit.md),
+in derived budget expressions, or in reporting and summary functions.
+
+For example, if \\x\_{ia} \in \\0,1\\\\ denotes whether action \\a\\ is
+selected in planning unit \\i\\, then a profit-maximization objective
+typically takes the form \$\$ \max \sum\_{(i,a) \in \mathcal{F}}
+\pi\_{ia} x\_{ia}. \$\$
+
+## See also
+
+[`add_actions`](https://josesalgr.github.io/mosap/reference/add_actions.md),
+[`add_objective_max_profit`](https://josesalgr.github.io/mosap/reference/add_objective_max_profit.md),
+[`add_objective_max_net_profit`](https://josesalgr.github.io/mosap/reference/add_objective_max_net_profit.md),
+[`add_effects`](https://josesalgr.github.io/mosap/reference/add_effects.md)
 
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
-# 1) Default: profit = 0 everywhere (table may be empty if keep_zero = FALSE)
-x <- x |> add_profit()
+# Minimal problem
+pu <- data.frame(
+  id = 1:3,
+  cost = c(2, 3, 1)
+)
 
-# 2) Constant profit for every feasible (pu, action)
-x <- x |> add_profit(profit = 10)
+features <- data.frame(
+  id = c("sp1", "sp2")
+)
 
-# 3) Profit per action (named vector)
-pr <- c(harvest = 50, sustainable = 20, restoration = -5)
-x <- x |> add_profit(profit = pr)
+dist_features <- data.frame(
+  pu = c(1, 1, 2, 3),
+  feature = c("sp1", "sp2", "sp1", "sp2"),
+  amount = c(1, 2, 1, 3)
+)
 
-# 4) Profit per action (data.frame)
-pr_df <- data.frame(action = c("harvest", "sustainable"), profit = c(50, 20))
-x <- x |> add_profit(profit = pr_df)
+p <- inputData(
+  pu = pu,
+  features = features,
+  dist_features = dist_features
+)
+#> Error: features$id must be numeric/integer ids (got non-numeric strings).
 
-# 5) Profit per (pu, action) pair
-pr_sp <- data.frame(
-  pu = c(1, 2, 2),
-  action = c("harvest", "harvest", "sustainable"),
+p <- add_actions(
+  x = p,
+  actions = data.frame(id = c("harvest", "restoration"))
+)
+#> Error: object 'p' not found
+
+# 1) Constant profit for every feasible (pu, action)
+p1 <- add_profit(p, profit = 10)
+#> Error: object 'p' not found
+p1$data$dist_profit
+#> Error: object 'p1' not found
+
+# 2) Profit per action using a named vector
+pr <- c(harvest = 50, restoration = -5)
+p2 <- add_profit(p, profit = pr, keep_zero = TRUE)
+#> Error: object 'p' not found
+p2$data$dist_profit
+#> Error: object 'p2' not found
+
+# 3) Profit per action using a data frame
+pr_df <- data.frame(
+  action = c("harvest", "restoration"),
+  profit = c(40, 15)
+)
+p3 <- add_profit(p, profit = pr_df)
+#> Error: object 'p' not found
+p3$data$dist_profit
+#> Error: object 'p3' not found
+
+# 4) Profit per (pu, action) pair
+pr_pair <- data.frame(
+  pu = c(1, 2, 3),
+  action = c("harvest", "harvest", "restoration"),
   profit = c(100, 80, 30)
 )
-x <- x |> add_profit(profit = pr_sp, keep_zero = TRUE)
-} # }
+p4 <- add_profit(p, profit = pr_pair, keep_zero = TRUE)
+#> Error: object 'p' not found
+p4$data$dist_profit
+#> Error: object 'p4' not found
 ```

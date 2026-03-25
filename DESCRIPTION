@@ -1,21 +1,17 @@
 Package: mosap
 Type: Package
 Version: 1.0.4
-Title: Integrated Multi-Objective Spatial Action Planning            
-Description: Provides an exact multi-objective optimisation framework for integrated
-    spatial action planning using mixed-integer programming (MIP). The package
-    supports the design of management portfolios (e.g., conservation, restoration,
-    and other interventions) across planning units to abate threats and satisfy
-    user-defined constraints, while accounting for spatial structure (e.g.,
-    connectivity and fragmentation). Multiple multi-objective methods are
-    available, including weighted-sum aggregation, lexicographic (hierarchical)
-    optimisation, epsilon-constraint, and AUGMECON-based approaches. Problems can
-    be solved with commercial (e.g., Gurobi, CPLEX) and open-source (e.g., CBC,
-    SYMPHONY) MIP solvers. Methods build on Salgado-Rojas et al. (2020)
-    <doi:10.1016/j.ecolmodel.2019.108901>, Beyer et al. (2016)
-    <doi:10.1016/j.ecolmodel.2016.02.005>, Cattarino et al. (2015)
-    <doi:10.1371/journal.pone.0128027>, and Watts et al. (2009)
-    <doi:10.1016/j.envsoft.2009.06.005>.
+Title: Multi-Objective Spatial Planning
+Description: Provides a modular framework for exact multi-objective spatial
+    planning using mixed-integer programming (MIP). The package supports the
+    definition of planning problems through planning units, features,
+    management actions, action effects, spatial relations, targets,
+    constraints, and objective functions. It enables the optimisation of
+    spatial planning portfolios under considerations such as boundary
+    structure, connectivity, and fragmentation. Supported multi-objective
+    methods include weighted-sum aggregation, epsilon-constraint, and
+    AUGMECON. Problems can be solved with commercial (e.g., Gurobi, CPLEX)
+    and open-source (e.g., CBC, SYMPHONY) MIP solvers.
 Authors@R: c(person(c('Jose'), 'Salgado-Rojas',
              email='jose.salgroj@gmail.com', role = c('aut','cre')),
              person(c('Matias'), 'Moreno-Faguett',

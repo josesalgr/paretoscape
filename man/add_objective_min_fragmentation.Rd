@@ -14,15 +14,101 @@ add_objective_min_fragmentation(
 \arguments{
 \item{x}{A \code{Problem} object.}
 
-\item{relation_name}{Character. Name of the spatial relation.}
+\item{relation_name}{Character string giving the name of the spatial relation
+to use. The relation must already exist in
+\code{x$data$spatial_relations}.}
 
-\item{weight_multiplier}{Numeric >= 0. Multiplier applied to relation weights.}
+\item{weight_multiplier}{Numeric scalar greater than or equal to zero. Global
+multiplier applied to the relation weights when the objective is built.}
 
-\item{alias}{Optional identifier for multi-objective workflows.}
+\item{alias}{Optional identifier used to register this objective for
+multi-objective workflows.}
 }
 \value{
-Updated \code{Problem} object.
+An updated \code{Problem} object.
 }
 \description{
-Specify an objective that minimizes planning-unit fragmentation over a spatial relation.
+Define an objective that minimizes planning-unit fragmentation over a stored
+spatial relation.
+
+This objective acts on the planning-unit selection pattern through the binary
+planning-unit variables \eqn{w_i}. It is therefore appropriate when spatial
+cohesion is to be encouraged at the level of the selected planning-unit set
+as a whole.
+}
+\details{
+Let \eqn{\mathcal{P}} denote the set of planning units and let
+\eqn{w_i \in \{0,1\}} indicate whether planning unit \eqn{i \in \mathcal{P}}
+is selected.
+
+Let the chosen spatial relation
+\code{x$data$spatial_relations[[relation_name]]} define a set of weighted
+pairs with weights \eqn{\omega_{ij} \ge 0}. These relation weights are
+interpreted by the model builder after scaling by
+\eqn{\lambda = \code{weight_multiplier}}.
+
+The internal preparation step constructs one auxiliary variable
+\eqn{y_{ij} \in [0,1]} for each unique non-diagonal undirected edge
+\eqn{(i,j)} with \eqn{i < j}. Diagonal entries of the relation, if present,
+are not used to create auxiliary variables.
+
+Each auxiliary variable is constrained to represent the logical conjunction of
+the two incident planning-unit selections:
+\deqn{
+y_{ij} = w_i \land w_j.
+}
+
+This is enforced by the standard linearization:
+\deqn{
+y_{ij} \le w_i,
+}
+\deqn{
+y_{ij} \le w_j,
+}
+\deqn{
+y_{ij} \ge w_i + w_j - 1.
+}
+
+Thus, \eqn{y_{ij}=1} if and only if both planning units \eqn{i} and
+\eqn{j} are selected, and \eqn{y_{ij}=0} otherwise.
+
+The exact objective coefficients are assembled later by the model builder
+from:
+\itemize{
+\item the planning-unit variables \eqn{w_i},
+\item the edge-conjunction variables \eqn{y_{ij}},
+\item the stored relation weights \eqn{\omega_{ij}},
+\item and the multiplier \eqn{\lambda}.
+}
+
+Conceptually, the resulting objective is a boundary- or relation-based
+compactness functional that penalizes exposed or weakly connected selected
+patterns while rewarding adjacency among selected planning units.
+
+In the common case where \code{relation_name = "boundary"} and the relation
+was built with \code{\link{add_spatial_boundary}}, the objective corresponds
+to a boundary-length-style fragmentation penalty. In that setting:
+\itemize{
+\item off-diagonal relation rows encode shared boundary,
+\item diagonal relation rows may encode exposed boundary,
+\item the objective is evaluated from the combination of selected planning
+units and selected adjacent pairs.
+}
+
+A key implementation detail is that symmetric duplicates in the relation are
+canonicalized internally before the auxiliary block is created. For each
+unordered non-diagonal pair \eqn{\{i,j\}}, only one edge is retained, using
+the maximum weight among duplicates.
+
+Setting \code{weight_multiplier = 0} removes the contribution of the spatial
+relation from the objective after scaling.
+
+This objective does not distinguish between different actions within the same
+planning unit. If action-specific spatial cohesion is required, use
+\code{\link{add_objective_min_action_fragmentation}} instead.
+}
+\seealso{
+\code{\link{add_spatial_boundary}},
+\code{\link{add_spatial_relations}},
+\code{\link{add_objective_min_action_fragmentation}}
 }

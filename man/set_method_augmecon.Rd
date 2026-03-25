@@ -18,82 +18,203 @@ set_method_augmecon(
 )
 }
 \arguments{
-\item{x}{A problem object.}
+\item{x}{A \code{Problem} object.}
 
-\item{primary}{\code{character(1)}. Alias of the primary objective, i.e. the
-objective optimized directly in the AUGMECON formulation.}
+\item{primary}{Character string giving the alias of the primary objective,
+that is, the objective optimized directly in the AUGMECON formulation.}
 
-\item{aliases}{\code{NULL} or \code{character}. Objective aliases to include in the
-method. If \code{NULL}, all registered objective aliases are used. \code{primary}
-must be included in \code{aliases}.}
+\item{aliases}{Optional character vector of objective aliases to include in
+the method. If \code{NULL}, all registered objective aliases are used. The
+value of \code{primary} must be included in \code{aliases}.}
 
-\item{grid}{\code{NULL} or a named \code{list}. Epsilon levels for the secondary
-objectives. When \code{NULL}, epsilon levels are generated automatically.
-When supplied, it must be a named list with one numeric vector per
-secondary objective.}
+\item{grid}{Optional named list defining manual \eqn{\epsilon}-levels for the
+secondary objectives. Each name must correspond to a secondary objective
+alias, and each element must be a non-empty numeric vector of finite values.
+If \code{NULL}, the grid is generated automatically.}
 
-\item{n_points}{\code{numeric(1)}. Number of automatically generated epsilon
-levels per secondary objective when \code{grid = NULL}. Must be at least 2.
-Ignored when \code{grid} is supplied.}
+\item{n_points}{Number of automatically generated \eqn{\epsilon}-levels per
+secondary objective when \code{grid = NULL}. Must be at least 2. Ignored
+when \code{grid} is supplied.}
 
-\item{include_extremes}{\code{logical(1)}. Should automatically generated grids
-include the extreme values of each secondary objective?}
+\item{include_extremes}{Logical. If \code{TRUE}, automatically generated
+grids include extreme values of each secondary objective.}
 
-\item{lexicographic}{\code{logical(1)}. Should lexicographic anchoring be used
-when computing extreme points for automatic grid construction?}
+\item{lexicographic}{Logical. If \code{TRUE}, use lexicographic anchoring
+when computing extreme points for automatic grid construction.}
 
-\item{lexicographic_tol}{\code{numeric(1)}. Non-negative tolerance used in
+\item{lexicographic_tol}{Non-negative numeric tolerance used in
 lexicographic anchoring.}
 
-\item{augmentation}{\code{numeric(1)}. Positive augmentation coefficient used
-to weight the normalized slack variables in the AUGMECON objective.
-Smaller values make the primary objective dominate more strongly, while
-larger values give more emphasis to slack maximization within the same
-epsilon-constrained region. The effective coefficient of each slack is
-computed internally as \code{augmentation / range}, where \code{range} is the
-payoff-table range of the corresponding secondary objective.}
+\item{augmentation}{Positive numeric augmentation coefficient
+\eqn{\rho}. The effective coefficient of each secondary slack is computed
+internally as \eqn{\rho / R_k}, where \eqn{R_k} is the payoff-table range
+of the corresponding secondary objective.}
 
-\item{slack_upper_bound}{\code{numeric(1)}. Upper bound used for the explicit
-non-negative slack variables associated with secondary objectives.}
+\item{slack_upper_bound}{Positive numeric upper bound imposed on the explicit
+non-negative slack variables associated with the secondary objectives.}
 }
 \value{
-The updated problem object with the AUGMECON method stored in
-\code{x$data$method}.
+The updated \code{Problem} object with the AUGMECON method
+configuration stored in \code{x$data$method}.
 }
 \description{
-Configure a problem to be solved with the augmented epsilon-constraint
-method (AUGMECON). One objective is treated as the primary objective and
-the remaining objectives are converted into epsilon constraints.
+Configure a \code{Problem} object to be solved with the augmented
+\eqn{\epsilon}-constraint method (AUGMECON).
+
+AUGMECON is an exact multi-objective optimization method in which one
+objective is treated as the primary objective and the remaining objectives are
+converted into \eqn{\epsilon}-constraints. In the augmented formulation, each
+secondary objective is associated with a non-negative slack variable, and the
+primary objective is augmented with a small reward term based on the
+normalized slacks. This augmentation is used to avoid weakly efficient
+solutions, following Mavrotas (2009). AUGMECON is generally preferable to the
+standard epsilon-constraint method when the goal is to generate a well-distributed
+set of efficient solutions while reducing weakly efficient points.
+
+This function does not solve the problem directly. It stores the AUGMECON
+configuration in \code{x$data$method}, to be used later by
+\code{\link{solve}}.
 }
 \details{
-In the AUGMECON formulation, each secondary objective is enforced through
-an epsilon equality with a non-negative slack variable, and the primary
-objective is augmented with a small reward term based on the normalized
-slacks. This augmentation helps avoid weakly efficient solutions, following
-the formulation proposed by Mavrotas (2009).
+\strong{General idea}
 
-The set of epsilon levels for secondary objectives can be supplied
-manually through \code{grid}, or generated automatically when \code{grid = NULL}.
+Suppose that \eqn{m \ge 2} objective functions have been registered in the
+problem:
+\deqn{
+f_1(x), f_2(x), \dots, f_m(x).
+}
 
-AUGMECON is an augmented version of the epsilon-constraint method. Let
-\code{f_primary(x)} denote the primary objective and let the remaining objectives
-be treated as secondary objectives. For each secondary objective, the method
-introduces an epsilon equality with a slack variable. The objective then
-optimizes the primary objective while rewarding normalized slack values.
+AUGMECON selects one of them as the primary objective, say
+\eqn{f_p(x)}, and treats the remaining \eqn{m - 1} objectives as secondary
+objectives. For a fixed combination of \eqn{\epsilon}-levels, the method
+solves a sequence of single-objective subproblems of the form:
 
-This follows the spirit of the AUGMECON formulation of Mavrotas (2009),
-where augmentation is used to avoid weakly efficient solutions and improve
-the generation of the Pareto frontier.
+\deqn{
+\max \; f_p(x) + \rho \sum_{k \in \mathcal{S}} \frac{s_k}{R_k}
+}
 
-If \code{grid = NULL}, the method will later build epsilon levels
-automatically from the ranges of the secondary objectives. If \code{grid} is
-supplied, those values are used directly.
+subject to
 
-For \code{m} objectives, one is the \code{primary} objective and the remaining
-\code{m - 1} objectives are treated as secondary objectives.
+\deqn{
+f_k(x) - s_k = \epsilon_k, \qquad k \in \mathcal{S},
+}
+
+\deqn{
+s_k \ge 0, \qquad k \in \mathcal{S},
+}
+
+together with all original feasibility constraints of the planning problem.
+
+Here:
+\itemize{
+\item \eqn{f_p(x)} is the primary objective,
+\item \eqn{\mathcal{S}} is the set of secondary objectives,
+\item \eqn{\epsilon_k} is the imposed level for secondary objective
+\eqn{k},
+\item \eqn{s_k} is a non-negative slack variable,
+\item \eqn{R_k} is the payoff-table range used to normalize objective
+\eqn{k},
+\item \eqn{\rho > 0} is a small augmentation coefficient.
+}
+
+In the original AUGMECON formulation of Mavrotas (2009), the augmentation
+term ensures that, among solutions with the same primary objective value, the
+solver prefers those with larger slack, thereby avoiding weakly efficient
+points and improving Pareto-front generation.
+
+\strong{Secondary-objective equalities and slacks}
+
+The key difference between standard \eqn{\epsilon}-constraint and AUGMECON is
+that the secondary objectives are written as equalities with slacks rather
+than as simple inequalities. For a maximization-type secondary objective,
+this takes the form:
+
+\deqn{
+f_k(x) - s_k = \epsilon_k, \qquad s_k \ge 0.
+}
+
+This implies:
+\deqn{
+f_k(x) \ge \epsilon_k,
+}
+
+while explicitly measuring the excess above the imposed
+\eqn{\epsilon}-level through \eqn{s_k}. The augmentation term then rewards
+such excess in normalized form.
+
+In implementation terms, the exact sign convention for each objective depends
+on whether it is internally treated as a minimization or maximization
+objective, but the method always preserves the same AUGMECON principle:
+\itemize{
+\item one objective is optimized directly,
+\item all others are turned into constrained objectives,
+\item non-negative slacks measure controlled deviation from the imposed
+\eqn{\epsilon}-levels,
+\item the primary objective is augmented with a small slack-based reward.
+}
+
+\strong{Automatic and manual grids}
+
+AUGMECON requires a grid of \eqn{\epsilon}-levels for each secondary
+objective.
+
+If \code{grid} is supplied, it must be a named list with one numeric vector
+per secondary objective. Each vector defines the exact
+\eqn{\epsilon}-levels to be explored for that objective.
+
+If \code{grid = NULL}, the grid is generated automatically later during
+\code{\link{solve}}. In that case, the method first computes extreme points
+and payoff-table ranges for the secondary objectives, and then generates
+\code{n_points} levels for each one.
+
+If \code{include_extremes = TRUE}, the automatic grid includes the extreme
+values of each secondary objective.
+
+If \code{lexicographic = TRUE}, extreme points are computed using
+lexicographic anchoring, which can improve numerical stability and payoff
+table quality when objectives are tightly competing. The tolerance used for
+lexicographic anchoring is controlled by \code{lexicographic_tol}.
+
+\strong{Normalization and augmentation}
+
+The augmentation term is scaled using the payoff-table ranges of the
+secondary objectives. If \eqn{R_k} denotes the range of secondary objective
+\eqn{k}, then the effective coefficient applied to the slack is:
+
+\deqn{
+\frac{\rho}{R_k},
+}
+
+where \eqn{\rho = \code{augmentation}}.
+
+This normalization is important because different objectives may be measured
+on very different numerical scales. Without normalization, a slack belonging
+to a large-scale objective could dominate the augmentation term simply due to
+units.
+
+In this implementation, the user supplies \code{augmentation} as the base
+coefficient \eqn{\rho}, while the normalized slack coefficients are computed
+internally at solve time using the corresponding payoff-table ranges.
+
+\strong{Stored configuration}
+
+This function stores the method definition in \code{x$data$method} with:
+\itemize{
+\item \code{name = "augmecon"},
+\item the primary objective alias,
+\item the full set of participating aliases,
+\item the set of secondary aliases,
+\item either a manual grid or the information required to generate one
+automatically,
+\item augmentation and slack-bound parameters.
+}
+
+The actual payoff table, grid construction, and subproblem solution loop are
+performed later by \code{\link{solve}}.
 }
 \examples{
 \dontrun{
+# Automatic epsilon grids from payoff ranges
 p <- p |>
   set_method_augmecon(
     primary = "benefit",
@@ -104,6 +225,7 @@ p <- p |>
     augmentation = 1e-3
   )
 
+# Manual epsilon grids for two secondary objectives
 p <- p |>
   set_method_augmecon(
     primary = "benefit",
@@ -112,13 +234,19 @@ p <- p |>
       cost = c(100, 150, 200, 250),
       frag = c(2, 4, 6, 8)
     ),
-    augmentation = 1e-3
+    augmentation = 1e-3,
+    slack_upper_bound = 1e6
   )
 }
 
 }
 \references{
-Mavrotas, G. (2009). Effective implementation of the epsilon-constraint
-method in Multi-Objective Mathematical Programming problems.
-\emph{Applied Mathematics and Computation}, 213(2), 455--465.
+Mavrotas, G. (2009). Effective implementation of the
+\eqn{\epsilon}-constraint method in multi-objective mathematical programming
+problems. \emph{Applied Mathematics and Computation}, 213(2), 455--465.
+}
+\seealso{
+\code{\link{set_method_epsilon_constraint}},
+\code{\link{set_method_weighted}},
+\code{\link{solve}}
 }

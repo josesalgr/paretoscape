@@ -1,14 +1,18 @@
-# Add spatial relations (core)
+# Add spatial relations
 
-Register an externally computed spatial relation inside a `Data` object
-using the unified internal representation. Most users should prefer the
-convenience wrappers:
+Register an externally computed spatial relation inside a `Problem`
+object using the unified internal representation adopted by `mosap`.
+
+Most users will typically prefer one of the convenience constructors
+such as
 [`add_spatial_boundary`](https://josesalgr.github.io/mosap/reference/add_spatial_boundary.md),
 [`add_spatial_rook`](https://josesalgr.github.io/mosap/reference/add_spatial_rook.md),
 [`add_spatial_queen`](https://josesalgr.github.io/mosap/reference/add_spatial_queen.md),
 [`add_spatial_knn`](https://josesalgr.github.io/mosap/reference/add_spatial_knn.md),
 or
 [`add_spatial_distance`](https://josesalgr.github.io/mosap/reference/add_spatial_distance.md).
+This function is the core low-level entry point for adding an already
+computed relation.
 
 ## Usage
 
@@ -28,71 +32,117 @@ add_spatial_relations(
 
 - x:
 
-  A [data](https://josesalgr.github.io/mosap/reference/data-class.md)
-  object created with
-  [`inputData()`](https://josesalgr.github.io/mosap/reference/inputData.md)
-  or
-  [`inputDataSpatial()`](https://josesalgr.github.io/mosap/reference/inputDataSpatial.md).
+  A `Problem` object created with
+  [`inputData`](https://josesalgr.github.io/mosap/reference/inputData.md).
 
 - relations:
 
-  A `data.frame` describing edges. Must contain either:
+  A `data.frame` describing relation edges. It must contain either:
 
-  - `pu1`, `pu2`, `weight` (external PU ids), or
+  - `pu1`, `pu2`, and `weight`, using external planning-unit ids, or
 
-  - `internal_pu1`, `internal_pu2`, `weight` (internal indices).
+  - `internal_pu1`, `internal_pu2`, and `weight`, using internal
+    planning-unit indices.
 
-  Extra columns (e.g., `distance`, `source`) are allowed and preserved
-  when possible.
+  Extra columns such as `distance` or `source` are allowed and are
+  preserved when possible.
 
 - name:
 
-  Character. Name/key under which to store the relation (default
-  `"default"`).
+  Character string giving the key under which the relation is stored.
 
 - directed:
 
-  Logical. If `FALSE` (default), treats edges as undirected and
-  collapses duplicates. If `TRUE`, keeps directed edges as provided.
+  Logical. If `FALSE`, treat edges as undirected and collapse duplicate
+  unordered pairs. If `TRUE`, keep edges as directed ordered pairs.
 
 - allow_self:
 
-  Logical. Whether to allow self-edges `(i,i)`. Default `FALSE`.
+  Logical. If `TRUE`, allow self-edges \\(i,i)\\. Default is `FALSE`.
 
 - duplicate_agg:
 
-  Aggregation for duplicate undirected edges when `directed=FALSE`. One
-  of `"sum"`, `"max"`, `"min"`, `"mean"`.
+  Character string specifying how to aggregate duplicated undirected
+  edges when `directed = FALSE`. Must be one of `"sum"`, `"max"`,
+  `"min"`, or `"mean"`.
 
 - symmetric:
 
-  Logical. If `TRUE`, expands an undirected relation into a directed one
-  by duplicating off-diagonal edges in both directions. Default `FALSE`.
+  Logical. If `TRUE`, expand an undirected relation into a directed
+  representation by duplicating off-diagonal edges in both directions.
+  Default is `FALSE`.
 
 ## Value
 
-Updated
-[data](https://josesalgr.github.io/mosap/reference/data-class.md) object
-with `x$data$spatial_relations[[name]]`.
+An updated `Problem` object with the relation stored in
+`x$data$spatial_relations[[name]]`.
 
 ## Details
 
-The input can be given in external PU ids (`pu1`, `pu2`) or in internal
-PU indices (`internal_pu1`, `internal_pu2`). If external ids are
-provided, they are mapped using `x$data$pu$id` and
-`x$data$pu$internal_id`.
+The input relation may be provided either in terms of external
+planning-unit identifiers or in terms of internal planning-unit indices.
 
-If `directed = FALSE`, edges are treated as undirected and duplicates
-are collapsed using `duplicate_agg`. If `symmetric = TRUE`, the relation
-is expanded to a directed edge list by adding swapped copies for
-off-diagonal edges.
+Specifically, the input `relations` table must contain either:
+
+- `pu1`, `pu2`, and `weight`, or
+
+- `internal_pu1`, `internal_pu2`, and `weight`.
+
+If external ids are supplied, they are mapped to internal indices using
+`x$data$pu$id` and `x$data$index$pu`.
+
+Let \\E\\ denote the set of rows supplied in `relations`. If
+`directed = FALSE`, each edge is treated as undirected, so pairs
+\\(i,j)\\ and \\(j,i)\\ are interpreted as the same edge. In that case,
+duplicated undirected edges are collapsed according to `duplicate_agg`.
+
+If `directed = TRUE`, edges are preserved as ordered pairs, so \\(i,j)\\
+and \\(j,i)\\ are distinct unless the user provides both.
+
+If `symmetric = TRUE` and `directed = FALSE`, the final undirected
+relation is expanded into a directed representation by duplicating each
+off-diagonal edge: \$\$ (i,j,\omega\_{ij}) \mapsto (i,j,\omega\_{ij}),
+(j,i,\omega\_{ij}). \$\$
+
+Self-edges \\(i,i)\\ are permitted only if `allow_self = TRUE`.
+
+The final relation is stored in `x$data$spatial_relations[[name]]`.
+
+## See also
+
+[`add_spatial_boundary`](https://josesalgr.github.io/mosap/reference/add_spatial_boundary.md),
+[`add_spatial_rook`](https://josesalgr.github.io/mosap/reference/add_spatial_rook.md),
+[`add_spatial_queen`](https://josesalgr.github.io/mosap/reference/add_spatial_queen.md),
+[`add_spatial_knn`](https://josesalgr.github.io/mosap/reference/add_spatial_knn.md),
+[`add_spatial_distance`](https://josesalgr.github.io/mosap/reference/add_spatial_distance.md)
 
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
-# Register an externally computed adjacency list:
-rel <- data.frame(pu1 = c(1, 1, 2), pu2 = c(2, 3, 3), weight = 1)
-x <- x |> add_spatial_relations(relations = rel, name = "my_adj")
-} # }
+pu <- data.frame(id = 1:3, cost = c(1, 2, 3))
+features <- data.frame(id = "sp1")
+dist_features <- data.frame(pu = 1:3, feature = "sp1", amount = c(1, 1, 1))
+
+p <- inputData(
+  pu = pu,
+  features = features,
+  dist_features = dist_features
+)
+#> Error: features$id must be numeric/integer ids (got non-numeric strings).
+
+rel <- data.frame(
+  pu1 = c(1, 1, 2),
+  pu2 = c(2, 3, 3),
+  weight = c(1, 1, 2)
+)
+
+p <- add_spatial_relations(
+  x = p,
+  relations = rel,
+  name = "my_relation"
+)
+#> Error: object 'p' not found
+
+p$data$spatial_relations$my_relation
+#> Error: object 'p' not found
 ```

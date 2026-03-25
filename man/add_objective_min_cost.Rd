@@ -2,7 +2,7 @@
 % Please edit documentation in R/add_objectives.R
 \name{add_objective_min_cost}
 \alias{add_objective_min_cost}
-\title{Register an atomic objective (internal)}
+\title{Add objective: minimize cost}
 \usage{
 add_objective_min_cost(
   x,
@@ -15,45 +15,93 @@ add_objective_min_cost(
 \arguments{
 \item{x}{A \code{Problem} object.}
 
-\item{include_pu_cost}{Logical. If \code{TRUE}, include planning-unit costs.}
+\item{include_pu_cost}{Logical. If \code{TRUE}, include planning-unit costs
+in the objective.}
 
-\item{include_action_cost}{Logical. If \code{TRUE}, include action costs.}
+\item{include_action_cost}{Logical. If \code{TRUE}, include action costs in
+the objective.}
 
-\item{actions}{Optional subset of actions to include in the action-cost component.
-Values may match \code{actions$id} and, if present, \code{actions$action_set}.}
+\item{actions}{Optional subset of actions to include in the action-cost
+component. Values may match \code{x$data$actions$id} and, if present,
+\code{x$data$actions$action_set}. If \code{NULL}, all feasible actions are
+included in the action-cost term.}
 
-\item{alias}{Optional identifier for multi-objective workflows.}
-
-\item{objective_id}{Character. Stable objective identifier (e.g., \code{"min_cost"}).}
-
-\item{model_type}{Character. Model type label used by the model builder (e.g., \code{"minimizeCosts"}).}
-
-\item{objective_args}{List. Objective-specific arguments to be stored with the objective.}
-
-\item{sense}{Character. Either \code{"min"} or \code{"max"}.}
+\item{alias}{Optional identifier used to register this objective for
+multi-objective workflows.}
 }
 \value{
-The updated \code{Problem} object.
-
-Updated \code{Problem} object.
+An updated \code{Problem} object.
 }
 \description{
-Internal helper used by objective setter functions to optionally register an objective
-as an \emph{atomic objective} for multi-objective workflows.
+Define an objective that minimizes the total cost of the solution.
 
-If \code{alias} is non-\code{NULL}, the objective definition is stored in
-\code{x$data$objectives[[alias]]}. This allows external multi-objective orchestration
-(e.g., weighted sum, \eqn{\epsilon}-constraint, AUGMECON, interactive methods) to refer to
-objectives by a stable user-facing identifier.
-
-The function is fully backward compatible with single-objective workflows: when
-\code{alias} is \code{NULL}, no entry is added to \code{x$data$objectives} and only the
-active single-objective specification stored in \code{x$data$model_args} (set by the calling
-objective setter) is used.
-
-Specify an objective that minimizes total costs associated with the solution.
-Costs may include planning-unit costs and/or action costs. When \code{actions} is provided,
-the action-cost component is restricted to that subset of actions, while planning-unit
-costs remain global.
+Depending on the function arguments, the objective may include planning-unit
+costs, action costs, or both. Action costs can optionally be restricted to a
+subset of actions.
 }
-\keyword{internal}
+\details{
+Let \eqn{\mathcal{P}} be the set of planning units and let
+\eqn{\mathcal{A}_i} be the set of feasible actions in planning unit
+\eqn{i \in \mathcal{P}}.
+
+Let:
+\itemize{
+\item \eqn{w_i \in \{0,1\}} denote whether planning unit \eqn{i} is
+selected,
+\item \eqn{x_{ia} \in \{0,1\}} denote whether action \eqn{a} is selected
+in planning unit \eqn{i},
+\item \eqn{c_i^{PU} \ge 0} denote the planning-unit cost of unit \eqn{i},
+\item \eqn{c_{ia}^{A} \ge 0} denote the cost of selecting action
+\eqn{a} in planning unit \eqn{i}.
+}
+
+The most general form of this objective is:
+
+\deqn{
+\min \left(
+\sum_{i \in \mathcal{P}} c_i^{PU} w_i
++
+\sum_{i \in \mathcal{P}} \sum_{a \in \mathcal{A}_i^\star} c_{ia}^{A} x_{ia}
+\right),
+}
+
+where \eqn{\mathcal{A}_i^\star} denotes the subset of feasible actions that
+contribute to the action-cost term.
+
+If \code{include_pu_cost = FALSE}, the planning-unit cost term is omitted.
+
+If \code{include_action_cost = FALSE}, the action-cost term is omitted.
+
+If \code{actions = NULL}, all feasible actions contribute to the action-cost
+term. If \code{actions} is supplied, only the selected subset contributes to
+that term. Planning-unit costs are never subset by \code{actions}; they are
+always global whenever \code{include_pu_cost = TRUE}.
+
+This objective is useful when the decision problem is framed primarily as a
+cost-minimization problem, optionally combining fixed planning-unit costs
+with action-specific implementation costs.
+}
+\examples{
+\dontrun{
+# Minimize both planning-unit and action costs
+p <- add_objective_min_cost(p)
+
+# Minimize only action costs
+p <- add_objective_min_cost(
+  p,
+  include_pu_cost = FALSE,
+  include_action_cost = TRUE
+)
+
+# Minimize costs considering only a subset of actions
+p <- add_objective_min_cost(
+  p,
+  actions = c("restoration", "conservation")
+)
+}
+
+}
+\seealso{
+\code{\link{add_objective_max_profit}},
+\code{\link{add_objective_max_net_profit}}
+}

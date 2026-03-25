@@ -2,7 +2,7 @@
 % Please edit documentation in R/add_spatial_relations.R
 \name{add_spatial_boundary}
 \alias{add_spatial_boundary}
-\title{Add spatial boundary-length relations from sf polygons or a boundary table}
+\title{Add spatial boundary-length relations}
 \usage{
 add_spatial_boundary(
   x,
@@ -17,59 +17,134 @@ add_spatial_boundary(
 )
 }
 \arguments{
-\item{x}{A \linkS4class{problem} object.}
+\item{x}{A \code{Problem} object.}
 
-\item{boundary}{Optional \code{data.frame} describing boundaries. Accepted formats:
+\item{boundary}{Optional \code{data.frame} describing boundary lengths.
+Accepted formats are:
 \itemize{
-\item \code{(id1, id2, boundary)} (Marxan-style), or
+\item \code{(id1, id2, boundary)}, or
 \item \code{(pu1, pu2, weight)}.
 }}
 
-\item{pu_sf}{Optional \code{sf} object with PU polygons and an \code{id} column. If \code{NULL},
-uses \code{x$data$pu_sf}.}
+\item{pu_sf}{Optional \code{sf} object with planning-unit polygons and an
+\code{id} column. If \code{NULL}, \code{x$data$pu_sf} is used.}
 
-\item{name}{Character name/key under which to store the relation (default \code{"boundary"}).}
+\item{name}{Character string giving the key under which the relation is
+stored.}
 
-\item{weight_col}{Character. Column in \code{boundary} to use as weights. If \code{NULL}, attempts to
-guess \code{"boundary"} or \code{"weight"}.}
+\item{weight_col}{Optional character string giving the name of the weight
+column in \code{boundary}. If \code{NULL}, the function tries to infer it
+from \code{"boundary"} or \code{"weight"}.}
 
-\item{weight_multiplier}{Numeric multiplier applied to boundary weights (e.g., BLM scaling).
-Must be finite and positive.}
+\item{weight_multiplier}{Positive numeric scalar applied to all boundary
+weights.}
 
-\item{progress}{Logical. If \code{TRUE}, prints basic progress messages for large instances.}
+\item{progress}{Logical. If \code{TRUE}, print simple progress messages in
+geometry mode.}
 
-\item{include_self}{Logical. If \code{TRUE} (default), include diagonal \code{(i,i)} entries representing
-effective exposed boundary length.}
+\item{include_self}{Logical. If \code{TRUE}, include diagonal entries
+representing exposed boundary.}
 
-\item{edge_factor}{Numeric \eqn{\ge 0}. Multiplier applied to exposed boundary when computing diagonal weights.}
+\item{edge_factor}{Numeric scalar greater than or equal to zero. Multiplier
+applied to exposed boundary when constructing diagonal entries.}
 }
 \value{
-Updated \linkS4class{problem} object with a stored relation \code{x$data$spatial_relations[[name]]}.
+An updated \code{Problem} object with the stored relation in
+\code{x$data$spatial_relations[[name]]}.
 }
 \description{
-Register a boundary-length relation between planning units. Boundary relations represent
-shared edge length between adjacent polygons (not queen touches).
+Build and register a boundary-length spatial relation between planning units.
+
+Boundary relations represent shared edge length between adjacent polygons. In
+contrast to queen adjacency, they only account for boundary segments of
+positive length and ignore point-only contacts.
 }
 \details{
 Two input modes are supported:
 \enumerate{
-\item \strong{Boundary table mode.} If \code{boundary} is provided, it is interpreted as a table
-containing PU pairs and a boundary-length weight (e.g., Marxan-style \code{bound.dat}).
-\item \strong{Geometry mode.} If \code{boundary} is \code{NULL}, boundary lengths are derived from
-planning-unit polygons (\code{pu_sf} or \code{x$data$pu_sf}).
+\item \strong{Boundary-table mode.} If \code{boundary} is supplied, it is
+interpreted as a boundary table, for example a Marxan-style
+\code{bound.dat}.
+
+\item \strong{Geometry mode.} If \code{boundary = NULL}, boundary lengths
+are derived from polygon geometry using \code{pu_sf} or
+\code{x$data$pu_sf}.
 }
 
-If \code{include_self=TRUE}, the function also adds diagonal entries \code{(i,i)} with weights equal to
-an "effective exposed boundary" (scaled by \code{edge_factor}). This is useful for objectives such as
-boundary-length modifier / fragmentation penalties where perimeter exposed to the outside should be counted.
+Let \eqn{\omega_{ij} \ge 0} denote the shared boundary length between
+planning units \eqn{i} and \eqn{j}, multiplied by
+\code{weight_multiplier}.
+
+For off-diagonal entries \eqn{i \neq j}, the stored weight is:
+\deqn{
+\omega_{ij} = \mathrm{BLM} \times b_{ij},
+}
+where \eqn{b_{ij}} is the shared boundary length and \eqn{\mathrm{BLM}} is
+the user-supplied \code{weight_multiplier}.
+
+If \code{include_self = TRUE}, diagonal entries are also created. These are
+not geometric self-neighbours in the graph sense; instead, they represent the
+effective boundary exposed to the outside of the solution.
+
+Let \eqn{p_i} be the total perimeter of planning unit \eqn{i}, and let
+\eqn{\sum_{j \neq i} \omega_{ij}} be the total incident shared boundary
+recorded for that planning unit. Then the exposed boundary is:
+\deqn{
+e_i = \max\left\{ p_i \times \mathrm{BLM}
+- \sum_{j \neq i} \omega_{ij}, 0 \right\},
+}
+and the stored diagonal term is:
+\deqn{
+\omega_{ii} = \mathrm{edge\_factor} \times e_i.
+}
+
+These diagonal terms are useful in boundary-based compactness or
+fragmentation objectives, because they encode the portion of each planning
+unit's perimeter that would remain exposed if the unit were selected.
+
+\strong{Boundary-table mode}
+
+If \code{boundary} is provided, accepted formats are:
+\itemize{
+\item \code{(id1, id2, boundary)}, or
+\item \code{(pu1, pu2, weight)}.
+}
+
+If the table contains diagonal rows \eqn{(i,i)}, these are interpreted as
+total perimeter values in boundary-table mode.
+
+\strong{Geometry mode}
+
+If \code{boundary = NULL}, shared boundary lengths are derived directly from
+polygon geometry. Only positive-length intersections are retained. Point
+touches are ignored.
+
+\strong{Storage}
+
+The final relation is stored through \code{\link{add_spatial_relations}},
+typically as an undirected relation with optional diagonal entries.
 }
 \examples{
 \dontrun{
-# From a Marxan-style boundary table:
-x <- x |> add_spatial_boundary(boundary = bound_df, name = "boundary")
+# From a boundary table
+p <- add_spatial_boundary(
+  x = p,
+  boundary = bound_df,
+  name = "boundary"
+)
 
-# From sf polygons:
-x <- x |> add_spatial_boundary(pu_sf = pu_sf, include_self = TRUE, edge_factor = 1)
+# From sf polygons
+p <- add_spatial_boundary(
+  x = p,
+  pu_sf = pu_sf,
+  include_self = TRUE,
+  edge_factor = 1
+)
 }
 
+}
+\seealso{
+\code{\link{add_spatial_relations}},
+\code{\link{add_objective_min_fragmentation}},
+\code{\link{add_objective_min_action_fragmentation}}
 }

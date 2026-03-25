@@ -1,70 +1,164 @@
 #' @include internal.R
 NULL
 
-#' Add locked action decisions to a planning problem
+#' @title Add locked action decisions to a planning problem
 #'
 #' @description
-#' Fix feasible \code{(pu, action)} decisions to be selected
-#' (\code{locked_in}) or not selected (\code{locked_out}).
+#' Fix feasible planning unit--action decisions to be selected or excluded.
 #'
-#' This function does not create new feasible action pairs. It only modifies
-#' the \code{status} column of existing rows in \code{x$data$dist_actions}.
+#' This function modifies the status of existing feasible
+#' \code{(pu, action)} pairs stored in \code{x$data$dist_actions}. It does not
+#' create new feasible action pairs and therefore must be used only after
+#' \code{\link{add_actions}} has been called.
+#'
+#' Locked decisions are represented through status codes:
+#' \itemize{
+#'   \item \code{0}: free decision,
+#'   \item \code{2}: locked in,
+#'   \item \code{3}: locked out.
+#' }
 #'
 #' @details
-#' Internally, the following status codes are used:
+#' Let \eqn{\mathcal{F} \subseteq \mathcal{P} \times \mathcal{A}} denote the set
+#' of feasible planning unit--action pairs already defined in
+#' \code{x$data$dist_actions}, where \eqn{\mathcal{P}} is the set of planning
+#' units and \eqn{\mathcal{A}} is the set of actions.
+#'
+#' This function allows the user to define two subsets:
 #' \itemize{
-#'   \item \code{0}: free
-#'   \item \code{2}: locked-in
-#'   \item \code{3}: locked-out
+#'   \item \eqn{\mathcal{L}^{in} \subseteq \mathcal{F}}, the set of feasible
+#'   pairs that must be selected,
+#'   \item \eqn{\mathcal{L}^{out} \subseteq \mathcal{F}}, the set of feasible
+#'   pairs that must not be selected.
 #' }
 #'
-#' The function validates that all requested locked pairs are already feasible.
-#' Therefore, \code{add_actions()} should be called first.
+#' These sets are encoded by updating the \code{status} column of
+#' \code{x$data$dist_actions}. The function validates that all requested
+#' locked-in and locked-out pairs are already feasible. Therefore, it cannot be
+#' used to introduce new planning unit--action combinations into the problem.
 #'
-#' If a planning unit is already marked as \code{locked_out} in
-#' \code{x$data$pu}, then all its feasible action pairs are forced to
-#' \code{status = 3}. In that case, any overlapping \code{locked_in} request
-#' will raise an error.
-#'
-#' Accepted formats for \code{locked_in} and \code{locked_out} are:
+#' In optimization terms, if \eqn{x_{ia}} denotes the decision variable
+#' associated with planning unit \eqn{i} and action \eqn{a}, then:
 #' \itemize{
-#'   \item \code{NULL}
-#'   \item A \code{data.frame} with columns \code{pu} and \code{action}. An
-#'   optional \code{feasible} column is supported as a filter.
-#'   \item A named list with names equal to action ids. Each element can be:
-#'   \itemize{
-#'     \item an integer vector of PU ids, or
-#'     \item an \code{sf} object defining a spatial zone for that action.
-#'   }
+#'   \item locked-in pairs conceptually impose \eqn{x_{ia} = 1},
+#'   \item locked-out pairs conceptually impose \eqn{x_{ia} = 0}.
 #' }
 #'
-#' @param x A \code{Problem} object with actions already defined through
+#' The exact translation into solver-side constraints occurs later when the
+#' model is built.
+#'
+#' \strong{Accepted formats}
+#'
+#' Both \code{locked_in} and \code{locked_out} accept the same formats:
+#' \itemize{
+#'   \item \code{NULL},
+#'   \item a \code{data.frame} with columns \code{pu} and \code{action},
+#'   optionally including a \code{feasible} column used as a filter,
+#'   \item a named list whose names are action ids and whose elements are either
+#'   vectors of planning unit ids or \code{sf} objects.
+#' }
+#'
+#' If an \code{sf} specification is supplied, the problem object must contain
+#' \code{x$data$pu_sf}, and planning units are matched spatially using
+#' \code{sf::st_intersects()}.
+#'
+#' \strong{Conflict checking}
+#'
+#' A given \code{(pu, action)} pair cannot be simultaneously requested in both
+#' \code{locked_in} and \code{locked_out}. Such overlaps are rejected.
+#'
+#' In addition, if a planning unit is already marked as locked out at the
+#' planning-unit level through \code{x$data$pu$locked_out}, then all feasible
+#' actions in that planning unit are forced to \code{status = 3}. Any attempt to
+#' lock in an action within such a planning unit raises an error.
+#'
+#' \strong{Order of precedence}
+#'
+#' User-supplied locked-in and locked-out action requests are first applied to
+#' \code{x$data$dist_actions}. Afterwards, any planning-unit-level
+#' \code{locked_out} flag stored in \code{x$data$pu} is enforced, overriding
+#' action-level status and ensuring consistency with planning-unit exclusions.
+#'
+#' @param x A \code{Problem} object with action feasibility already defined via
 #'   \code{\link{add_actions}}.
-#' @param locked_in Optional specification of feasible \code{(pu, action)} pairs
-#'   that must be selected.
-#' @param locked_out Optional specification of feasible \code{(pu, action)} pairs
-#'   that must not be selected.
-#' @param na_is_infeasible Logical. Only relevant when a specification is
-#'   provided as a \code{data.frame} with a \code{feasible} column.
 #'
-#' @return The updated \code{Problem} object with modified
-#'   \code{x$data$dist_actions$status}.
+#' @param locked_in Optional specification of feasible \code{(pu, action)} pairs
+#'   that must be selected. It may be \code{NULL}, a \code{data.frame}, or a
+#'   named list.
+#'
+#' @param locked_out Optional specification of feasible \code{(pu, action)}
+#'   pairs that must not be selected. It may be \code{NULL}, a
+#'   \code{data.frame}, or a named list.
+#'
+#' @param na_is_infeasible Logical. Only relevant when \code{locked_in} or
+#'   \code{locked_out} is supplied as a \code{data.frame} with a
+#'   \code{feasible} column. If \code{TRUE}, missing values in
+#'   \code{feasible} are treated as \code{FALSE}.
+#'
+#' @return An updated \code{Problem} object in which
+#'   \code{x$data$dist_actions$status} has been modified to reflect locked-in and
+#'   locked-out decisions.
 #'
 #' @examples
-#' \dontrun{
+#' pu <- data.frame(
+#'   id = 1:4,
+#'   cost = c(2, 3, 1, 4)
+#' )
+#'
+#' features <- data.frame(
+#'   id = c("sp1", "sp2")
+#' )
+#'
+#' dist_features <- data.frame(
+#'   pu = c(1, 1, 2, 3, 4, 4),
+#'   feature = c("sp1", "sp2", "sp1", "sp2", "sp1", "sp2"),
+#'   amount = c(1, 2, 1, 3, 2, 1)
+#' )
+#'
+#' p <- inputData(
+#'   pu = pu,
+#'   features = features,
+#'   dist_features = dist_features
+#' )
+#'
 #' p <- add_actions(
-#'   p,
-#'   actions = data.frame(id = c("harvest", "restoration"))
+#'   x = p,
+#'   actions = data.frame(id = c("conservation", "restoration")),
+#'   cost = c(conservation = 3, restoration = 8)
 #' )
 #'
+#' # Lock a few feasible decisions
 #' p <- add_locked_actions(
-#'   p,
-#'   locked_in = data.frame(pu = c(1, 2), action = c("harvest", "restoration")),
-#'   locked_out = data.frame(pu = c(5), action = c("harvest"))
+#'   x = p,
+#'   locked_in = data.frame(
+#'     pu = c(1, 2),
+#'     action = c("conservation", "restoration")
+#'   ),
+#'   locked_out = data.frame(
+#'     pu = c(4),
+#'     action = c("conservation")
+#'   )
 #' )
-#' }
 #'
-#' @seealso \code{\link{add_actions}}, \code{\link{add_locked_pu}}
+#' p$data$dist_actions
+#'
+#' # Named-list interface
+#' p2 <- add_locked_actions(
+#'   x = p,
+#'   locked_in = list(
+#'     conservation = c(1, 3)
+#'   ),
+#'   locked_out = list(
+#'     restoration = c(2)
+#'   )
+#' )
+#'
+#' p2$data$dist_actions
+#'
+#' @seealso
+#' \code{\link{add_actions}},
+#' \code{\link{add_locked_pu}}
+#'
 #' @export
 add_locked_actions <- function(
     x,

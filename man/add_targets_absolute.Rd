@@ -15,21 +15,23 @@ add_targets_absolute(
 \arguments{
 \item{x}{A \code{Problem} object.}
 
-\item{targets}{Target specification. See Details.}
+\item{targets}{Target specification. This is interpreted as an absolute target
+value in the same units as the modelled feature contributions. See Details.}
 
 \item{subset}{Optional character vector indicating which actions count toward
 target achievement. Entries may match action ids, \code{action_set} labels,
 or both. If \code{NULL}, all actions count.}
 
-\item{overwrite}{Logical. If \code{TRUE}, replace existing targets for the same
-feature/subset combination. If \code{FALSE}, new rows are appended and any
-overlap is handled by \code{.pa_store_targets()}.}
+\item{overwrite}{Logical. If \code{TRUE}, replace existing stored targets for
+the same feature and subset combination. If \code{FALSE}, new rows are
+appended and overlap handling is delegated to \code{.pa_store_targets()}.}
 
-\item{label}{Optional character label stored with the targets for reporting
+\item{label}{Optional character string stored with the targets for reporting
 and bookkeeping.}
 }
 \value{
-Updated \code{Problem} object.
+An updated \code{Problem} object with absolute targets stored in
+\code{x$data$targets}.
 }
 \description{
 Add feature-level absolute targets to a planning problem.
@@ -37,11 +39,40 @@ Add feature-level absolute targets to a planning problem.
 These targets are stored in \code{x$data$targets} and later translated into
 linear constraints when the optimization model is built.
 
-Absolute targets are interpreted directly in the same units as the underlying
-feature contributions used by the model.
+Absolute targets are interpreted directly in the same units as the feature
+contributions used by the model.
 }
 \details{
-The \code{targets} argument is parsed by \code{.pa_parse_targets()} and can be
+Let \eqn{\mathcal{F}} denote the set of features. For each feature
+\eqn{f \in \mathcal{F}}, this function stores an absolute target threshold
+\eqn{T_f \ge 0}.
+
+When the optimization model is built, each such target is interpreted as a
+lower-bound constraint of the form:
+\deqn{
+\sum_{(i,a) \in \mathcal{S}_f} c_{iaf} x_{ia} \ge T_f,
+}
+where:
+\itemize{
+\item \eqn{x_{ia}} indicates whether action \eqn{a} is selected in planning
+unit \eqn{i},
+\item \eqn{c_{iaf}} is the contribution of that action to feature
+\eqn{f},
+\item \eqn{\mathcal{S}_f} is the set of planning unit--action pairs allowed
+to count toward the target.
+}
+
+In the absolute case, the stored target threshold is simply:
+\deqn{
+T_f = t_f,
+}
+where \eqn{t_f} is the user-supplied target value for feature \eqn{f}.
+
+The \code{subset} argument restricts which actions may contribute toward
+achievement of the target, but it does not modify the value of \eqn{T_f}
+itself.
+
+The \code{targets} argument is parsed by \code{.pa_parse_targets()} and may be
 supplied in several equivalent forms, including:
 \itemize{
 \item a single numeric value recycled to all features,
@@ -50,13 +81,10 @@ supplied in several equivalent forms, including:
 \item a \code{data.frame} with \code{feature} and \code{target} columns.
 }
 
-The \code{subset} argument optionally restricts which actions count toward target
-achievement. It may contain action ids, values of \code{action_set}, or a mixture
-of both. If \code{NULL}, all actions count.
-
-Targets are stored internally with:
+Internally, targets added by this function are stored with:
 \itemize{
 \item \code{type = "actions"},
+\item \code{sense = "ge"},
 \item \code{target_unit = "absolute"},
 \item \code{target_raw = target_value},
 \item \code{basis_total = NA}.
@@ -73,14 +101,22 @@ p <- add_targets_absolute(
   c("1" = 5, "2" = 8, "3" = 12)
 )
 
-# Only actions in the "recovery" set count
-p <- add_targets_absolute(p, 5, subset = "recovery")
+# Only actions in the "recovery" set count toward target achievement
+p <- add_targets_absolute(
+  p,
+  5,
+  subset = "recovery"
+)
 
-# Mix action sets and individual actions
-p <- add_targets_absolute(p, 5, subset = c("recovery", "conservation_action"))
+# Mix action sets and specific actions
+p <- add_targets_absolute(
+  p,
+  5,
+  subset = c("recovery", "conservation_action")
+)
 }
 
 }
 \seealso{
-\code{\link[=add_targets_relative]{add_targets_relative()}}
+\code{\link{add_targets_relative}}
 }

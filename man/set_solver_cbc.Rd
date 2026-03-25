@@ -2,7 +2,7 @@
 % Please edit documentation in R/set_solver.R
 \name{set_solver_cbc}
 \alias{set_solver_cbc}
-\title{Configure CBC solver settings}
+\title{Configure CPLEX solver settings}
 \usage{
 set_solver_cbc(
   x,
@@ -13,59 +13,65 @@ set_solver_cbc(
   solution_limit = NULL,
   cores = NULL,
   verbose = FALSE,
-  name_output_file = NULL,
-  output_file = NULL
+  log_file = NULL,
+  write_log = NULL
 )
 }
 \arguments{
-\item{x}{A \code{Problem} object created with \code{\link{inputData}} or
-\code{\link{inputDataSpatial}}.}
+\item{x}{A \code{Problem} object.}
 
-\item{...}{Additional solver-specific parameters passed as named arguments.
-These are merged into \code{solver_params}. For example,
-\code{MIPFocus = 1} for Gurobi.}
+\item{...}{Additional named solver-specific parameters. These are merged into
+\code{solver_params}. For example, \code{MIPFocus = 1} for Gurobi.}
 
-\item{solver_params}{A named list of solver-specific parameters.
-These values are merged with previously stored solver parameters rather
-than replacing them completely.}
+\item{solver_params}{Named list of solver-specific parameters. These are
+merged with previously stored backend-specific parameters rather than
+replacing them completely.}
 
-\item{gap_limit}{Numeric value in \code{[0, 1]} giving the relative
-optimality gap for mixed-integer optimization. If \code{NULL},
-the currently stored value is kept unchanged.}
+\item{gap_limit}{Optional numeric value in \eqn{[0,1]} giving the relative
+optimality gap for mixed-integer optimization. If \code{NULL}, the
+previously stored value is kept unchanged.}
 
-\item{time_limit}{Numeric. Maximum solving time in seconds.
-If \code{NULL}, the currently stored value is kept unchanged.}
+\item{time_limit}{Optional non-negative numeric value giving the maximum
+solving time in seconds. If \code{NULL}, the previously stored value is
+kept unchanged.}
 
-\item{solution_limit}{Logical. Whether the solver should stop after
-finding a feasible solution according to the backend-specific behavior.
-If \code{NULL}, the currently stored value is kept unchanged.}
+\item{solution_limit}{Optional logical flag controlling backend-specific
+early stopping after feasible solution discovery. If \code{NULL}, the
+previously stored value is kept unchanged.}
 
-\item{cores}{Integer. Number of CPU cores to use.
-If \code{NULL}, the currently stored value is kept unchanged.}
+\item{cores}{Optional positive integer giving the number of CPU cores to use.
+If \code{NULL}, the previously stored value is kept unchanged.}
 
-\item{verbose}{Logical. Should the solver print log output?
-If \code{NULL}, the currently stored value is kept unchanged.}
+\item{verbose}{Optional logical flag indicating whether the solver should
+print log output. If \code{NULL}, the previously stored value is kept
+unchanged.}
 
-\item{name_output_file}{Character string with the name of the solver log file.
-If \code{NULL}, the currently stored value is kept unchanged.}
+\item{log_file}{Optional character string giving the name of the
+solver log file. If \code{NULL}, the previously stored value is kept
+unchanged.}
 
-\item{output_file}{Logical. Should solver output be written to a file?
-If \code{NULL}, the currently stored value is kept unchanged.}
+\item{write_log}{Optional logical flag indicating whether solver output
+should be written to a file. If \code{NULL}, the previously stored value is
+kept unchanged.}
 }
 \value{
-An updated \code{Problem} object with CBC solver settings.
+An updated \code{Problem} object with CPLEX solver settings stored in
+\code{x$data$solve_args}.
 }
 \description{
-Convenience wrapper around \code{\link{set_solver}} that sets
-\code{solver = "cbc"}.
+Convenience wrapper around \code{\link{set_solver}} that stores
+\code{solver = "cplex"} in the problem object.
+
+This function does not solve the model. It only updates the stored solver
+configuration.
 }
 \examples{
 \dontrun{
-x <- set_solver_cbc(
+x <- set_solver_cplex(
   x,
-  gap_limit = 0.01,
-  time_limit = 600,
-  verbose = TRUE
+  gap_limit = 0.001,
+  time_limit = 1200,
+  cores = 8
 )
 }
 

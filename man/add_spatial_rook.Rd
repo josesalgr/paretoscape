@@ -2,30 +2,59 @@
 % Please edit documentation in R/add_spatial_relations.R
 \name{add_spatial_rook}
 \alias{add_spatial_rook}
-\title{Add rook adjacency from sf polygons}
+\title{Add rook adjacency from polygons}
 \usage{
 add_spatial_rook(x, pu_sf = NULL, name = "default", weight = 1)
 }
 \arguments{
-\item{x}{A \linkS4class{problem} object created with \code{\link[=inputDataSpatial]{inputDataSpatial()}}.}
+\item{x}{A \code{Problem} object created with
+\code{\link{inputData}} or another object containing aligned
+planning-unit polygons.}
 
-\item{pu_sf}{Optional \code{sf} object with PU polygons and an \code{id} column. If \code{NULL},
-uses \code{x$data$pu_sf}.}
+\item{pu_sf}{Optional \code{sf} object with planning-unit polygons and an
+\code{id} column. If \code{NULL}, \code{x$data$pu_sf} is used.}
 
-\item{name}{Character name/key under which to store the relation.}
+\item{name}{Character string giving the key under which the relation is
+stored.}
 
-\item{weight}{Numeric edge weight assigned to each rook adjacency (default 1).}
+\item{weight}{Numeric scalar giving the edge weight assigned to each rook
+adjacency.}
 }
 \value{
-Updated \linkS4class{problem} object.
+An updated \code{Problem} object.
 }
 \description{
-Build and register a rook adjacency relation (shared edge) from planning-unit polygons.
-Rook adjacency detects pairs of polygons that share a non-zero-length boundary segment.
+Build and register a rook adjacency relation from planning-unit polygons.
+
+Two planning units are rook-adjacent if they share a boundary segment of
+positive length. Corner-only contact does not count as rook adjacency.
+}
+\details{
+This constructor derives an adjacency graph from polygon geometry using a
+rook criterion. If planning units \eqn{i} and \eqn{j} share a common edge of
+non-zero length, then an edge \eqn{(i,j)} is added to the relation.
+
+Let \eqn{G = (V,E)} denote the resulting graph. Then:
+\deqn{
+(i,j) \in E \quad \Longleftrightarrow \quad
+\mathrm{length}(\partial i \cap \partial j) > 0.
+}
+
+All edges receive the same user-supplied weight.
+
+The resulting relation is stored as an undirected spatial relation.
 }
 \examples{
 \dontrun{
-x <- x |> add_spatial_rook(name = "rook", weight = 1)
+p <- add_spatial_rook(
+  x = p,
+  name = "rook",
+  weight = 1
+)
 }
 
+}
+\seealso{
+\code{\link{add_spatial_queen}},
+\code{\link{add_spatial_boundary}}
 }

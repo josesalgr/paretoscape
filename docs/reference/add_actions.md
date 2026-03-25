@@ -1,20 +1,20 @@
-# Add actions to a planning problem
+# Add management actions to a planning problem
 
-Define the set of management actions, where they can be implemented
-(feasibility), their costs, and optional lock status per `(pu, action)`
-pair. The function stores the action catalogue in `x$data$actions` and
-the feasible action distribution in `x$data$dist_actions`.
+Define the management action catalogue, the set of planning unit–action
+pairs for which each action is feasible, and the corresponding
+implementation costs.
 
-Feasibility is controlled via `include` / `exclude`:
+This function adds two core components to a `Problem` object. First, it
+stores the action catalogue in `x$data$actions`. Second, it builds the
+feasible distribution of planning unit–action pairs in
+`x$data$dist_actions`, including implementation costs, status codes, and
+internal integer indices used by the optimization backend.
 
-- If `include` is `NULL` and `feasible_default = TRUE`, all
-  `(pu, action)` pairs are feasible.
-
-- If `include` is provided, only those `(pu, action)` pairs are
-  feasible.
-
-- If `exclude` is provided, those `(pu, action)` pairs are removed from
-  the feasible set (either the full set or `include`).
+Conceptually, if \\\mathcal{P}\\ is the set of planning units and
+\\\mathcal{A}\\ is the set of actions, this function defines a feasible
+set \\\mathcal{F} \subseteq \mathcal{P} \times \mathcal{A}\\ together
+with a non-negative cost function \\c : \mathcal{F} \to \mathbb{R}\_{\ge
+0}\\.
 
 ## Usage
 
@@ -25,10 +25,8 @@ add_actions(
   include = NULL,
   exclude = NULL,
   cost = NULL,
-  status = NULL,
   feasible_default = TRUE,
-  na_is_infeasible = TRUE,
-  sort_actions = TRUE
+  na_is_infeasible = TRUE
 )
 ```
 
@@ -36,160 +34,200 @@ add_actions(
 
 - x:
 
-  A `Data` object created with
-  [`inputData`](https://josesalgr.github.io/mosap/reference/inputData.md)
-  or
-  [`inputDataSpatial`](https://josesalgr.github.io/mosap/reference/inputDataSpatial.md).
-  Must contain at least `x$data$pu`, `x$data$features`, and
-  `x$data$dist_features`.
+  A `Problem` object created with
+  [`inputData`](https://josesalgr.github.io/mosap/reference/inputData.md).
 
 - actions:
 
-  A `data.frame` defining the action catalogue. Must contain a unique
-  `id` column (action identifiers). For backwards compatibility, a
-  column named `action` is also accepted and will be renamed to `id`.
-  Additional columns are kept.
+  A `data.frame` defining the action catalogue. It must contain a unique
+  `id` column. A column named `action` is also accepted and
+  automatically renamed to `id`.
 
 - include:
 
-  Optional feasibility specification. If provided, only these
-  `(pu, action)` pairs are feasible. Accepts `NULL`, a `data.frame`, or
-  a named list (see Details).
+  Optional feasibility specification defining which `(pu, action)` pairs
+  are allowed. It can be `NULL`, a `data.frame` with columns `pu` and
+  `action` (optionally also `feasible`), or a named list whose names are
+  action ids and whose elements are vectors of planning unit ids or `sf`
+  objects.
 
 - exclude:
 
-  Optional infeasibility specification. Removed from the feasible set
-  defined by `include` (or from the full set if `include` is `NULL` and
-  `feasible_default = TRUE`). Accepts the same formats as `include`.
+  Optional infeasibility specification. It uses the same formats as
+  `include` and removes matching `(pu, action)` pairs from the feasible
+  set.
 
 - cost:
 
-  Optional cost specification for feasible `(pu, action)` pairs.
-  Accepts:
-
-  - `NULL`: default cost = 1 for all pairs,
-
-  - a single numeric scalar,
-
-  - a named numeric vector (names = action ids),
-
-  - a `data.frame(action, cost)` or `data.frame(pu, action, cost)`.
-
-- status:
-
-  Optional `data.frame` with columns `pu`, `action`, and `status`
-  specifying lock status for feasible pairs. Status must be in
-  `{0, 2, 3}`.
+  Optional cost specification for feasible pairs. It may be `NULL`, a
+  scalar numeric value, a named numeric vector indexed by action id, or
+  a `data.frame` with columns `action, cost` or `pu, action, cost`.
 
 - feasible_default:
 
-  Logical. If `include` is `NULL`, should all actions be feasible in all
-  planning units? If `FALSE` and `include` is `NULL`, the function
-  errors.
+  Logical. If `TRUE` and `include` is `NULL`, all possible
+  `(pu, action)` pairs are considered feasible.
 
 - na_is_infeasible:
 
-  Logical. Only relevant when `include`/`exclude` are provided as
-  `data.frame`s with a `feasible` column. If `TRUE`, treat `NA` as
-  `FALSE`.
-
-- sort_actions:
-
-  Logical. If `TRUE`, sort `actions` by `id` before assigning internal
-  ids.
+  Logical. Relevant only when `include` or `exclude` is provided as a
+  `data.frame` with a `feasible` column. If `TRUE`, missing values in
+  `feasible` are treated as `FALSE`.
 
 ## Value
 
-The updated `Data` object with:
+An updated `Problem` object with:
 
-- `x$data$actions`: action catalogue including `internal_id`,
+- `x$data$actions`:
 
-- `x$data$dist_actions`: feasible `(pu, action)` pairs with columns
-  `pu`, `action`, `cost`, `status`, `internal_pu`, and
-  `internal_action`,
+  The action catalogue, including a unique integer `internal_id` for
+  each action.
 
-- `x$data$index$pu` and `x$data$index$action`: id-to-internal-id
-  mappings.
+- `x$data$dist_actions`:
 
-The updated
-[data](https://josesalgr.github.io/mosap/reference/data-class.md)
-object.
+  The feasible planning unit–action distribution with columns `pu`,
+  `action`, `cost`, `status`, `internal_pu`, and `internal_action`.
+
+- `x$data$index$pu`:
+
+  A mapping from user-supplied planning unit ids to internal integer
+  ids.
+
+- `x$data$index$action`:
+
+  A mapping from action ids to internal integer ids.
 
 ## Details
 
-**Accepted formats for `include` and `exclude`:**
+The `actions` argument must be a `data.frame` with a unique `id` column
+identifying each action. If a column named `action` is supplied instead,
+it is renamed internally to `id`. Additional columns are preserved. If
+no `name` column is provided, action names are taken from `id`. If an
+`action_set` column is present, it is retained and can be used later for
+grouped constraints or reporting.
 
-- `NULL`: no restriction (only valid for `include` when
-  `feasible_default = TRUE`).
+Feasibility is controlled through `include` and `exclude`. If
+`include = NULL` and `feasible_default = TRUE`, all possible
+`(pu, action)` pairs are considered feasible. If `include` is supplied,
+only those pairs are retained. If `exclude` is also supplied, the
+specified pairs are removed from the feasible set after applying
+`include`.
 
-- A `data.frame` with columns `pu` and `action`. An optional `feasible`
-  column is supported as a filter (only rows with `feasible == TRUE` are
-  used). If `na_is_infeasible = TRUE`, `NA` values in `feasible` are
-  treated as `FALSE`. Action ids must match `actions$id`, and PU ids
-  must match `x$data$pu$id`.
-
-- A named list with names equal to action ids. Each element can be:
-
-  - an integer vector of PU ids, or
-
-  - an `sf` object defining a spatial zone for that action.
-
-**Spatial feasibility:** when `include`/`exclude` are provided as `sf`
-layers, feasibility is computed using spatial predicates (no geometries
-are cut). Specifically, planning units in `x$data$pu_sf` are matched to
-zones via
+Both `include` and `exclude` may be specified as `NULL`, as a
+`data.frame`, or as a named list. When provided as a `data.frame`, the
+object must contain columns `pu` and `action`; an optional logical-like
+column `feasible` can also be used, in which case rows with
+`feasible = FALSE` are ignored. When provided as a named list, names
+must match action identifiers. Each element of the list may contain
+either a vector of planning unit ids or, when spatial planning units are
+available in `x$data$pu_sf`, an `sf` layer defining the geographic area
+where that action is feasible. In the latter case, feasible planning
+units are identified using
 [`sf::st_intersects()`](https://r-spatial.github.io/sf/reference/geos_binary_pred.html).
-This procedure does not create new planning unit geometries.
 
-**Costs:** costs can be specified as a single scalar applied to all
-feasible pairs, a named numeric vector by action id, or a `data.frame`
-providing costs by action (`action, cost`) or by pair
-(`pu, action, cost`). Costs must be finite and non-negative.
+It is important to distinguish feasibility from decision fixing. This
+function only determines whether a `(pu, action)` pair is available to
+the model. It does not force an action to be selected or prevented
+beyond structural infeasibility. Fixed decisions should be imposed later
+using
+[`add_locked_actions`](https://josesalgr.github.io/mosap/reference/add_locked_actions.md).
 
-**Locks:** `status` can set the lock status for specific feasible pairs.
-Status must be one of `0` (free), `2` (locked-in), or `3` (locked-out).
-If `x$data$pu` contains a logical `locked_out` column, then all action
-pairs in those PUs are forced to `status = 3`.
+Costs can be provided in several ways. If `cost` is `NULL`, all feasible
+pairs receive a default cost of 1. If `cost` is a scalar, the same cost
+is assigned to every feasible pair. If `cost` is a named numeric vector,
+names must match action ids and costs are assigned by action. If `cost`
+is a `data.frame`, it must define either action-level costs through
+columns `action` and `cost`, or pair-specific costs through columns
+`pu`, `action`, and `cost`. In all cases, costs must be finite and
+non-negative.
+
+Internally, all feasible pairs are initialized with `status = 0`,
+indicating a free decision. If `x$data$pu$locked_out` exists and a
+planning unit is marked as locked out, all actions in that planning unit
+are assigned `status = 3`. This preserves consistency with planning-unit
+exclusions already encoded in the problem object.
+
+Calling `add_actions()` replaces any previous action catalogue and
+feasible action distribution stored in the problem.
 
 ## See also
 
 [`inputData`](https://josesalgr.github.io/mosap/reference/inputData.md),
-[`inputDataSpatial`](https://josesalgr.github.io/mosap/reference/inputDataSpatial.md)
+[`add_locked_actions`](https://josesalgr.github.io/mosap/reference/add_locked_actions.md)
 
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
-# Action catalogue
-actions_df <- data.frame(id = c("harvest", "sustainable", "restoration"))
+# Minimal planning problem
+pu <- data.frame(
+  id = 1:4,
+  cost = c(2, 3, 1, 4)
+)
 
-# 1) Full feasibility (all actions everywhere), constant cost
-p <- add_actions(p, actions = actions_df, cost = 10)
+features <- data.frame(
+  id = c("sp1", "sp2")
+)
 
-# 2) Only allow some pairs (include)
+dist_features <- data.frame(
+  pu = c(1, 1, 2, 3, 4, 4),
+  feature = c("sp1", "sp2", "sp1", "sp2", "sp1", "sp2"),
+  amount = c(1, 2, 1, 3, 2, 1)
+)
+
+p <- inputData(
+  pu = pu,
+  features = features,
+  dist_features = dist_features
+)
+#> Error: features$id must be numeric/integer ids (got non-numeric strings).
+
+actions <- data.frame(
+  id = c("conservation", "restoration"),
+  name = c("Conservation", "Restoration")
+)
+
+# Example 1: all actions feasible everywhere, with action-level costs
+p1 <- add_actions(
+  x = p,
+  actions = actions,
+  cost = c(conservation = 5, restoration = 12)
+)
+#> Error: object 'p' not found
+
+head(p1$data$dist_actions)
+#> Error: object 'p1' not found
+
+# Example 2: specify feasibility explicitly
 include_df <- data.frame(
-  pu = c(1, 2, 10),
-  action = c("harvest", "harvest", "restoration")
+  pu = c(1, 2, 3, 4),
+  action = c("conservation", "conservation", "restoration", "restoration")
 )
-p <- add_actions(p, actions = actions_df, include = include_df, cost = 10)
 
-# 3) Allow everything except some impossible pairs (exclude)
-exclude_df <- data.frame(pu = c(1, 2, 3, 5), action = "harvest")
-p <- add_actions(p, actions = actions_df, exclude = exclude_df, cost = 10)
-
-# 4) Feasibility as a named list (PU ids per action)
-include_list <- list(
-  harvest = c(1, 2, 3),
-  restoration = c(10, 11)
+p2 <- add_actions(
+  x = p,
+  actions = actions,
+  include = include_df,
+  cost = 10
 )
-p <- add_actions(p, actions = actions_df, include = include_list)
+#> Error: object 'p' not found
 
-# 5) Action-specific costs (named vector)
-costs <- c(harvest = 5, sustainable = 2, restoration = 8)
-p <- add_actions(p, actions = actions_df, cost = costs)
+p2$data$dist_actions
+#> Error: object 'p2' not found
 
-# 6) Lock status for specific pairs
-st <- data.frame(pu = c(1, 10), action = c("harvest", "restoration"), status = c(3L, 2L))
-p <- add_actions(p, actions = actions_df, status = st)
-} # }
+# Example 3: exclude selected pairs after full expansion
+exclude_df <- data.frame(
+  pu = c(2, 4),
+  action = c("restoration", "conservation")
+)
+
+p3 <- add_actions(
+  x = p,
+  actions = actions,
+  exclude = exclude_df,
+  cost = c(conservation = 3, restoration = 8)
+)
+#> Error: object 'p' not found
+
+p3$data$dist_actions
+#> Error: object 'p3' not found
 ```

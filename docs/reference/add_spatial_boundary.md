@@ -1,8 +1,11 @@
-# Add spatial boundary-length relations from sf polygons or a boundary table
+# Add spatial boundary-length relations
 
-Register a boundary-length relation between planning units. Boundary
-relations represent shared edge length between adjacent polygons (not
-queen touches).
+Build and register a boundary-length spatial relation between planning
+units.
+
+Boundary relations represent shared edge length between adjacent
+polygons. In contrast to queen adjacency, they only account for boundary
+segments of positive length and ignore point-only contacts.
 
 ## Usage
 
@@ -24,83 +27,136 @@ add_spatial_boundary(
 
 - x:
 
-  A [data](https://josesalgr.github.io/mosap/reference/data-class.md)
-  object.
+  A `Problem` object.
 
 - boundary:
 
-  Optional `data.frame` describing boundaries. Accepted formats:
+  Optional `data.frame` describing boundary lengths. Accepted formats
+  are:
 
-  - `(id1, id2, boundary)` (Marxan-style), or
+  - `(id1, id2, boundary)`, or
 
   - `(pu1, pu2, weight)`.
 
 - pu_sf:
 
-  Optional `sf` object with PU polygons and an `id` column. If `NULL`,
-  uses `x$data$pu_sf`.
+  Optional `sf` object with planning-unit polygons and an `id` column.
+  If `NULL`, `x$data$pu_sf` is used.
 
 - name:
 
-  Character name/key under which to store the relation (default
-  `"boundary"`).
+  Character string giving the key under which the relation is stored.
 
 - weight_col:
 
-  Character. Column in `boundary` to use as weights. If `NULL`, attempts
-  to guess `"boundary"` or `"weight"`.
+  Optional character string giving the name of the weight column in
+  `boundary`. If `NULL`, the function tries to infer it from
+  `"boundary"` or `"weight"`.
 
 - weight_multiplier:
 
-  Numeric multiplier applied to boundary weights (e.g., BLM scaling).
-  Must be finite and positive.
+  Positive numeric scalar applied to all boundary weights.
 
 - progress:
 
-  Logical. If `TRUE`, prints basic progress messages for large
-  instances.
+  Logical. If `TRUE`, print simple progress messages in geometry mode.
 
 - include_self:
 
-  Logical. If `TRUE` (default), include diagonal `(i,i)` entries
-  representing effective exposed boundary length.
+  Logical. If `TRUE`, include diagonal entries representing exposed
+  boundary.
 
 - edge_factor:
 
-  Numeric \\\ge 0\\. Multiplier applied to exposed boundary when
-  computing diagonal weights.
+  Numeric scalar greater than or equal to zero. Multiplier applied to
+  exposed boundary when constructing diagonal entries.
 
 ## Value
 
-Updated
-[data](https://josesalgr.github.io/mosap/reference/data-class.md) object
-with a stored relation `x$data$spatial_relations[[name]]`.
+An updated `Problem` object with the stored relation in
+`x$data$spatial_relations[[name]]`.
 
 ## Details
 
 Two input modes are supported:
 
-1.  **Boundary table mode.** If `boundary` is provided, it is
-    interpreted as a table containing PU pairs and a boundary-length
-    weight (e.g., Marxan-style `bound.dat`).
+1.  **Boundary-table mode.** If `boundary` is supplied, it is
+    interpreted as a boundary table, for example a Marxan-style
+    `bound.dat`.
 
-2.  **Geometry mode.** If `boundary` is `NULL`, boundary lengths are
-    derived from planning-unit polygons (`pu_sf` or `x$data$pu_sf`).
+2.  **Geometry mode.** If `boundary = NULL`, boundary lengths are
+    derived from polygon geometry using `pu_sf` or `x$data$pu_sf`.
 
-If `include_self=TRUE`, the function also adds diagonal entries `(i,i)`
-with weights equal to an "effective exposed boundary" (scaled by
-`edge_factor`). This is useful for objectives such as boundary-length
-modifier / fragmentation penalties where perimeter exposed to the
-outside should be counted.
+Let \\\omega\_{ij} \ge 0\\ denote the shared boundary length between
+planning units \\i\\ and \\j\\, multiplied by `weight_multiplier`.
+
+For off-diagonal entries \\i \neq j\\, the stored weight is: \$\$
+\omega\_{ij} = \mathrm{BLM} \times b\_{ij}, \$\$ where \\b\_{ij}\\ is
+the shared boundary length and \\\mathrm{BLM}\\ is the user-supplied
+`weight_multiplier`.
+
+If `include_self = TRUE`, diagonal entries are also created. These are
+not geometric self-neighbours in the graph sense; instead, they
+represent the effective boundary exposed to the outside of the solution.
+
+Let \\p_i\\ be the total perimeter of planning unit \\i\\, and let
+\\\sum\_{j \neq i} \omega\_{ij}\\ be the total incident shared boundary
+recorded for that planning unit. Then the exposed boundary is: \$\$ e_i
+= \max\left\\ p_i \times \mathrm{BLM} - \sum\_{j \neq i} \omega\_{ij}, 0
+\right\\, \$\$ and the stored diagonal term is: \$\$ \omega\_{ii} =
+\mathrm{edge\\factor} \times e_i. \$\$
+
+These diagonal terms are useful in boundary-based compactness or
+fragmentation objectives, because they encode the portion of each
+planning unit's perimeter that would remain exposed if the unit were
+selected.
+
+**Boundary-table mode**
+
+If `boundary` is provided, accepted formats are:
+
+- `(id1, id2, boundary)`, or
+
+- `(pu1, pu2, weight)`.
+
+If the table contains diagonal rows \\(i,i)\\, these are interpreted as
+total perimeter values in boundary-table mode.
+
+**Geometry mode**
+
+If `boundary = NULL`, shared boundary lengths are derived directly from
+polygon geometry. Only positive-length intersections are retained. Point
+touches are ignored.
+
+**Storage**
+
+The final relation is stored through
+[`add_spatial_relations`](https://josesalgr.github.io/mosap/reference/add_spatial_relations.md),
+typically as an undirected relation with optional diagonal entries.
+
+## See also
+
+[`add_spatial_relations`](https://josesalgr.github.io/mosap/reference/add_spatial_relations.md),
+[`add_objective_min_fragmentation`](https://josesalgr.github.io/mosap/reference/add_objective_min_fragmentation.md),
+[`add_objective_min_action_fragmentation`](https://josesalgr.github.io/mosap/reference/add_objective_min_action_fragmentation.md)
 
 ## Examples
 
 ``` r
 if (FALSE) { # \dontrun{
-# From a Marxan-style boundary table:
-x <- x |> add_spatial_boundary(boundary = bound_df, name = "boundary")
+# From a boundary table
+p <- add_spatial_boundary(
+  x = p,
+  boundary = bound_df,
+  name = "boundary"
+)
 
-# From sf polygons:
-x <- x |> add_spatial_boundary(pu_sf = pu_sf, include_self = TRUE, edge_factor = 1)
+# From sf polygons
+p <- add_spatial_boundary(
+  x = p,
+  pu_sf = pu_sf,
+  include_self = TRUE,
+  edge_factor = 1
+)
 } # }
 ```

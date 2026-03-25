@@ -1,8 +1,8 @@
-# Build optimization model from Data
+# Build optimization model from Problem
 
 Materializes (builds) the optimization model using the current state of
-the `Data` object: prepared data tables, stored objective settings, and
-stored constraints (e.g., targets).
+the `Problem` object: prepared data tables, stored objective settings,
+and stored constraints (e.g., targets).
 
 ## Usage
 
@@ -14,9 +14,9 @@ stored constraints (e.g., targets).
 
 - x:
 
-  Data object (class "Data") created with
+  Problem object (class "Problem") created with
   inputData()/inputDataSpatial().
 
 ## Value
 
-Updated `Data` object with model pointer and model snapshot.
+Updated `Problem` object with model pointer and model snapshot.

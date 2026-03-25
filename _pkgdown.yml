@@ -1,5 +1,4 @@
 title: mosap
-
 url: https://josesalgr.github.io/mosap/
 
 template:
@@ -11,14 +10,6 @@ template:
     ganalytics: G-6YB8F3838H
 
 destination: docs
-
-authors:
-  Jose Salgado-Rojas:
-    href: https://scholar.google.com/citations?user=Z3F-9DgAAAAJ&hl=en
-  Matias Moreno-Faguett:
-    href: https://www.ctfc.cat/personal24_det.php?id=148
-  Nuria Aquilue:
-    href: https://scholar.google.com/citations?user=OLJaCsYAAAAJ&hl=en
 
 navbar:
   structure:
@@ -33,32 +24,37 @@ navbar:
     github:
       icon: fa-github
       href: https://github.com/josesalgr/mosap
+      aria-label: GitHub repository
 
 reference:
 
-  - title: Create and solve problems
-    desc: Core workflow to build a planning problem and solve it.
+  - title: Build and solve problems
+    desc: Core workflow to create a planning problem, configure it, and solve it.
     contents:
       - inputData
       - solve
-      - mosap
 
-  - title: Actions, effects, targets and profits
-    desc: Define actions/effects (benefits), targets, and optional profit layers used by objectives/constraints.
+  - title: Actions, effects, profits and locks
+    desc: Define feasible actions, their effects, optional profits, and fixed decisions.
     contents:
       - add_actions
       - add_effects
       - add_benefits
+      - add_losses
       - add_profit
-      - add_conservation_targets_absolute
-      - add_conservation_targets_relative
-      - add_recovery_targets_absolute
-      - add_recovery_targets_relative
-      - add_mixed_targets_total_absolute
-      - add_mixed_targets_total_relative
+      - add_locked_actions
+      - add_locked_pu
+
+  - title: Targets and constraints
+    desc: Define target requirements and area-related constraints.
+    contents:
+      - add_targets_absolute
+      - add_targets_relative
+      - add_area_min_constraint
+      - add_area_max_constraint
 
   - title: Spatial relations
-    desc: Register adjacency/boundary relations (from tables, polygons, or coordinates) used by spatial objectives.
+    desc: Register boundary and graph-based spatial relations from tables, polygons, or coordinates.
     contents:
       - add_spatial_relations
       - add_spatial_boundary
@@ -68,25 +64,35 @@ reference:
       - add_spatial_distance
 
   - title: Atomic objectives
-    desc: Register objectives that can be solved alone or combined in multi-objective methods.
+    desc: Register objectives that can be solved individually or combined in multi-objective workflows.
     contents:
-      - starts_with("add_objective_")
-
-  - title: Solver configuration
-    desc: Configure solver and runtime options before calling solve().
-    contents:
-      - starts_with("set_solver")
-      - starts_with("add_") # si tienes helpers tipo add_gurobi_solver(); si NO, bórralo.
+      - add_objective_min_cost
+      - add_objective_max_benefit
+      - add_objective_min_loss
+      - add_objective_max_profit
+      - add_objective_max_net_profit
+      - add_objective_min_fragmentation
+      - add_objective_min_action_fragmentation
+      - add_objective_min_intervention_impact
 
   - title: Multi-objective methods
-    desc: Configure and solve multi-objective problems (e.g., weighted sum).
+    desc: Configure weighted-sum, epsilon-constraint, and AUGMECON workflows.
     contents:
       - set_method_weighted
       - set_method_epsilon_constraint
-      - solve
+      - set_method_augmecon
 
-  - title: Results and solution helpers
-    desc: Extract tables and diagnostics from a Solution object.
+  - title: Solver configuration
+    desc: Store solver and runtime options before calling solve().
+    contents:
+      - set_solver
+      - set_solver_gurobi
+      - set_solver_cplex
+      - set_solver_cbc
+      - set_solver_symphony
+
+  - title: Results and extraction
+    desc: Extract user-facing summaries and raw solution vectors.
     contents:
       - get_pu
       - get_actions
@@ -94,21 +100,21 @@ reference:
       - get_targets
       - get_solution_vector
 
+  - title: Plotting
+    desc: Visualize spatial outputs and multi-objective trade-offs.
+    contents:
+      - plot_spatial
+      - plot_tradeoff
+
   - title: Classes
     desc: Core classes used across the package.
     contents:
-      - Data
-      - MOProblem
-      - Solution
+      - problem-class
+      - solution-class
+      - solutionset-class
 
   - title: Data
     desc: Simulated datasets distributed with the package.
     contents:
       - starts_with("sim_")
       - simData
-
-  - title: Miscellaneous
-    desc: Utilities and print methods.
-    contents:
-      - print
-      - show

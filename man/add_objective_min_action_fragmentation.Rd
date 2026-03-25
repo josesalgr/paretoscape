@@ -16,23 +16,129 @@ add_objective_min_action_fragmentation(
 \arguments{
 \item{x}{A \code{Problem} object.}
 
-\item{relation_name}{Character. Name of the spatial relation.}
+\item{relation_name}{Character string giving the name of the spatial relation
+to use. The relation must already exist in
+\code{x$data$spatial_relations}.}
 
-\item{weight_multiplier}{Numeric >= 0. Multiplier applied to relation weights.}
+\item{weight_multiplier}{Numeric scalar greater than or equal to zero. Global
+multiplier applied to the relation weights when the objective is built.}
 
 \item{action_weights}{Optional action weights. Either a named numeric vector
-(names = action ids) or a \code{data.frame(action, weight)}.}
+with names equal to action ids, or a \code{data.frame} with columns
+\code{action} and \code{weight}. These weights scale the contribution of
+each action to the final objective.}
 
-\item{actions}{Optional subset of actions to include. Values may match \code{actions$id}
-and, if present, \code{actions$action_set}.}
+\item{actions}{Optional subset of actions to include. Values may match
+\code{x$data$actions$id} and, if present,
+\code{x$data$actions$action_set}. If \code{NULL}, all actions are included.}
 
-\item{alias}{Optional identifier for multi-objective workflows.}
+\item{alias}{Optional identifier used to register this objective for
+multi-objective workflows.}
 }
 \value{
-Updated \code{Problem} object.
+An updated \code{Problem} object.
 }
 \description{
-Specify an objective that minimizes fragmentation at the action level over
-a spatial relation. The objective can optionally be restricted to a subset
-of actions and/or weighted by action.
+Define an objective that minimizes fragmentation at the action level over a
+stored spatial relation.
+
+Unlike \code{\link{add_objective_min_fragmentation}}, which acts on the
+selected planning-unit set through \eqn{w_i}, this objective acts on the
+spatial arrangement of individual action decisions through the action
+variables \eqn{x_{ia}}.
+}
+\details{
+Let \eqn{\mathcal{P}} denote the set of planning units and let
+\eqn{\mathcal{A}} denote the set of actions.
+
+Let \eqn{x_{ia} \in \{0,1\}} indicate whether action \eqn{a \in \mathcal{A}}
+is selected in planning unit \eqn{i \in \mathcal{P}}.
+
+Let the chosen spatial relation
+\code{x$data$spatial_relations[[relation_name]]} define weighted pairs with
+weights \eqn{\omega_{ij} \ge 0}, and let
+\eqn{\lambda = \code{weight_multiplier}} be the global scaling factor applied
+to these weights.
+
+If \code{actions} is supplied, only the selected subset
+\eqn{\mathcal{A}^{\star} \subseteq \mathcal{A}} contributes to the final
+objective. If \code{actions = NULL}, all actions are included.
+
+The internal preparation step constructs one auxiliary variable
+\eqn{b_{ija} \in [0,1]} for each unique non-diagonal undirected edge
+\eqn{(i,j)} with \eqn{i < j} and for each action \eqn{a}. These variables are
+created globally for all actions.
+
+For each edge--action combination, the intended semantics is:
+\deqn{
+b_{ija} = x_{ia} \land x_{ja}.
+}
+
+Whenever both decision variables \eqn{x_{ia}} and \eqn{x_{ja}} exist in the
+model, this conjunction is enforced by the linearization:
+\deqn{
+b_{ija} \le x_{ia},
+}
+\deqn{
+b_{ija} \le x_{ja},
+}
+\deqn{
+b_{ija} \ge x_{ia} + x_{ja} - 1.
+}
+
+If one of the two action variables does not exist because the corresponding
+\code{(pu, action)} pair is not feasible, the auxiliary variable is forced to
+zero:
+\deqn{
+b_{ija} = 0.
+}
+
+Therefore, \eqn{b_{ija}=1} if and only if action \eqn{a} is selected in both
+adjacent planning units \eqn{i} and \eqn{j}; otherwise \eqn{b_{ija}=0}.
+
+The exact objective coefficients are assembled later by the model builder
+from:
+\itemize{
+\item the action decision variables \eqn{x_{ia}},
+\item the edge-conjunction variables \eqn{b_{ija}},
+\item the relation weights \eqn{\omega_{ij}},
+\item the multiplier \eqn{\lambda},
+\item and, if supplied, the action-specific weights.
+}
+
+If action-specific weights are provided, let \eqn{\alpha_a \ge 0} denote the
+weight associated with action \eqn{a}. Then the resulting objective can be
+interpreted as an action-wise compactness or fragmentation functional of the
+form:
+\deqn{
+\min \sum_{a \in \mathcal{A}^{\star}} \alpha_a \,
+F_a(x_{\cdot a}, b_{\cdot\cdot a}; \lambda \omega),
+}
+where \eqn{F_a} is the fragmentation expression induced by the selected
+relation and the internal coefficient construction for action \eqn{a}.
+
+In practical terms, this objective penalizes solutions in which the same
+action is spatially scattered or broken into separate patches, while allowing
+different actions to form different spatial patterns.
+
+This differs from planning-unit fragmentation:
+\itemize{
+\item \code{add_objective_min_fragmentation()} encourages cohesion of the
+union of selected planning units,
+\item \code{add_objective_min_action_fragmentation()} encourages cohesion of
+each selected action pattern separately.
+}
+
+A key implementation detail is that the auxiliary block is built over the
+global set of unique undirected non-diagonal edges and all actions, even if a
+later subset of actions is used in the objective. Missing edge--action
+combinations induced by infeasible decisions are fixed to zero.
+
+Setting \code{weight_multiplier = 0} removes the contribution of the spatial
+relation from the objective after scaling.
+}
+\seealso{
+\code{\link{add_objective_min_fragmentation}},
+\code{\link{add_spatial_boundary}},
+\code{\link{add_spatial_relations}}
 }

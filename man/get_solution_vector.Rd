@@ -2,27 +2,50 @@
 % Please edit documentation in R/get_solution.R
 \name{get_solution_vector}
 \alias{get_solution_vector}
-\title{Get raw solution vector from a Solution}
+\title{Get raw solution vector from a solution}
 \usage{
 get_solution_vector(x, run = 1L)
 }
 \arguments{
-\item{x}{A \linkS4class{solution} object returned by \code{\link[=solve]{solve()}}.}
+\item{x}{A \code{Solution} or \code{SolutionSet} object returned by
+\code{\link{solve}}.}
 
-\item{run}{Integer. For multi-run objects, the run index to extract. Default \code{1L}.}
+\item{run}{Positive integer giving the run index to extract when \code{x} is
+a \code{SolutionSet}. Default is \code{1L}.}
 }
 \value{
-A numeric vector with one value per model variable.
+A numeric vector with one value per internal model variable.
 }
 \description{
-Return the raw decision-variable vector produced by the solver, in the internal model
-variable order used by the optimizer backend.
+Return the raw decision-variable vector produced by the solver, in the
+internal model-variable order used by the optimization backend.
 }
 \details{
-This function expects the raw solution vector at \code{x$solution$vector} and errors if it is missing.
-The vector is returned as numeric and corresponds to the model's variable ordering (e.g.,
-planning-unit selection variables, action variables, and any auxiliary variables such as
-fragmentation variables when present).
+This function extracts the raw solution vector stored at
+\code{x$solution$vector} for a \code{Solution} or for a selected run of a
+\code{SolutionSet}.
+
+The returned vector is in the internal variable order of the optimization
+model. Depending on the problem formulation, it may include:
+\itemize{
+\item planning-unit selection variables,
+\item action-allocation variables,
+\item auxiliary variables introduced for targets, budgets, fragmentation,
+or other constraints/objectives,
+\item and potentially additional blocks created internally by the model
+builder.
+}
+
+Therefore, this vector is primarily intended for advanced users, debugging,
+diagnostics, or internal verification. It is not a user-facing allocation
+table.
+
+To inspect selected planning units or selected actions in a more interpretable
+form, use \code{\link{get_pu}} or \code{\link{get_actions}} instead.
+
+For a single solution, the returned vector corresponds to that solution.
+For a \code{SolutionSet}, the \code{run} argument selects which run to
+extract.
 }
 \examples{
 \dontrun{
@@ -33,5 +56,8 @@ length(v)
 
 }
 \seealso{
-\code{\link[=get_pu]{get_pu()}}, \code{\link[=get_actions]{get_actions()}}, \code{\link[=get_features]{get_features()}}, \code{\link[=get_targets]{get_targets()}}
+\code{\link{get_pu}},
+\code{\link{get_actions}},
+\code{\link{get_features}},
+\code{\link{get_targets}}
 }

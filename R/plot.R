@@ -1,43 +1,186 @@
 #' @title Plot spatial outputs from a solution or solution set
 #'
 #' @description
-#' Plot spatial information from a `Solution` object or from one or more runs of a
-#' `SolutionSet` object.
+#' Plot spatial outputs derived from a \code{Solution} or \code{SolutionSet}
+#' object.
 #'
-#' Supported views are:
+#' This function provides three main spatial views:
 #' \itemize{
-#'   \item \code{"pu"}: selected planning units.
-#'   \item \code{"actions"}: selected actions in space.
-#'   \item \code{"features"}: spatial distribution of features using baseline,
-#'   benefit, or final values.
+#'   \item \code{"pu"}: selected planning units,
+#'   \item \code{"actions"}: selected actions in space,
+#'   \item \code{"features"}: spatial feature values based on baseline or
+#'   action-induced changes.
 #' }
 #'
-#' @param x A `Solution` or `SolutionSet` object.
-#' @param what Character. One of `"pu"`, `"actions"`, or `"features"`.
-#' @param runs Optional integer vector of run ids. If `NULL`, a `Solution` is used
-#'   directly, and for a `SolutionSet` the first run is used.
-#' @param subset Optional character vector used to filter actions or features.
-#' @param value Character. Only used when `what = "features"`. One of
-#'   `"final"`, `"baseline"`, or `"benefit"`.
-#' @param layout Character. One of `"single"` or `"facet"`. For actions, the
-#'   default is `"single"`. For features, the default is `"facet"`.
-#' @param max_facets Maximum number of facets shown when `subset = NULL`.
-#' @param only_selected Logical. Only used when `what = "pu"`.
-#' @param ... Reserved for future extensions.
-#' @param base_alpha Numeric in `[0,1]`. Alpha used for the base PU layer.
-#' @param selected_alpha Numeric in `[0,1]`. Alpha used for highlighted layers.
-#' @param base_fill Fill color for the base PU layer.
-#' @param base_color Border color for the base PU layer.
-#' @param selected_color Border color for highlighted layers.
-#' @param draw_borders Logical. If `FALSE`, borders are not drawn. This is faster
-#'   for large spatial datasets.
-#' @param show_base Logical. If `TRUE`, draw the base PU layer underneath the
-#'   highlighted layer.
-#' @param fill_values Optional named vector of colors for discrete maps.
-#' @param fill_na Fill color for missing values.
-#' @param use_viridis Logical.
+#' The function requires planning-unit geometry to be available in
+#' \code{x$problem$data$pu_sf}.
 #'
-#' @return Invisibly returns a `ggplot` object.
+#' @details
+#' \strong{General behaviour}
+#'
+#' This function is a plotting helper built on top of the stored solution
+#' summaries and the geometry preserved in the associated \code{Problem}
+#' object. It does not rebuild a spatial problem from scratch. Instead, it
+#' combines:
+#' \itemize{
+#'   \item geometry from \code{x$problem$data$pu_sf},
+#'   \item solution summaries extracted with \code{\link{get_pu}},
+#'   \code{\link{get_actions}}, and related internal data,
+#'   \item baseline feature distributions from
+#'   \code{x$problem$data$dist_features},
+#'   \item and, when needed, effect information from
+#'   \code{x$problem$data$dist_effects} or
+#'   \code{x$problem$data$dist_effects_model}.
+#' }
+#'
+#' The returned object is a \code{ggplot} object, which is also printed.
+#'
+#' \strong{Run handling}
+#'
+#' If \code{x} is a \code{Solution}, then \code{runs} must be \code{NULL} or
+#' \code{1}.
+#'
+#' If \code{x} is a \code{SolutionSet}, the \code{runs} argument selects which
+#' runs to plot. If \code{runs = NULL}, the first run is used by default.
+#'
+#' Some plotting modes impose additional restrictions when several runs are
+#' displayed simultaneously:
+#' \itemize{
+#'   \item for \code{what = "actions"}, \code{layout = "facet"} is not allowed
+#'   when plotting multiple runs,
+#'   \item for \code{what = "features"}, plotting multiple runs requires that
+#'   \code{subset} specify exactly one feature.
+#' }
+#'
+#' \strong{View: \code{what = "pu"}}
+#'
+#' This view plots planning units and highlights those with
+#' \code{selected == 1} in the stored planning-unit summary.
+#'
+#' Let \eqn{w_i \in \{0,1\}} denote the planning-unit selection variable for
+#' planning unit \eqn{i}. This view is the spatial representation of the
+#' user-facing \code{selected} version of \eqn{w_i}.
+#'
+#' If \code{only_selected = TRUE}, only selected planning units are shown as
+#' highlighted output. If several runs are plotted, the panels are faceted by
+#' run.
+#'
+#' \strong{View: \code{what = "actions"}}
+#'
+#' This view plots selected planning unit--action decisions. It is based on the
+#' action summary returned by \code{\link{get_actions}(only_selected = TRUE)}.
+#'
+#' Let \eqn{x_{ia} \in \{0,1\}} denote whether action \eqn{a} is selected in
+#' planning unit \eqn{i}. This view maps the selected \code{(pu, action)} pairs
+#' onto planning-unit geometry.
+#'
+#' If more than one action is selected in the same planning unit and
+#' \code{layout = "single"}, action labels are collapsed using \code{"+"} and a
+#' warning is emitted.
+#'
+#' If \code{layout = "facet"} and only one run is plotted, one panel is drawn
+#' per action. If \code{layout = "single"}, all selected actions are drawn in a
+#' single map using discrete fill values.
+#'
+#' The \code{subset} argument can be used to restrict the displayed actions.
+#'
+#' \strong{View: \code{what = "features"}}
+#'
+#' This view plots feature values at the planning-unit level. It combines the
+#' baseline feature distribution stored in \code{dist_features} with positive
+#' action-induced effects from the selected solution.
+#'
+#' For each planning unit \eqn{i} and feature \eqn{f}, the plotted quantities
+#' are:
+#' \deqn{
+#' \mathrm{baseline}_{if},
+#' }
+#' \deqn{
+#' \mathrm{benefit}_{if},
+#' }
+#' \deqn{
+#' \mathrm{final}_{if} = \mathrm{baseline}_{if} + \mathrm{benefit}_{if}.
+#' }
+#'
+#' In the current implementation, the \code{"features"} view uses:
+#' \itemize{
+#'   \item \code{baseline}: the summed baseline amount from
+#'   \code{x$problem$data$dist_features},
+#'   \item \code{benefit}: the summed positive effect from selected actions only,
+#'   \item \code{final}: \code{baseline + benefit}.
+#' }
+#'
+#' Negative effects are not subtracted in this plotting method. Therefore, the
+#' \code{"final"} map should be interpreted as \code{baseline + selected
+#' benefit} under the currently stored plotting logic, not necessarily as a full
+#' net-effect reconstruction.
+#'
+#' The \code{subset} argument can be used to restrict which features are shown.
+#' Feature matching is attempted against both feature ids and feature names.
+#'
+#' If \code{layout = "facet"} and only one run is plotted, one panel is drawn
+#' per feature. If multiple runs are plotted, faceting is done by run instead.
+#'
+#' \strong{Base layer and drawing options}
+#'
+#' If \code{show_base = TRUE}, the planning-unit geometry is first drawn as a
+#' low-alpha background layer using \code{base_fill} and \code{base_color}. The
+#' highlighted output is then drawn on top.
+#'
+#' If \code{draw_borders = FALSE}, border colors are disabled to improve speed,
+#' which is especially useful for large spatial datasets.
+#'
+#' \strong{Colour scales}
+#'
+#' For discrete maps such as \code{"actions"}, colours may be supplied through
+#' \code{fill_values}. Otherwise, discrete viridis colours are used when
+#' available and \code{use_viridis = TRUE}.
+#'
+#' For continuous maps such as \code{"features"}, a continuous viridis colour
+#' scale is used when available and \code{use_viridis = TRUE}.
+#'
+#' @param x A \code{Solution} or \code{SolutionSet} object.
+#' @param what Character string indicating what to plot. Must be one of
+#'   \code{"pu"}, \code{"actions"}, or \code{"features"}.
+#' @param runs Optional integer vector of run ids. If \code{NULL}, a
+#'   \code{Solution} is used directly and a \code{SolutionSet} defaults to the
+#'   first run.
+#' @param subset Optional character vector used to restrict actions or features,
+#'   depending on \code{what}.
+#' @param value Character string used only when \code{what = "features"}.
+#'   Must be one of \code{"final"}, \code{"baseline"}, or \code{"benefit"}.
+#' @param layout Character string controlling the layout. Must be one of
+#'   \code{"single"} or \code{"facet"}. If \code{NULL}, the default is
+#'   \code{"single"} for \code{"pu"} and \code{"actions"}, and \code{"facet"}
+#'   for \code{"features"}.
+#' @param max_facets Maximum number of facets shown when \code{subset = NULL}
+#'   and faceting would otherwise create many panels.
+#' @param only_selected Logical. Used only when \code{what = "pu"}. If
+#'   \code{TRUE}, highlight only selected planning units.
+#' @param ... Reserved for future extensions.
+#' @param base_alpha Numeric value in \eqn{[0,1]} giving the alpha of the base
+#'   planning-unit layer.
+#' @param selected_alpha Numeric value in \eqn{[0,1]} giving the alpha of the
+#'   highlighted layer.
+#' @param base_fill Fill colour for the base planning-unit layer.
+#' @param base_color Border colour for the base planning-unit layer.
+#' @param selected_color Border colour for highlighted layers.
+#' @param draw_borders Logical. If \code{FALSE}, borders are not drawn.
+#' @param show_base Logical. If \code{TRUE}, draw the base planning-unit layer
+#'   underneath the highlighted output.
+#' @param fill_values Optional named vector of colours for discrete maps.
+#' @param fill_na Fill colour for missing values.
+#' @param use_viridis Logical. If \code{TRUE} and the \pkg{viridis} package is
+#'   available, use viridis scales.
+#'
+#' @return Invisibly returns a \code{ggplot} object.
+#'
+#' @seealso
+#' \code{\link{get_pu}},
+#' \code{\link{get_actions}},
+#' \code{\link{get_features}},
+#' \code{\link{solve}}
+#'
 #' @export
 plot_spatial <- function(
     x,
@@ -486,30 +629,95 @@ plot_spatial <- function(
 #' @title Plot trade-offs from a multi-objective solution set
 #'
 #' @description
-#' Plot pairwise trade-offs among objective values stored in a `SolutionSet`.
+#' Plot pairwise trade-offs among objective values stored in a
+#' \code{SolutionSet}.
 #'
-#' If exactly two objectives are selected, the function returns a single scatterplot.
-#' If three or more objectives are selected, it returns all pairwise combinations
-#' using facets.
+#' This function is intended for multi-objective workflows in which the solution
+#' set contains one row per run and one or more objective value columns of the
+#' form \code{value_*}.
 #'
-#' @param x A `SolutionSet` object.
+#' If exactly two objectives are selected, the function returns a single
+#' scatterplot. If three or more objectives are selected, all pairwise
+#' combinations are plotted using facets.
+#'
+#' @details
+#' This function reads the run-level table stored in \code{x$solution$runs}. It
+#' expects objective values to be stored in columns whose names begin with
+#' \code{"value_"}.
+#'
+#' If the available objective columns are, for example,
+#' \code{value_cost}, \code{value_benefit}, and \code{value_frag}, then the
+#' corresponding objective aliases are \code{"cost"}, \code{"benefit"}, and
+#' \code{"frag"}.
+#'
+#' Let \eqn{f_k(r)} denote the value of objective \eqn{k} in run \eqn{r}. This
+#' function visualizes pairwise projections of the run table of the form:
+#' \deqn{
+#' \left(f_k(r), f_\ell(r)\right)
+#' }
+#' for selected pairs of objectives \eqn{k,\ell}.
+#'
+#' If exactly two objectives are selected, a single panel is produced.
+#'
+#' If three or more objectives are selected, all pairwise combinations are
+#' generated:
+#' \deqn{
+#' \{(k,\ell): k < \ell,\; k,\ell \in \mathcal{O}\},
+#' }
+#' where \eqn{\mathcal{O}} is the selected set of objective aliases.
+#'
+#' By default, plotting more than four objectives is not allowed unless
+#' \code{all_pairs = TRUE}, because the number of panels grows quadratically in
+#' the number of objectives.
+#'
+#' \strong{Colouring}
+#'
+#' If \code{color_by} is supplied, points are coloured by either:
+#' \itemize{
+#'   \item one of the selected objective aliases, in which case the
+#'   corresponding \code{value_*} column is used,
+#'   \item or one of the run-level columns \code{run_id}, \code{status},
+#'   \code{runtime}, or \code{gap}.
+#' }
+#'
+#' \strong{Connecting runs}
+#'
+#' If \code{connect = TRUE}, runs are connected in their current table order
+#' within each panel. This can be useful when runs correspond to an ordered scan
+#' of weights, \eqn{\epsilon}-levels, or frontier points, but it should be used
+#' with care when run order has no substantive meaning.
+#'
+#' \strong{Run labels}
+#'
+#' If \code{label_runs = TRUE}, each point is labelled by its \code{run_id}. If
+#' the \pkg{ggrepel} package is available, repelled labels are used.
+#'
+#' @param x A \code{SolutionSet} object.
 #' @param objectives Optional character vector of objective aliases to display.
-#'   These should match the suffixes of the `value_*` columns in `x$solution$runs`.
-#'   If `NULL`, all available objectives are used.
-#' @param color_by Optional character scalar used to color points. It may refer to
-#'   one of the selected objective aliases (e.g. `"benefit"`) or to one of the
-#'   run-level columns `"run_id"`, `"status"`, `"runtime"`, or `"gap"`.
-#' @param all_pairs Logical. If `TRUE`, allow plotting all pairwise combinations
-#'   even when more than four objectives are present. If `NULL`, it is treated as
-#'   `FALSE`.
-#' @param connect Logical. If `TRUE`, connect points by `run_id` within each panel.
-#' @param label_runs Logical. If `TRUE`, add run labels to points.
+#'   These must match the suffixes of the \code{value_*} columns in
+#'   \code{x$solution$runs}. If \code{NULL}, all available objective columns are
+#'   used.
+#' @param color_by Optional character scalar used to colour points. This may be
+#'   either one of the selected objective aliases or one of the run-level
+#'   columns \code{"run_id"}, \code{"status"}, \code{"runtime"}, or
+#'   \code{"gap"}.
+#' @param all_pairs Logical. If \code{TRUE}, allow plotting all pairwise
+#'   combinations even when more than four objectives are selected. If
+#'   \code{NULL}, it is treated as \code{FALSE}.
+#' @param connect Logical. If \code{TRUE}, connect points by run order within
+#'   each panel.
+#' @param label_runs Logical. If \code{TRUE}, add run labels to points.
 #' @param point_size Numeric point size.
-#' @param line_alpha Numeric alpha for connecting lines.
+#' @param line_alpha Numeric alpha value for connecting lines.
 #' @param text_size Numeric size for run labels.
 #' @param ... Reserved for future extensions.
 #'
-#' @return Invisibly returns a `ggplot` object.
+#' @return Invisibly returns a \code{ggplot} object.
+#'
+#' @seealso
+#' \code{\link{solve}},
+#' \code{\link{get_solution_vector}}
+#'
 #' @export
 plot_tradeoff <- function(
     x,

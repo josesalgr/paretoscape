@@ -1,8 +1,10 @@
-# Add queen adjacency from sf polygons
+# Add queen adjacency from polygons
 
-Build and register a queen adjacency relation (shared edge or shared
-vertex) from planning-unit polygons. Queen adjacency includes all rook
-neighbours plus corner-touching neighbours.
+Build and register a queen adjacency relation from planning-unit
+polygons.
+
+Two planning units are queen-adjacent if their boundaries touch, either
+along a shared edge or at a shared vertex.
 
 ## Usage
 
@@ -14,33 +16,58 @@ add_spatial_queen(x, pu_sf = NULL, name = "default", weight = 1)
 
 - x:
 
-  A [data](https://josesalgr.github.io/mosap/reference/data-class.md)
-  object created with
-  [`inputDataSpatial()`](https://josesalgr.github.io/mosap/reference/inputDataSpatial.md).
+  A `Problem` object created with
+  [`inputData`](https://josesalgr.github.io/mosap/reference/inputData.md)
+  or another object containing aligned planning-unit polygons.
 
 - pu_sf:
 
-  Optional `sf` object with PU polygons and an `id` column. If `NULL`,
-  uses `x$data$pu_sf`.
+  Optional `sf` object with planning-unit polygons and an `id` column.
+  If `NULL`, `x$data$pu_sf` is used.
 
 - name:
 
-  Character name/key under which to store the relation.
+  Character string giving the key under which the relation is stored.
 
 - weight:
 
-  Numeric edge weight assigned to each queen adjacency (default 1).
+  Numeric scalar giving the edge weight assigned to each queen
+  adjacency.
 
 ## Value
 
-Updated
-[data](https://josesalgr.github.io/mosap/reference/data-class.md)
-object.
+An updated `Problem` object.
+
+## Details
+
+This constructor derives an adjacency graph from polygon geometry using
+a queen criterion. If planning units \\i\\ and \\j\\ touch at any
+boundary point, then an edge \\(i,j)\\ is added to the relation.
+
+Let \\G = (V,E)\\ denote the resulting graph. Then: \$\$ (i,j) \in E
+\quad \Longleftrightarrow \quad \partial i \cap \partial j \neq
+\varnothing. \$\$
+
+Thus, queen adjacency includes all rook neighbours plus corner-touching
+neighbours.
+
+All edges receive the same user-supplied weight.
+
+The resulting relation is stored as an undirected spatial relation.
+
+## See also
+
+[`add_spatial_rook`](https://josesalgr.github.io/mosap/reference/add_spatial_rook.md),
+[`add_spatial_boundary`](https://josesalgr.github.io/mosap/reference/add_spatial_boundary.md)
 
 ## Examples
 
 ``` r
 if (FALSE) { # \dontrun{
-x <- x |> add_spatial_queen(name = "queen", weight = 1)
+p <- add_spatial_queen(
+  x = p,
+  name = "queen",
+  weight = 1
+)
 } # }
 ```

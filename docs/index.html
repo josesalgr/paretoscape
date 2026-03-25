@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Integrated Multi-Objective Spatial Action Planning • mosap</title>
+<title>Multi-Objective Spatial Planning • mosap</title>
 <!-- favicons --><link rel="icon" type="image/png" sizes="96x96" href="favicon-96x96.png">
 <link rel="icon" type="”image/svg+xml”" href="favicon.svg">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
@@ -15,9 +15,9 @@
 <link href="deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Integrated Multi-Objective Spatial Action Planning">
-<meta name="description" content="Description: Provides an exact multi-objective optimisation framework for integrated spatial action planning using mixed-integer programming (MIP). The package supports the design of management portfolios (e.g., conservation, restoration, and other interventions) across planning units to abate threats and satisfy user-defined constraints, while accounting for spatial structure (e.g., connectivity and fragmentation). Multiple multi-objective methods are available, including weighted-sum aggregation, lexicographic (hierarchical) optimisation, epsilon-constraint, and AUGMECON-based approaches. Problems can be solved with commercial (e.g., Gurobi, CPLEX) and open-source (e.g., CBC, SYMPHONY) MIP solvers. Methods build on Salgado-Rojas et al. (2020) &lt;doi:10.1016/j.ecolmodel.2019.108901&gt;, Beyer et al. (2016) &lt;doi:10.1016/j.ecolmodel.2016.02.005&gt;, Cattarino et al. (2015) &lt;doi:10.1371/journal.pone.0128027&gt;, and Watts et al. (2009) &lt;doi:10.1016/j.envsoft.2009.06.005&gt;.">
-<meta property="og:description" content="Description: Provides an exact multi-objective optimisation framework for integrated spatial action planning using mixed-integer programming (MIP). The package supports the design of management portfolios (e.g., conservation, restoration, and other interventions) across planning units to abate threats and satisfy user-defined constraints, while accounting for spatial structure (e.g., connectivity and fragmentation). Multiple multi-objective methods are available, including weighted-sum aggregation, lexicographic (hierarchical) optimisation, epsilon-constraint, and AUGMECON-based approaches. Problems can be solved with commercial (e.g., Gurobi, CPLEX) and open-source (e.g., CBC, SYMPHONY) MIP solvers. Methods build on Salgado-Rojas et al. (2020) &lt;doi:10.1016/j.ecolmodel.2019.108901&gt;, Beyer et al. (2016) &lt;doi:10.1016/j.ecolmodel.2016.02.005&gt;, Cattarino et al. (2015) &lt;doi:10.1371/journal.pone.0128027&gt;, and Watts et al. (2009) &lt;doi:10.1016/j.envsoft.2009.06.005&gt;.">
+<script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Multi-Objective Spatial Planning">
+<meta name="description" content="Provides a modular framework for exact multi-objective spatial planning using mixed-integer programming (MIP). The package supports the definition of planning problems through planning units, features, management actions, action effects, spatial relations, targets, constraints, and objective functions. It enables the optimisation of spatial planning portfolios under considerations such as boundary structure, connectivity, and fragmentation. Supported multi-objective methods include weighted-sum aggregation, epsilon-constraint, and AUGMECON. Problems can be solved with commercial (e.g., Gurobi, CPLEX) and open-source (e.g., CBC, SYMPHONY) MIP solvers.">
+<meta property="og:description" content="Provides a modular framework for exact multi-objective spatial planning using mixed-integer programming (MIP). The package supports the definition of planning problems through planning units, features, management actions, action effects, spatial relations, targets, constraints, and objective functions. It enables the optimisation of spatial planning portfolios under considerations such as boundary structure, connectivity, and fragmentation. Supported multi-objective methods include weighted-sum aggregation, epsilon-constraint, and AUGMECON. Problems can be solved with commercial (e.g., Gurobi, CPLEX) and open-source (e.g., CBC, SYMPHONY) MIP solvers.">
 <meta property="og:image" content="https://josesalgr.github.io/mosap/logo.png">
 <!-- Global site tag (gtag.js) - Google Analytics --><script async src="https://www.googletagmanager.com/gtag/js?id=G-6YB8F3838H"></script><script>
   window.dataLayer = window.dataLayer || [];
@@ -35,7 +35,7 @@
 
     <a class="navbar-brand me-2" href="index.html">mosap</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -48,7 +48,7 @@
 <li class="nav-item"><a class="nav-link" href="news/index.html">Changelog</a></li>
       </ul>
 <ul class="navbar-nav">
-<li class="nav-item"><a class="external-link nav-link" href="https://github.com/josesalgr/mosap"><span class="fa fa-github"></span></a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/josesalgr/mosap" aria-label="GitHub repository"><span class="fa fa-github"></span></a></li>
       </ul>
 </div>
 
@@ -100,7 +100,7 @@
 <span><span class="va">x</span> <span class="op">&lt;-</span> <span class="va">x</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="reference/add_actions.html">add_actions</a></span><span class="op">(</span><span class="va">actions_df</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="reference/add_effects.html">add_effects</a></span><span class="op">(</span><span class="va">effects_df</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="reference/add_conservation_targets_relative.html">add_conservation_targets_relative</a></span><span class="op">(</span><span class="fl">0.17</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">add_conservation_targets_relative</span><span class="op">(</span><span class="fl">0.17</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="reference/add_spatial_boundary.html">add_spatial_boundary</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># 3) Register atomic objectives (aliases are later used by MO methods)</span></span>
@@ -168,12 +168,9 @@
 <div class="developers">
 <h2 data-toc-skip>Developers</h2>
 <ul class="list-unstyled">
-<li>
-<a href="https://scholar.google.com/citations?user=Z3F-9DgAAAAJ&amp;hl=en" class="external-link">Jose Salgado-Rojas</a> <br><small class="roles"> Author, maintainer </small>   </li>
-<li>
-<a href="https://www.ctfc.cat/personal24_det.php?id=148" class="external-link">Matias Moreno-Faguett</a> <br><small class="roles"> Author, maintainer </small>   </li>
-<li>
-<a href="https://scholar.google.com/citations?user=OLJaCsYAAAAJ&amp;hl=en" class="external-link">Nuria Aquilue</a> <br><small class="roles"> Author </small>   </li>
+<li>Jose Salgado-Rojas <br><small class="roles"> Author, maintainer </small>   </li>
+<li>Matias Moreno-Faguett <br><small class="roles"> Author </small>   </li>
+<li>Nuria Aquilue <br><small class="roles"> Author </small>   </li>
 </ul>
 </div>
 
@@ -189,7 +186,7 @@
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by <a href="https://scholar.google.com/citations?user=Z3F-9DgAAAAJ&amp;hl=en" class="external-link">Jose Salgado-Rojas</a>, <a href="https://www.ctfc.cat/personal24_det.php?id=148" class="external-link">Matias Moreno-Faguett</a>, <a href="https://scholar.google.com/citations?user=OLJaCsYAAAAJ&amp;hl=en" class="external-link">Nuria Aquilue</a>.</p>
+  <p>Developed by Jose Salgado-Rojas, Matias Moreno-Faguett, Nuria Aquilue.</p>
 </div>
 
 <div class="pkgdown-footer-right">

@@ -29,59 +29,201 @@ plot_spatial(
 \arguments{
 \item{x}{A \code{Solution} or \code{SolutionSet} object.}
 
-\item{what}{Character. One of \code{"pu"}, \code{"actions"}, or \code{"features"}.}
+\item{what}{Character string indicating what to plot. Must be one of
+\code{"pu"}, \code{"actions"}, or \code{"features"}.}
 
-\item{runs}{Optional integer vector of run ids. If \code{NULL}, a \code{Solution} is used
-directly, and for a \code{SolutionSet} the first run is used.}
+\item{runs}{Optional integer vector of run ids. If \code{NULL}, a
+\code{Solution} is used directly and a \code{SolutionSet} defaults to the
+first run.}
 
-\item{subset}{Optional character vector used to filter actions or features.}
+\item{subset}{Optional character vector used to restrict actions or features,
+depending on \code{what}.}
 
-\item{value}{Character. Only used when \code{what = "features"}. One of
-\code{"final"}, \code{"baseline"}, or \code{"benefit"}.}
+\item{value}{Character string used only when \code{what = "features"}.
+Must be one of \code{"final"}, \code{"baseline"}, or \code{"benefit"}.}
 
-\item{layout}{Character. One of \code{"single"} or \code{"facet"}. For actions, the
-default is \code{"single"}. For features, the default is \code{"facet"}.}
+\item{layout}{Character string controlling the layout. Must be one of
+\code{"single"} or \code{"facet"}. If \code{NULL}, the default is
+\code{"single"} for \code{"pu"} and \code{"actions"}, and \code{"facet"}
+for \code{"features"}.}
 
-\item{max_facets}{Maximum number of facets shown when \code{subset = NULL}.}
+\item{max_facets}{Maximum number of facets shown when \code{subset = NULL}
+and faceting would otherwise create many panels.}
 
-\item{only_selected}{Logical. Only used when \code{what = "pu"}.}
+\item{only_selected}{Logical. Used only when \code{what = "pu"}. If
+\code{TRUE}, highlight only selected planning units.}
 
 \item{...}{Reserved for future extensions.}
 
-\item{base_alpha}{Numeric in \verb{[0,1]}. Alpha used for the base PU layer.}
+\item{base_alpha}{Numeric value in \eqn{[0,1]} giving the alpha of the base
+planning-unit layer.}
 
-\item{selected_alpha}{Numeric in \verb{[0,1]}. Alpha used for highlighted layers.}
-
-\item{base_fill}{Fill color for the base PU layer.}
-
-\item{base_color}{Border color for the base PU layer.}
-
-\item{selected_color}{Border color for highlighted layers.}
-
-\item{draw_borders}{Logical. If \code{FALSE}, borders are not drawn. This is faster
-for large spatial datasets.}
-
-\item{show_base}{Logical. If \code{TRUE}, draw the base PU layer underneath the
+\item{selected_alpha}{Numeric value in \eqn{[0,1]} giving the alpha of the
 highlighted layer.}
 
-\item{fill_values}{Optional named vector of colors for discrete maps.}
+\item{base_fill}{Fill colour for the base planning-unit layer.}
 
-\item{fill_na}{Fill color for missing values.}
+\item{base_color}{Border colour for the base planning-unit layer.}
 
-\item{use_viridis}{Logical.}
+\item{selected_color}{Border colour for highlighted layers.}
+
+\item{draw_borders}{Logical. If \code{FALSE}, borders are not drawn.}
+
+\item{show_base}{Logical. If \code{TRUE}, draw the base planning-unit layer
+underneath the highlighted output.}
+
+\item{fill_values}{Optional named vector of colours for discrete maps.}
+
+\item{fill_na}{Fill colour for missing values.}
+
+\item{use_viridis}{Logical. If \code{TRUE} and the \pkg{viridis} package is
+available, use viridis scales.}
 }
 \value{
 Invisibly returns a \code{ggplot} object.
 }
 \description{
-Plot spatial information from a \code{Solution} object or from one or more runs of a
-\code{SolutionSet} object.
+Plot spatial outputs derived from a \code{Solution} or \code{SolutionSet}
+object.
 
-Supported views are:
+This function provides three main spatial views:
 \itemize{
-\item \code{"pu"}: selected planning units.
-\item \code{"actions"}: selected actions in space.
-\item \code{"features"}: spatial distribution of features using baseline,
-benefit, or final values.
+\item \code{"pu"}: selected planning units,
+\item \code{"actions"}: selected actions in space,
+\item \code{"features"}: spatial feature values based on baseline or
+action-induced changes.
 }
+
+The function requires planning-unit geometry to be available in
+\code{x$problem$data$pu_sf}.
+}
+\details{
+\strong{General behaviour}
+
+This function is a plotting helper built on top of the stored solution
+summaries and the geometry preserved in the associated \code{Problem}
+object. It does not rebuild a spatial problem from scratch. Instead, it
+combines:
+\itemize{
+\item geometry from \code{x$problem$data$pu_sf},
+\item solution summaries extracted with \code{\link{get_pu}},
+\code{\link{get_actions}}, and related internal data,
+\item baseline feature distributions from
+\code{x$problem$data$dist_features},
+\item and, when needed, effect information from
+\code{x$problem$data$dist_effects} or
+\code{x$problem$data$dist_effects_model}.
+}
+
+The returned object is a \code{ggplot} object, which is also printed.
+
+\strong{Run handling}
+
+If \code{x} is a \code{Solution}, then \code{runs} must be \code{NULL} or
+\code{1}.
+
+If \code{x} is a \code{SolutionSet}, the \code{runs} argument selects which
+runs to plot. If \code{runs = NULL}, the first run is used by default.
+
+Some plotting modes impose additional restrictions when several runs are
+displayed simultaneously:
+\itemize{
+\item for \code{what = "actions"}, \code{layout = "facet"} is not allowed
+when plotting multiple runs,
+\item for \code{what = "features"}, plotting multiple runs requires that
+\code{subset} specify exactly one feature.
+}
+
+\strong{View: \code{what = "pu"}}
+
+This view plots planning units and highlights those with
+\code{selected == 1} in the stored planning-unit summary.
+
+Let \eqn{w_i \in \{0,1\}} denote the planning-unit selection variable for
+planning unit \eqn{i}. This view is the spatial representation of the
+user-facing \code{selected} version of \eqn{w_i}.
+
+If \code{only_selected = TRUE}, only selected planning units are shown as
+highlighted output. If several runs are plotted, the panels are faceted by
+run.
+
+\strong{View: \code{what = "actions"}}
+
+This view plots selected planning unit--action decisions. It is based on the
+action summary returned by \code{\link{get_actions}(only_selected = TRUE)}.
+
+Let \eqn{x_{ia} \in \{0,1\}} denote whether action \eqn{a} is selected in
+planning unit \eqn{i}. This view maps the selected \code{(pu, action)} pairs
+onto planning-unit geometry.
+
+If more than one action is selected in the same planning unit and
+\code{layout = "single"}, action labels are collapsed using \code{"+"} and a
+warning is emitted.
+
+If \code{layout = "facet"} and only one run is plotted, one panel is drawn
+per action. If \code{layout = "single"}, all selected actions are drawn in a
+single map using discrete fill values.
+
+The \code{subset} argument can be used to restrict the displayed actions.
+
+\strong{View: \code{what = "features"}}
+
+This view plots feature values at the planning-unit level. It combines the
+baseline feature distribution stored in \code{dist_features} with positive
+action-induced effects from the selected solution.
+
+For each planning unit \eqn{i} and feature \eqn{f}, the plotted quantities
+are:
+\deqn{
+\mathrm{baseline}_{if},
+}
+\deqn{
+\mathrm{benefit}_{if},
+}
+\deqn{
+\mathrm{final}_{if} = \mathrm{baseline}_{if} + \mathrm{benefit}_{if}.
+}
+
+In the current implementation, the \code{"features"} view uses:
+\itemize{
+\item \code{baseline}: the summed baseline amount from
+\code{x$problem$data$dist_features},
+\item \code{benefit}: the summed positive effect from selected actions only,
+\item \code{final}: \code{baseline + benefit}.
+}
+
+Negative effects are not subtracted in this plotting method. Therefore, the
+\code{"final"} map should be interpreted as \code{baseline + selected
+benefit} under the currently stored plotting logic, not necessarily as a full
+net-effect reconstruction.
+
+The \code{subset} argument can be used to restrict which features are shown.
+Feature matching is attempted against both feature ids and feature names.
+
+If \code{layout = "facet"} and only one run is plotted, one panel is drawn
+per feature. If multiple runs are plotted, faceting is done by run instead.
+
+\strong{Base layer and drawing options}
+
+If \code{show_base = TRUE}, the planning-unit geometry is first drawn as a
+low-alpha background layer using \code{base_fill} and \code{base_color}. The
+highlighted output is then drawn on top.
+
+If \code{draw_borders = FALSE}, border colors are disabled to improve speed,
+which is especially useful for large spatial datasets.
+
+\strong{Colour scales}
+
+For discrete maps such as \code{"actions"}, colours may be supplied through
+\code{fill_values}. Otherwise, discrete viridis colours are used when
+available and \code{use_viridis = TRUE}.
+
+For continuous maps such as \code{"features"}, a continuous viridis colour
+scale is used when available and \code{use_viridis = TRUE}.
+}
+\seealso{
+\code{\link{get_pu}},
+\code{\link{get_actions}},
+\code{\link{get_features}},
+\code{\link{solve}}
 }

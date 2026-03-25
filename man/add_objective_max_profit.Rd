@@ -14,17 +14,51 @@ add_objective_max_profit(
 \arguments{
 \item{x}{A \code{Problem} object.}
 
-\item{profit_col}{Character. Profit column in \code{x$data$dist_profit}.}
+\item{profit_col}{Character string giving the profit column in
+\code{x$data$dist_profit}.}
 
-\item{actions}{Optional subset of actions to include. Values may match \code{actions$id}
-and, if present, \code{actions$action_set}.}
+\item{actions}{Optional subset of actions to include. Values may match
+\code{x$data$actions$id} and, if present,
+\code{x$data$actions$action_set}. If \code{NULL}, all actions are included.}
 
-\item{alias}{Optional identifier for multi-objective workflows.}
+\item{alias}{Optional identifier used to register this objective for
+multi-objective workflows.}
 }
 \value{
-Updated \code{Problem} object.
+An updated \code{Problem} object.
 }
 \description{
-Specify an objective that maximizes total profit from selected \verb{(pu, action)} pairs.
-The objective can optionally be restricted to a subset of actions.
+Define an objective that maximizes total profit from selected planning
+unit--action decisions.
+}
+\details{
+Let \eqn{x_{ia} \in \{0,1\}} denote whether action \eqn{a} is selected in
+planning unit \eqn{i}, and let \eqn{\pi_{ia}} denote the profit associated
+with that decision, as taken from column \code{profit_col} in
+\code{x$data$dist_profit}.
+
+If all actions are included, the objective is:
+
+\deqn{
+\max \sum_{(i,a) \in \mathcal{F}} \pi_{ia} x_{ia},
+}
+
+where \eqn{\mathcal{F}} denotes the set of feasible planning unit--action
+pairs.
+
+If \code{actions} is provided, only the selected subset contributes to the
+objective. Letting \eqn{\mathcal{F}^{\star}} denote the feasible pairs whose
+action belongs to the selected subset, the objective becomes:
+
+\deqn{
+\max \sum_{(i,a) \in \mathcal{F}^{\star}} \pi_{ia} x_{ia}.
+}
+
+This objective considers profit only. It does not subtract planning-unit
+costs or action costs. For a net-profit formulation, use
+\code{\link{add_objective_max_net_profit}}.
+}
+\seealso{
+\code{\link{add_objective_min_cost}},
+\code{\link{add_objective_max_net_profit}}
 }

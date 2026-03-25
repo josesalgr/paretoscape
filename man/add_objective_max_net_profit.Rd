@@ -16,21 +16,71 @@ add_objective_max_net_profit(
 \arguments{
 \item{x}{A \code{Problem} object.}
 
-\item{profit_col}{Character. Profit column in \code{x$data$dist_profit}.}
+\item{profit_col}{Character string giving the profit column in
+\code{x$data$dist_profit}.}
 
 \item{include_pu_cost}{Logical. If \code{TRUE}, subtract planning-unit costs.}
 
 \item{include_action_cost}{Logical. If \code{TRUE}, subtract action costs.}
 
-\item{actions}{Optional subset of actions to include in the profit and action-cost terms.
-Values may match \code{actions$id} and, if present, \code{actions$action_set}.}
+\item{actions}{Optional subset of actions to include in the profit and
+action-cost terms. Values may match \code{x$data$actions$id} and, if
+present, \code{x$data$actions$action_set}.}
 
-\item{alias}{Optional identifier for multi-objective workflows.}
+\item{alias}{Optional identifier used to register this objective for
+multi-objective workflows.}
 }
 \value{
-Updated \code{Problem} object.
+An updated \code{Problem} object.
 }
 \description{
-Specify an objective that maximizes net profit, optionally restricting the
-profit and action-cost components to a subset of actions.
+Define an objective that maximizes net profit by combining profits with
+optional planning-unit and action-cost penalties.
+}
+\details{
+Let:
+\itemize{
+\item \eqn{x_{ia} \in \{0,1\}} denote whether action \eqn{a} is selected
+in planning unit \eqn{i},
+\item \eqn{w_i \in \{0,1\}} denote whether planning unit \eqn{i} is
+selected,
+\item \eqn{\pi_{ia}} denote the profit associated with decision
+\eqn{(i,a)},
+\item \eqn{c_i^{PU} \ge 0} denote the planning-unit cost,
+\item \eqn{c_{ia}^{A} \ge 0} denote the action cost.
+}
+
+In its most general form, the objective is:
+
+\deqn{
+\max \left(
+\sum_{(i,a) \in \mathcal{F}^{\star}} \pi_{ia} x_{ia}
+-
+\sum_{i \in \mathcal{P}} c_i^{PU} w_i
+-
+\sum_{(i,a) \in \mathcal{F}^{\star}} c_{ia}^{A} x_{ia}
+\right),
+}
+
+where \eqn{\mathcal{F}^{\star}} denotes the subset of feasible
+planning unit--action pairs included in the objective.
+
+If \code{actions = NULL}, all feasible actions contribute to both the profit
+term and the action-cost term.
+
+If \code{actions} is provided, the profit term and the action-cost term are
+restricted to that subset. The planning-unit cost term, if included, remains
+global.
+
+If \code{include_pu_cost = FALSE}, the planning-unit cost term is omitted.
+
+If \code{include_action_cost = FALSE}, the action-cost term is omitted.
+
+This objective is appropriate when decisions generate revenues or returns and
+the analyst wishes to optimize the resulting net balance after accounting for
+selected cost components.
+}
+\seealso{
+\code{\link{add_objective_max_profit}},
+\code{\link{add_objective_min_cost}}
 }

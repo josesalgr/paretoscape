@@ -2,7 +2,7 @@
 % Please edit documentation in R/add_spatial_relations.R
 \name{add_spatial_knn}
 \alias{add_spatial_knn}
-\title{Add k-nearest-neighbours spatial relations from coordinates}
+\title{Add k-nearest-neighbours spatial relations}
 \usage{
 add_spatial_knn(
   x,
@@ -14,41 +14,81 @@ add_spatial_knn(
 )
 }
 \arguments{
-\item{x}{A \linkS4class{problem} object created with \code{\link[=inputData]{inputData()}} or \code{\link[=inputDataSpatial]{inputDataSpatial()}}.}
+\item{x}{A \code{Problem} object created with \code{\link{inputData}}.}
 
-\item{coords}{Optional coordinates specification:
+\item{coords}{Optional coordinates specification. This may be:
 \itemize{
 \item a \code{data.frame(id, x, y)}, or
-\item a matrix with two columns \code{(x,y)} aligned to the PU order.
+\item a numeric matrix with two columns \code{(x, y)} aligned to the
+order of planning units.
 }
-If \code{NULL}, uses \code{x$data$pu_coords} or \code{x$data$pu$x/y}.}
+If \code{NULL}, coordinates are taken from \code{x$data$pu_coords} or from
+columns \code{x$data$pu$x} and \code{x$data$pu$y}.}
 
-\item{k}{Integer. Number of neighbours per planning unit (must be \code{>= 1} and \code{< n_pu}).}
+\item{k}{Integer giving the number of neighbours per planning unit. Must be
+at least 1 and strictly less than the number of planning units.}
 
-\item{name}{Character name/key under which to store the relation.}
+\item{name}{Character string giving the key under which the relation is
+stored.}
 
-\item{weight_fn}{Character. How to convert distance to weight:
-\code{"constant"}, \code{"inverse"}, or \code{"inverse_sq"}.}
+\item{weight_fn}{Character string indicating how distance is converted to
+weight. Must be one of \code{"constant"}, \code{"inverse"}, or
+\code{"inverse_sq"}.}
 
-\item{eps}{Small numeric constant to avoid division by zero when using inverse weights.}
+\item{eps}{Small positive numeric constant used to avoid division by zero in
+inverse-distance weighting.}
 }
 \value{
-Updated \linkS4class{problem} object.
+An updated \code{Problem} object.
 }
 \description{
-Build and register a k-nearest-neighbours (kNN) graph between planning units based on coordinates.
-This constructor does not require \code{sf}. If the \code{RANN} package is available, it is used for speed.
+Build and register a k-nearest-neighbours graph between planning units using
+coordinates.
+
+This constructor does not require polygon geometry. It uses planning-unit
+coordinates supplied explicitly or stored in the \code{Problem} object.
 }
 \details{
-Coordinates can be supplied explicitly via \code{coords}, stored in \code{x$data$pu_coords},
-or stored as columns \code{x$data$pu$x} and \code{x$data$pu$y}.
+Let \eqn{s_i = (x_i, y_i)} denote the coordinates of planning unit
+\eqn{i}. For each planning unit, this function identifies the \code{k}
+nearest distinct planning units under Euclidean distance.
 
-Edge weights can be constant or derived from distance using \code{weight_fn}.
-The stored relation is undirected by default (duplicates are collapsed).
+If \eqn{d_{ij}} denotes the Euclidean distance between units \eqn{i} and
+\eqn{j}, then the k-nearest-neighbours relation is constructed by adding an
+edge from \eqn{i} to each of its \code{k} nearest neighbours.
+
+Edge weights are then assigned according to \code{weight_fn}:
+\itemize{
+\item \code{"constant"}:
+\deqn{\omega_{ij} = 1,}
+\item \code{"inverse"}:
+\deqn{\omega_{ij} = \frac{1}{\max(d_{ij}, \varepsilon)},}
+\item \code{"inverse_sq"}:
+\deqn{\omega_{ij} = \frac{1}{\max(d_{ij}, \varepsilon)^2},}
+}
+where \eqn{\varepsilon = \code{eps}} is a small constant to avoid division
+by zero.
+
+The raw k-nearest-neighbours structure is directional by construction, but
+the stored relation is registered as undirected by default through
+\code{\link{add_spatial_relations}}, which collapses duplicate unordered
+pairs.
+
+If the \pkg{RANN} package is available, it is used for efficient nearest
+neighbour search. Otherwise, a full distance matrix is computed.
 }
 \examples{
 \dontrun{
-x <- x |> add_spatial_knn(k = 8, name = "knn8", weight_fn = "inverse")
+p <- add_spatial_knn(
+  x = p,
+  k = 8,
+  name = "knn8",
+  weight_fn = "inverse"
+)
 }
 
+}
+\seealso{
+\code{\link{add_spatial_distance}},
+\code{\link{add_spatial_relations}}
 }
