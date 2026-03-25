@@ -1233,29 +1233,66 @@
 
   .pamo_cli_done("Epsilon-constraint solve finished.", verbose = verbose)
 
+  ext <- attr(design_df, "extremes", exact = TRUE)
+
+  ranges_df <- NULL
+  if (!is.null(ext)) {
+    primary_vals <- c(
+      as.numeric(ext$primary_at_primary %||% NA_real_),
+      as.numeric(ext$primary_at_secondary %||% NA_real_)
+    )
+    primary_vals <- primary_vals[is.finite(primary_vals)]
+
+    secondary_vals <- c(
+      as.numeric(ext$secondary_min %||% NA_real_),
+      as.numeric(ext$secondary_max %||% NA_real_)
+    )
+    secondary_vals <- secondary_vals[is.finite(secondary_vals)]
+
+    ranges_df <- data.frame(
+      alias = c(primary, constrained[1]),
+      role = c("primary", "secondary"),
+      min = c(
+        if (length(primary_vals)) min(primary_vals) else NA_real_,
+        if (length(secondary_vals)) min(secondary_vals) else NA_real_
+      ),
+      max = c(
+        if (length(primary_vals)) max(primary_vals) else NA_real_,
+        if (length(secondary_vals)) max(secondary_vals) else NA_real_
+      ),
+      source = c("anchors", "auto_grid"),
+      stringsAsFactors = FALSE
+    )
+  }
+
   pproto(
     NULL, SolutionSet,
     problem = x,
     solution = list(
       design = design_df,
       runs = runs,
-      solutions = solutions
+      solutions = solutions,
+      frontier = list(
+        primary = primary,
+        secondary = constrained,
+        ranges = ranges_df,
+        extremes = ext
+      )
     ),
     summary = summary_set,
     diagnostics = list(
       n_design = nrow(design_df),
       n_runs = nrow(runs),
       n_solutions = length(solutions),
+      n_optimal = sum(runs$status == "optimal", na.rm = TRUE),
+      n_infeasible = sum(runs$status %in% c("infeasible", "infeasible_or_unbounded"), na.rm = TRUE),
       status_summary = .pa_solutionset_status_summary(runs),
       runtime_range = if ("runtime" %in% names(runs)) .pa_solutionset_range_text(runs$runtime, digits = 3) else "none",
       gap_range = if ("gap" %in% names(runs)) .pa_solutionset_range_text(runs$gap, digits = 4) else "none"
     ),
     method = method,
     meta = list(
-      call = match.call(),
-      epsilon_grid = design_df,
-      extremes = attr(design_df, "extremes", exact = TRUE),
-      method_meta = method$meta %||% NULL
+      call = match.call()
     ),
     name = "solset"
   )
@@ -3631,27 +3668,81 @@ add_objective <- function(x, objective) {
 
   .pamo_cli_done("AUGMECON solve finished.", verbose = verbose)
 
+  ext <- attr(design_df, "extremes", exact = TRUE)
+
+  ranges_list <- list()
+
+  # rango del primario a partir de los anchors de todos los secundarios
+  primary_vals <- numeric(0)
+  if (!is.null(ext) && length(ext) > 0L) {
+    primary_vals <- unlist(
+      lapply(ext, function(e) {
+        c(
+          as.numeric(e$primary_at_primary %||% NA_real_),
+          as.numeric(e$primary_at_secondary %||% NA_real_)
+        )
+      }),
+      use.names = FALSE
+    )
+    primary_vals <- primary_vals[is.finite(primary_vals)]
+  }
+
+  ranges_list[[1]] <- data.frame(
+    alias = primary,
+    role = "primary",
+    min = if (length(primary_vals)) min(primary_vals) else NA_real_,
+    max = if (length(primary_vals)) max(primary_vals) else NA_real_,
+    source = "anchors",
+    stringsAsFactors = FALSE
+  )
+
+  if (!is.null(ext) && length(ext) > 0L) {
+    for (s in secondary) {
+      e <- ext[[s]]
+      if (is.null(e)) next
+
+      ranges_list[[length(ranges_list) + 1L]] <- data.frame(
+        alias = s,
+        role = "secondary",
+        min = as.numeric(e$secondary_min %||% NA_real_)[1],
+        max = as.numeric(e$secondary_max %||% NA_real_)[1],
+        source = "auto_grid",
+        stringsAsFactors = FALSE
+      )
+    }
+  }
+
+  ranges_df <- do.call(rbind, ranges_list)
+  rownames(ranges_df) <- NULL
+
   pproto(
     NULL, SolutionSet,
     problem = x,
     solution = list(
       design = design_df,
       runs = runs,
-      solutions = solutions
+      solutions = solutions,
+      frontier = list(
+        primary = primary,
+        secondary = secondary,
+        ranges = ranges_df,
+        extremes = ext
+      )
     ),
     summary = summary_set,
     diagnostics = list(
       n_design = nrow(design_df),
       n_runs = nrow(runs),
       n_solutions = length(solutions),
+      n_optimal = sum(runs$status == "optimal", na.rm = TRUE),
+      n_infeasible = sum(runs$status %in% c("infeasible", "infeasible_or_unbounded"), na.rm = TRUE),
       status_summary = .pa_solutionset_status_summary(runs),
       runtime_range = if ("runtime" %in% names(runs)) .pa_solutionset_range_text(runs$runtime, digits = 3) else "none",
       gap_range = if ("gap" %in% names(runs)) .pa_solutionset_range_text(runs$gap, digits = 4) else "none"
     ),
     method = method,
     meta = list(
-      call = match.call(),
-      augmecon_grid = design_df
+      call = match.call()
     ),
     name = "solset"
   )
