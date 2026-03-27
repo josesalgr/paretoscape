@@ -70,13 +70,17 @@ Rcpp::List rcpp_prepare_objective_min_fragmentation(
     }
 
     const double we = (double)wgt[r];
-    if (Rcpp::NumericVector::is_na(we) || !std::isfinite(we) || we < 0.0) {
-      Rcpp::stop("relation_data weight must be finite and >= 0.");
+    if (Rcpp::NumericVector::is_na(we) || !std::isfinite(we)) {
+      Rcpp::stop("relation_data weight must be finite.");
     }
 
     if (i1 == j1) {
       ++n_self_rows;
-      continue; // diagonal not used for y creation
+      continue; // diagonal not used for y creation; may be negative
+    }
+
+    if (we < 0.0) {
+      Rcpp::stop("relation_data off-diagonal weights must be >= 0.");
     }
 
     int a = i1, b = j1;

@@ -510,7 +510,9 @@ add_spatial_boundary <- function(x,
       else if ("weight" %in% names(b)) weight_col <- "weight"
       else stop("Could not find a weight column. Provide weight_col.", call. = FALSE)
     }
-    if (!(weight_col %in% names(b))) stop("weight_col not found in boundary table.", call. = FALSE)
+    if (!(weight_col %in% names(b))) {
+      stop("weight_col not found in boundary table.", call. = FALSE)
+    }
 
     rel0 <- data.frame(
       pu1 = as.integer(b$pu1),
@@ -524,22 +526,25 @@ add_spatial_boundary <- function(x,
     idx <- x$data$index$pu
     rel0$internal_pu1 <- unname(idx[as.character(rel0$pu1)])
     rel0$internal_pu2 <- unname(idx[as.character(rel0$pu2)])
+
     if (anyNA(rel0$internal_pu1) || anyNA(rel0$internal_pu2)) {
       stop("Some pu1/pu2 ids were not found in x$data$pu$id.", call. = FALSE)
     }
 
     n_pu <- nrow(x$data$pu)
 
+    # split diagonal / off-diagonal
     diag_rows <- rel0$internal_pu1 == rel0$internal_pu2
-    total <- numeric(n_pu); names(total) <- as.character(seq_len(n_pu))
+
+    total <- numeric(n_pu)
+    names(total) <- as.character(seq_len(n_pu))
     if (any(diag_rows)) {
       tt <- tapply(rel0$weight[diag_rows], rel0$internal_pu1[diag_rows], sum)
       total[names(tt)] <- tt
-    } else if (isTRUE(include_self)) {
-      stop("boundary table has no diagonal (total perimeter) but include_self=TRUE.", call. = FALSE)
     }
 
     off <- rel0[!diag_rows, , drop = FALSE]
+
     if (nrow(off) > 0) {
       a <- pmin(off$internal_pu1, off$internal_pu2)
       b2 <- pmax(off$internal_pu1, off$internal_pu2)
@@ -564,16 +569,7 @@ add_spatial_boundary <- function(x,
       off_u <- off
     }
 
-    if (!isTRUE(include_self)) {
-      if (nrow(off_u) == 0) stop("Boundary table has no off-diagonal edges and include_self=FALSE.", call. = FALSE)
-      rel <- off_u
-      rel$pu1 <- x$data$pu$id[rel$internal_pu1]
-      rel$pu2 <- x$data$pu$id[rel$internal_pu2]
-      return(add_spatial_relations(x, rel, name = name, directed = FALSE, allow_self = FALSE,
-                                   duplicate_agg = "max", symmetric = FALSE))
-    }
-
-    # incident por PU (OJO: suma, no sobrescribir)
+    # incident shared boundary by planning unit
     incident <- numeric(n_pu)
     if (nrow(off_u) > 0) {
       incident <- .sum_incident_by_pu(
@@ -584,16 +580,54 @@ add_spatial_boundary <- function(x,
       )
     }
 
-    exposed <- pmax(total - incident, 0)
+    # If self terms are not requested, return only off-diagonal relations
+    if (!isTRUE(include_self)) {
+      if (nrow(off_u) == 0) {
+        stop("Boundary table has no off-diagonal edges and include_self=FALSE.", call. = FALSE)
+      }
+      rel <- off_u
+      rel$pu1 <- x$data$pu$id[rel$internal_pu1]
+      rel$pu2 <- x$data$pu$id[rel$internal_pu2]
+      return(add_spatial_relations(
+        x, rel, name = name,
+        directed = FALSE,
+        allow_self = FALSE,
+        duplicate_agg = "max",
+        symmetric = FALSE
+      ))
+    }
 
-    # LAVE: diagonal efectiva equivalente a prioritizr
-    diag_eff <-  edge_factor * exposed
+    # ------------------------------------------------------------
+    # Algebraic self-diagonal construction:
+    #
+    # - if there is useful positive diagonal information, interpret it as
+    #   total boundary and build:
+    #       diag_eff = edge_factor * (total - incident)
+    #
+    # - if diagonal is absent or all zeros, build:
+    #       diag_eff = -incident
+    #
+    # so that the current objective:
+    #   sum_i (incident_i + diag_i) w_i - 2 sum_ij s_ij y_ij
+    # collapses algebraically to:
+    #   -2 sum_ij s_ij y_ij
+    # in the no-diagonal / zero-diagonal case.
+    # ------------------------------------------------------------
+    has_useful_diagonal <- any(total > 0)
+
+    if (has_useful_diagonal) {
+      diag_eff <- edge_factor * (total - incident)
+      diag_source <- "boundary_table_diag_effective"
+    } else {
+      diag_eff <- -incident
+      diag_source <- "boundary_table_diag_algebraic"
+    }
 
     rel_self <- data.frame(
       internal_pu1 = seq_len(n_pu),
       internal_pu2 = seq_len(n_pu),
       weight = as.numeric(diag_eff),
-      source = "boundary_table_diag_effective",
+      source = diag_source,
       stringsAsFactors = FALSE
     )
 
@@ -633,10 +667,14 @@ add_spatial_boundary <- function(x,
 
   nb <- sf::st_intersects(pu_sf, pu_sf, sparse = TRUE)
 
-  pu1 <- integer(0); pu2 <- integer(0); w <- numeric(0)
+  pu1 <- integer(0)
+  pu2 <- integer(0)
+  w <- numeric(0)
   n <- length(nb)
 
-  if (isTRUE(progress)) message("Computing shared boundary lengths for ", n, " planning units...")
+  if (isTRUE(progress)) {
+    message("Computing shared boundary lengths for ", n, " planning units...")
+  }
 
   for (i in seq_len(n)) {
     js <- nb[[i]]
@@ -646,6 +684,7 @@ add_spatial_boundary <- function(x,
     for (j in js) {
       inter <- sf::st_intersection(geom[i], geom[j])
       if (length(inter) == 0) next
+
       inter_line <- suppressWarnings(sf::st_cast(inter, "MULTILINESTRING"))
       len <- suppressWarnings(sf::st_length(inter_line))
       len <- sum(as.numeric(len), na.rm = TRUE)
@@ -673,9 +712,13 @@ add_spatial_boundary <- function(x,
   )
 
   if (!isTRUE(include_self)) {
-    return(add_spatial_relations(x, rel_off, name = name,
-                                 directed = FALSE, allow_self = FALSE,
-                                 duplicate_agg = "max", symmetric = FALSE))
+    return(add_spatial_relations(
+      x, rel_off, name = name,
+      directed = FALSE,
+      allow_self = FALSE,
+      duplicate_agg = "max",
+      symmetric = FALSE
+    ))
   }
 
   total <- as.numeric(sf::st_length(sf::st_boundary(sf::st_geometry(pu_sf))))
@@ -697,16 +740,21 @@ add_spatial_boundary <- function(x,
     )
   }
 
-  exposed <- pmax(total - incident, 0)
+  has_useful_diagonal <- any(total > 0)
 
-  # CLAVE: diagonal efectiva equivalente a prioritizr
-  diag_eff <-  edge_factor * exposed
+  if (has_useful_diagonal) {
+    diag_eff <- edge_factor * (total - incident)
+    diag_source <- "boundary_sf_diag_effective"
+  } else {
+    diag_eff <- -incident
+    diag_source <- "boundary_sf_diag_algebraic"
+  }
 
   rel_self <- data.frame(
     pu1 = pu_sf$id,
     pu2 = pu_sf$id,
     weight = as.numeric(diag_eff),
-    source = "boundary_sf_diag_effective",
+    source = diag_source,
     stringsAsFactors = FALSE
   )
 

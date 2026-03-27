@@ -575,9 +575,9 @@
     }
 
     ww <- as.numeric(rel$weight)
-    if (any(!is.finite(ww)) || any(ww < 0)) {
-      .pa_abort("Spatial relation '", rel_name, "' has non-finite or negative weights.")
-    }
+    # if (any(!is.finite(ww)) || any(ww < 0)) {
+    #   .pa_abort("Spatial relation '", rel_name, "' has non-finite or negative weights.")
+    # }
 
     if (identical(mtype, "minimizeActionFragmentation")) {
       if (is.null(x$data$actions) || !inherits(x$data$actions, "data.frame") || nrow(x$data$actions) == 0) {
@@ -590,12 +590,12 @@
           .pa_abort("actions_to_use has internal_action ids out of range (1..n_actions).")
         }
       }
-      if (!is.null(oargs$action_weights)) {
-        aw <- as.numeric(oargs$action_weights)
-        if (any(!is.finite(aw)) || any(aw < 0)) {
-          .pa_abort("action_weights must be finite and >= 0.")
-        }
-      }
+      # if (!is.null(oargs$action_weights)) {
+      #   aw <- as.numeric(oargs$action_weights)
+      #   if (any(!is.finite(aw)) || any(aw < 0)) {
+      #     .pa_abort("action_weights must be finite and >= 0.")
+      #   }
+      # }
     }
   }
 

@@ -29,8 +29,8 @@ Rcpp::List rcpp_add_objective_min_fragmentation(
     Rcpp::stop("Model has zero variables. Build base variables first.");
   }
 
-  if (!std::isfinite(weight) || weight < 0.0) {
-    Rcpp::stop("weight must be finite and >= 0.");
+  if (!std::isfinite(weight)) {
+    Rcpp::stop("weight must be finite.");
   }
   if (!std::isfinite(weight_multiplier) || weight_multiplier < 0.0) {
     Rcpp::stop("weight_multiplier must be finite and >= 0.");
@@ -102,14 +102,18 @@ Rcpp::List rcpp_add_objective_min_fragmentation(
     }
 
     const double we = (double)wgt[r];
-    if (Rcpp::NumericVector::is_na(we) || !std::isfinite(we) || we < 0.0) {
-      Rcpp::stop("relation_data weight must be finite and >= 0.");
+    if (Rcpp::NumericVector::is_na(we) || !std::isfinite(we)) {
+      Rcpp::stop("relation_data weight must be finite.");
     }
 
     if (i1 == j1) {
-      self_w[i1] += we;
+      self_w[i1] += we;   // may be negative for algebraic diagonal
       ++n_diag_rows;
       continue;
+    }
+
+    if (we < 0.0) {
+      Rcpp::stop("relation_data off-diagonal weights must be >= 0.");
     }
 
     int a = i1, b = j1;
