@@ -39,8 +39,6 @@ Imports:
     ggrepel
 Suggests: 
     knitr,
-    gurobi (>= 9.0),
-    Rcplex,
     roxygen2,
     prioritizr,
     rcbc,
