@@ -2,10 +2,6 @@ skip_if_no_prioritizr <- function() {
   testthat::skip_if_not_installed("prioritizr")
 }
 
-skip_if_no_ompr <- function() {
-  testthat::skip_if_not_installed("ompr")
-}
-
 build_prioritizr_basic <- function(toy, target = 0.5, boundary_matrix = NULL) {
   skip_if_no_prioritizr()
 

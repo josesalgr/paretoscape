@@ -35,6 +35,7 @@ Imports:
     RANN,
     exactextractr,
     ggplot2,
+    terra,
     ggrepel
 Suggests: 
     knitr,
@@ -56,8 +57,7 @@ Suggests:
     readr,
     slam,
     tibble,
-    reshape2,
-    terra
+    reshape2
 LinkingTo:
   Rcpp, 
   RcppArmadillo (>= 0.10.1.0.0), 
