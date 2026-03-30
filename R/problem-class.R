@@ -391,25 +391,39 @@ NULL
 .pa_constraints_summary <- function(self) {
   out <- list(
     area_constraints = 0L,
-    pu_locks = FALSE,
-    action_locks = FALSE
+    pu_locked_in = 0L,
+    pu_locked_out = 0L,
+    action_locked_in = 0L,
+    action_locked_out = 0L
   )
 
-  ac <- self$data$constraints$area %||% self$data$area_constraints %||% NULL
-  if (inherits(ac, "data.frame")) {
-    out$area_constraints <- nrow(ac)
-  } else if (is.list(ac) && length(ac) > 0) {
-    out$area_constraints <- length(ac)
-  }
+  cons <- self$data$constraints %||% list()
 
+  # area constraints
+  area_n <- 0L
+  if (is.list(cons)) {
+    if (!is.null(cons$area_min)) area_n <- area_n + 1L
+    if (!is.null(cons$area_max)) area_n <- area_n + 1L
+  }
+  out$area_constraints <- area_n
+
+  # planning-unit locks
   pu <- self$data$pu
-  if (!is.null(pu) && inherits(pu, "data.frame") && "locked_in" %in% names(pu)) {
-    out$pu_locks <- any(isTRUE(pu$locked_in) | (!is.na(pu$locked_in) & pu$locked_in))
+  if (!is.null(pu) && inherits(pu, "data.frame")) {
+    if ("locked_in" %in% names(pu)) {
+      out$pu_locked_in <- sum(isTRUE(pu$locked_in) | (!is.na(pu$locked_in) & pu$locked_in), na.rm = TRUE)
+    }
+    if ("locked_out" %in% names(pu)) {
+      out$pu_locked_out <- sum(isTRUE(pu$locked_out) | (!is.na(pu$locked_out) & pu$locked_out), na.rm = TRUE)
+    }
   }
 
+  # action locks
   da <- self$data$dist_actions
   if (!is.null(da) && inherits(da, "data.frame") && "status" %in% names(da)) {
-    out$action_locks <- any(da$status %in% c(1, 2, 3), na.rm = TRUE)
+    # ajusta estos códigos si tu convención final cambia
+    out$action_locked_in  <- sum(da$status %in% c(1, 2), na.rm = TRUE)
+    out$action_locked_out <- sum(da$status %in% c(3), na.rm = TRUE)
   }
 
   out
@@ -638,16 +652,16 @@ Problem <- pproto(
     cli::cli_text("{ch$l}{ch$b}{.h actions and effects}", .envir = environment())
 
     if (n_act == 0) {
-      cli::cli_text(" {ch$v}{ch$j}{ch$b}actions:         {.muted none specified}",
+      cli::cli_text(" {ch$v}{ch$j}{ch$b}actions:         {.muted none}",
                     .envir = environment())
-      cli::cli_text(" {ch$v}{ch$j}{ch$b}dist_actions:    {.muted none}",
+      cli::cli_text(" {ch$v}{ch$j}{ch$b}feasible action pairs:    {.muted none}",
                     .envir = environment())
     } else {
       cli::cli_text(
         " {ch$v}{ch$j}{ch$b}actions:         {act_sum$n} total ({act_sum$preview})",
         .envir = environment()
       )
-      cli::cli_text(" {ch$v}{ch$j}{ch$b}dist_actions:    {n_dist_act} feasible rows",
+      cli::cli_text(" {ch$v}{ch$j}{ch$b}feasible action pairs:    {n_dist_act} feasible rows",
                     .envir = environment())
 
       if (is.null(act_cost_rng)) {
@@ -662,20 +676,20 @@ Problem <- pproto(
     }
 
     if (eff_sum$n_effects == 0) {
-      cli::cli_text(" {ch$v}{ch$j}{ch$b}dist_effects:    {.muted none specified}",
+      cli::cli_text(" {ch$v}{ch$j}{ch$b}effect data:    {.muted none}",
                     .envir = environment())
     } else {
-      cli::cli_text(" {ch$v}{ch$j}{ch$b}dist_effects:    {eff_sum$n_effects} rows",
+      cli::cli_text(" {ch$v}{ch$j}{ch$b}effect data:    {eff_sum$n_effects} rows",
                     .envir = environment())
       cli::cli_text(" {ch$v}{ch$j}{ch$b}effect mode:     {eff_sum$effect_mode}",
                     .envir = environment())
     }
 
     if (eff_sum$n_profit == 0) {
-      cli::cli_text(" {ch$v}{ch$l}{ch$b}dist_profit:     {.muted none specified}",
+      cli::cli_text(" {ch$v}{ch$l}{ch$b}profit data:     {.muted none}",
                     .envir = environment())
     } else {
-      cli::cli_text(" {ch$v}{ch$l}{ch$b}dist_profit:     {eff_sum$n_profit} rows",
+      cli::cli_text(" {ch$v}{ch$l}{ch$b}profit data:     {eff_sum$n_profit} rows",
                     .envir = environment())
     }
 
@@ -696,14 +710,14 @@ Problem <- pproto(
       xr <- .pa_safe_range(pu_coords$x)
       yr <- .pa_safe_range(pu_coords$y)
       if (is.null(xr) || is.null(yr)) {
-        cli::cli_text(" {ch$v}{ch$j}{ch$b}pu_coords:      {n_c} rows",
+        cli::cli_text(" {ch$v}{ch$j}{ch$b}coordinates:      {n_c} rows",
                       .envir = environment())
       } else {
-        cli::cli_text(" {ch$v}{ch$j}{ch$b}pu_coords:      {n_c} rows (x: {xr[[1]]}..{xr[[2]]}, y: {yr[[1]]}..{yr[[2]]})",
+        cli::cli_text(" {ch$v}{ch$j}{ch$b}coordinates:      {n_c} rows (x: {xr[[1]]}..{xr[[2]]}, y: {yr[[1]]}..{yr[[2]]})",
                       .envir = environment())
       }
     } else {
-      cli::cli_text(" {ch$v}{ch$j}{ch$b}pu_coords:      {.muted none}",
+      cli::cli_text(" {ch$v}{ch$j}{ch$b}coordinates:      {.muted none}",
                     .envir = environment())
     }
 
@@ -786,26 +800,28 @@ Problem <- pproto(
       )
     }
 
-    if (isTRUE(cons_sum$pu_locks)) {
+    pu_lock_total <- cons_sum$pu_locked_in + cons_sum$pu_locked_out
+    if (pu_lock_total > 0L) {
       cli::cli_text(
-        " {ch$v}{ch$j}{ch$b}pu_locks:         present",
+        " {ch$v}{ch$j}{ch$b}planning-unit locks: {pu_lock_total} units ({cons_sum$pu_locked_in} locked-in, {cons_sum$pu_locked_out} locked-out)",
         .envir = environment()
       )
     } else {
       cli::cli_text(
-        " {ch$v}{ch$j}{ch$b}pu_locks:         {.muted none}",
+        " {ch$v}{ch$j}{ch$b}planning-unit locks: {.muted none}",
         .envir = environment()
       )
     }
 
-    if (isTRUE(cons_sum$action_locks)) {
+    act_lock_total <- cons_sum$action_locked_in + cons_sum$action_locked_out
+    if (act_lock_total > 0L) {
       cli::cli_text(
-        " {ch$v}{ch$l}{ch$b}action_locks:     present",
+        " {ch$v}{ch$l}{ch$b}action locks:       {act_lock_total} rows ({cons_sum$action_locked_in} locked-in, {cons_sum$action_locked_out} locked-out)",
         .envir = environment()
       )
     } else {
       cli::cli_text(
-        " {ch$v}{ch$l}{ch$b}action_locks:     {.muted none}",
+        " {ch$v}{ch$l}{ch$b}action locks:       {.muted none}",
         .envir = environment()
       )
     }
