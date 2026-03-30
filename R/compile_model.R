@@ -31,6 +31,10 @@ compile_model.Problem <- function(x, force = FALSE, ...) {
   objs <- x$data$objectives %||% list()
   n_obj <- if (is.list(objs)) length(objs) else 0L
 
+  active_model_type <- x$data$model_args$model_type %||% NULL
+  has_active_objective <- !is.null(active_model_type) &&
+    nzchar(as.character(active_model_type)[1])
+
   method <- x$data$method %||% NULL
   has_method <- is.list(method) && length(method) > 0L
 
@@ -82,7 +86,7 @@ compile_model.Problem <- function(x, force = FALSE, ...) {
     )
   }
 
-  if (n_obj < 1L) {
+  if (n_obj < 1L && !isTRUE(has_active_objective)) {
     stop(
       "No objective configured. Add an objective before compiling the model.",
       call. = FALSE
