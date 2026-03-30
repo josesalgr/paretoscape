@@ -49,14 +49,12 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          dependencies: |
-            Imports
-            Depends
-            LinkingTo
+          dependencies: '"hard"'
           extra-packages: |
             any::rcmdcheck
             any::sessioninfo
             any::testthat
+            rcbc
           needs: check
 
       - name: Install Linux system dependencies
