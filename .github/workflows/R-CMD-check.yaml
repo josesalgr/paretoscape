@@ -54,6 +54,7 @@ jobs:
             any::rcmdcheck
             any::sessioninfo
             any::testthat
+            knitr
           needs: check
 
       - name: Install Linux system dependencies
