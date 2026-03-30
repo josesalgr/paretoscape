@@ -307,16 +307,33 @@
 
   # dist_effects model-ready
   de <- x$data$dist_effects
+
+  if (is.null(de)) {
+    de <- data.frame(
+      pu = integer(0),
+      action = character(0),
+      feature = integer(0),
+      benefit = numeric(0),
+      loss = numeric(0),
+      internal_pu = integer(0),
+      internal_action = integer(0),
+      internal_feature = integer(0),
+      stringsAsFactors = FALSE
+    )
+  }
+
+  if (!inherits(de, "data.frame")) {
+    .pa_abort("dist_effects must be a data.frame (or NULL).")
+  }
+
   if (.has_rows(de) && .has_rows(da)) {
 
     n_before <- nrow(de)
 
-    # tipos base
     if ("pu" %in% names(de))      de$pu      <- as.integer(de$pu)
     if ("action" %in% names(de))  de$action  <- as.character(de$action)
     if ("feature" %in% names(de)) de$feature <- as.integer(de$feature)
 
-    # filtra a (pu, action) factibles
     de <- dplyr::inner_join(
       de,
       da[, c("pu", "action"), drop = FALSE],
@@ -327,37 +344,31 @@
     dropped <- n_before - n_after
     if (dropped > 0) x <- .pa_log_add(x, "filtered_effects_rows", dropped)
 
-    # --- NEW: asegurar columnas internas (legacy-safe)
     pu_map <- x$data$pu[, c("id", "internal_id")]
     act_map <- x$data$actions[, c("id", "internal_id")]
     feat_map <- x$data$features[, c("id", "internal_id")]
 
-    # internal_pu
     if (!("internal_pu" %in% names(de))) {
       de$internal_pu <- pu_map$internal_id[match(de$pu, pu_map$id)]
     } else {
       de$internal_pu <- as.integer(de$internal_pu)
     }
 
-    # internal_action
     if (!("internal_action" %in% names(de))) {
       de$internal_action <- act_map$internal_id[match(de$action, act_map$id)]
     } else {
       de$internal_action <- as.integer(de$internal_action)
     }
 
-    # internal_feature
     if (!("internal_feature" %in% names(de))) {
-      # ojo: algunas tablas legacy pueden usar "feature" como id
       if (!("feature" %in% names(de))) {
-        .pa_abort("dist_effects must contain column 'feature' (feature id) to derive internal_feature in legacy mode.")
+        .pa_abort("dist_effects must contain column 'feature' (feature id) to derive internal_feature.")
       }
       de$internal_feature <- feat_map$internal_id[match(de$feature, feat_map$id)]
     } else {
       de$internal_feature <- as.integer(de$internal_feature)
     }
 
-    # chequeos (si hay NA, es que hay ids que no matchean con pu/actions/features)
     if (anyNA(de$internal_pu)) {
       .pa_abort("dist_effects has pu ids not found in x$data$pu$id (cannot derive internal_pu).")
     }
@@ -369,21 +380,23 @@
     }
   }
 
-  de <- .pa_add_feature_labels(
-    df = de,
-    features_df = x$data$features,
-    feature_col = "feature",
-    internal_feature_col = "internal_feature",
-    out_col = "feature_name"
-  )
+  if (.has_rows(de)) {
+    de <- .pa_add_feature_labels(
+      df = de,
+      features_df = x$data$features,
+      feature_col = "feature",
+      internal_feature_col = "internal_feature",
+      out_col = "feature_name"
+    )
 
-  de <- .pa_add_action_labels(
-    df = de,
-    actions_df = x$data$actions,
-    action_col = "action",
-    internal_action_col = "internal_action",
-    out_col = "action_name"
-  )
+    de <- .pa_add_action_labels(
+      df = de,
+      actions_df = x$data$actions,
+      action_col = "action",
+      internal_action_col = "internal_action",
+      out_col = "action_name"
+    )
+  }
 
   x$data$dist_effects_model <- de
 
@@ -470,6 +483,11 @@
   oargs <- args$objective_args %||% list()
 
   has_actions_model <- .has_rows(x$data$dist_actions_model)
+  has_effects_model <- .has_rows(x$data$dist_effects_model)
+  has_targets <- !is.null(x$data$targets) &&
+    inherits(x$data$targets, "data.frame") &&
+    nrow(x$data$targets) > 0
+
 
   needs_actions <- mtype %in% c(
     "maximizeBenefits",
@@ -485,6 +503,17 @@
     .pa_abort(
       "Objective '", mtype, "' requires actions, but no actions are available.\n",
       "Run add_actions() (and ensure feasible dist_actions rows exist) before solve()."
+    )
+  }
+
+  # ------------------------------------------------------------
+  # Actions + targets over features require effects
+  # ------------------------------------------------------------
+  if (isTRUE(has_actions_model) && isTRUE(has_targets) && !isTRUE(has_effects_model)) {
+    .pa_abort(
+      "This problem includes actions and feature targets, but no action effects were provided.\n",
+      "Because targets are defined on features, paretoscape needs to know how each action affects each feature.\n",
+      "Run add_effects() after add_actions() before solve()."
     )
   }
 

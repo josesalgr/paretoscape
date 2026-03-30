@@ -170,6 +170,35 @@ print(p)
 
 This expands the problem from a planning-unit representation to a planning-unit-by-action representation, meaning the model can now decide which action is selected in each unit.
 
+### Add action effects
+
+Next, we define how actions affect features. In this example, we use a simple multiplier specification:
+
+- `conservation` provides a small positive effect on all features,
+- `restoration` provides a larger positive effect.
+
+```{r}
+effects_tbl <- expand.grid(
+  action = c("conservation", "restoration"),
+  feature = sim_features$name,
+  stringsAsFactors = FALSE
+)
+
+effects_tbl$multiplier <- c(
+  rep(0.05, nrow(sim_features)),
+  rep(0.20, nrow(sim_features))
+)
+
+p <- add_effects(
+  x = p,
+  effects = effects_tbl,
+  effect_type = "delta"
+)
+
+```
+
+Internally, effects are stored in canonical form with non-negative `benefit` and `loss` columns for each `(pu, action, feature)` triple.
+
 ## Step 3: add a target and a spatial relation
 
 To make the example realistic, we add a relative target and a spatial boundary relation derived from the polygons.
@@ -179,7 +208,7 @@ The target ensures that the solution must achieve a minimum representation level
 ```{r}
 p <- p |>
   add_targets_relative(targets = 0.05) |>
-  add_spatial_boundary(name = "boundary")
+  add_spatial_distance(name = "dist", max_distance = 1000)
 
 print(p)
 ```
@@ -200,7 +229,7 @@ p <- p |>
   add_objective_min_cost(alias = "cost") |>
   add_objective_min_fragmentation(
     alias = "frag",
-    relation_name = "boundary"
+    relation_name = "dist"
   )
 
 print(p)
@@ -251,7 +280,7 @@ Other backends can also be used, including `set_solver_gurobi()`, `set_solver_cp
 
 ## Step 7: solve the problem
 
-```{r eval = FALSE}
+```{r}
 res <- solve(p_mo)
 ```
 
