@@ -49,10 +49,14 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          cache: true
+          dependencies: |
+            Imports
+            Depends
+            LinkingTo
           extra-packages: |
             any::rcmdcheck
             any::sessioninfo
+            any::testthat
           needs: check
 
       - name: Install Linux system dependencies
