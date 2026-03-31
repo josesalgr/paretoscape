@@ -13,7 +13,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-# paretoscape: Multi-Objective Spatial Planning in R
+# paretoscape: Multi-Objective integrated spatial Planning in R
 
 <!-- badges: start -->
 [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
@@ -170,7 +170,7 @@ We now add a relative target requiring each feature to reach at least 20% of its
 ```{r}
 p <- add_targets_relative(
   x = p,
-  targets = 0.05
+  targets = 0.03
 )
 
 print(p)

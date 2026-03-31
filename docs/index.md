@@ -1,4 +1,4 @@
-# paretoscape: Multi-Objective Spatial Planning in R
+# paretoscape: Multi-Objective integrated spatial Planning in R
 
 `paretoscape` provides an exact optimisation framework for
 **multi-objective spatial planning** in problems where decisions are
@@ -94,19 +94,19 @@ print(p)
 #> │├─costs: min: 1, max: 1
 #> │└─features: 155 total ("ACCGENT", "ACCNISU", "ACRARUN", ...)
 #> └─actions and effects
-#> │├─actions: none specified
-#> │├─dist_actions: none
-#> │├─dist_effects: none specified
-#> │└─dist_profit: none specified
+#> │├─actions: none
+#> │├─feasible action pairs: none
+#> │├─effect data: none
+#> │└─profit data: none
 #> └─spatial
 #> │├─geometry: sf (11109 rows)
-#> │├─pu_coords: 11109 rows (x: 2868900..3007900, y: 2110700..2280700)
+#> │├─coordinates: 11109 rows (x: 2868900..3007900, y: 2110700..2280700)
 #> │└─relations: none
 #> └─targets and constraints
 #> │├─targets: none
 #> │├─area constraints: none
-#> │├─pu_locks: none
-#> │└─action_locks: none
+#> │├─planning-unit locks: none
+#> │└─action locks: none
 #> └─model
 #> │├─status: not built yet (will build in solve())
 #> │├─objectives: none
@@ -151,19 +151,19 @@ print(p)
 #> │└─features: 155 total ("ACCGENT", "ACCNISU", "ACRARUN", ...)
 #> └─actions and effects
 #> │├─actions: 2 total ("Conservation", "Restoration")
-#> │├─dist_actions: 22218 feasible rows
+#> │├─feasible action pairs: 22218 feasible rows
 #> │├─action costs: min: 2, max: 6
-#> │├─dist_effects: none specified
-#> │└─dist_profit: none specified
+#> │├─effect data: none
+#> │└─profit data: none
 #> └─spatial
 #> │├─geometry: sf (11109 rows)
-#> │├─pu_coords: 11109 rows (x: 2868900..3007900, y: 2110700..2280700)
+#> │├─coordinates: 11109 rows (x: 2868900..3007900, y: 2110700..2280700)
 #> │└─relations: none
 #> └─targets and constraints
 #> │├─targets: none
 #> │├─area constraints: none
-#> │├─pu_locks: none
-#> │└─action_locks: none
+#> │├─planning-unit locks: none
+#> │└─action locks: none
 #> └─model
 #> │├─status: not built yet (will build in solve())
 #> │├─objectives: none
@@ -226,20 +226,20 @@ print(p)
 #> │└─features: 155 total ("ACCGENT", "ACCNISU", "ACRARUN", ...)
 #> └─actions and effects
 #> │├─actions: 2 total ("Conservation", "Restoration")
-#> │├─dist_actions: 22218 feasible rows
+#> │├─feasible action pairs: 22218 feasible rows
 #> │├─action costs: min: 2, max: 6
-#> │├─dist_effects: 696042 rows
+#> │├─effect data: 696042 rows
 #> │├─effect mode: benefit only
-#> │└─dist_profit: none specified
+#> │└─profit data: none
 #> └─spatial
 #> │├─geometry: sf (11109 rows)
-#> │├─pu_coords: 11109 rows (x: 2868900..3007900, y: 2110700..2280700)
+#> │├─coordinates: 11109 rows (x: 2868900..3007900, y: 2110700..2280700)
 #> │└─relations: boundary (21693 edges, w: 1..1)
 #> └─targets and constraints
 #> │├─targets: none
 #> │├─area constraints: none
-#> │├─pu_locks: none
-#> │└─action_locks: none
+#> │├─planning-unit locks: none
+#> │└─action locks: none
 #> └─model
 #> │├─status: not built yet (will build in solve())
 #> │├─objectives: none
@@ -260,7 +260,7 @@ We now add a relative target requiring each feature to reach at least
 ``` r
 p <- add_targets_relative(
   x = p,
-  targets = 0.20
+  targets = 0.03
 )
 
 print(p)
@@ -271,21 +271,21 @@ print(p)
 #> │└─features: 155 total ("ACCGENT", "ACCNISU", "ACRARUN", ...)
 #> └─actions and effects
 #> │├─actions: 2 total ("Conservation", "Restoration")
-#> │├─dist_actions: 22218 feasible rows
+#> │├─feasible action pairs: 22218 feasible rows
 #> │├─action costs: min: 2, max: 6
-#> │├─dist_effects: 696042 rows
+#> │├─effect data: 696042 rows
 #> │├─effect mode: benefit only
-#> │└─dist_profit: none specified
+#> │└─profit data: none
 #> └─spatial
 #> │├─geometry: sf (11109 rows)
-#> │├─pu_coords: 11109 rows (x: 2868900..3007900, y: 2110700..2280700)
+#> │├─coordinates: 11109 rows (x: 2868900..3007900, y: 2110700..2280700)
 #> │└─relations: boundary (21693 edges, w: 1..1)
 #> └─targets and constraints
 #> │├─targets: 155 rows
-#> │├─target preview: "ACCGENT" >= 721.4, "ACCNISU" >= 806.2, "ACRARUN" >= 102.2
+#> │├─target preview: "ACCGENT" >= 108.2, "ACCNISU" >= 120.9, "ACRARUN" >= 15.33
 #> │├─area constraints: none
-#> │├─pu_locks: none
-#> │└─action_locks: none
+#> │├─planning-unit locks: none
+#> │└─action locks: none
 #> └─model
 #> │├─status: not built yet (will build in solve())
 #> │├─objectives: none
@@ -324,21 +324,21 @@ print(p)
 #> │└─features: 155 total ("ACCGENT", "ACCNISU", "ACRARUN", ...)
 #> └─actions and effects
 #> │├─actions: 2 total ("Conservation", "Restoration")
-#> │├─dist_actions: 22218 feasible rows
+#> │├─feasible action pairs: 22218 feasible rows
 #> │├─action costs: min: 2, max: 6
-#> │├─dist_effects: 696042 rows
+#> │├─effect data: 696042 rows
 #> │├─effect mode: benefit only
-#> │└─dist_profit: none specified
+#> │└─profit data: none
 #> └─spatial
 #> │├─geometry: sf (11109 rows)
-#> │├─pu_coords: 11109 rows (x: 2868900..3007900, y: 2110700..2280700)
+#> │├─coordinates: 11109 rows (x: 2868900..3007900, y: 2110700..2280700)
 #> │└─relations: boundary (21693 edges, w: 1..1)
 #> └─targets and constraints
 #> │├─targets: 155 rows
-#> │├─target preview: "ACCGENT" >= 721.4, "ACCNISU" >= 806.2, "ACRARUN" >= 102.2
+#> │├─target preview: "ACCGENT" >= 108.2, "ACCNISU" >= 120.9, "ACRARUN" >= 15.33
 #> │├─area constraints: none
-#> │├─pu_locks: none
-#> │└─action_locks: none
+#> │├─planning-unit locks: none
+#> │└─action locks: none
 #> └─model
 #> │├─status: not built yet (will build in solve())
 #> │├─objectives: 3 registered (benefit, cost, frag)
@@ -411,9 +411,9 @@ head(solution_actions)
 #> 1      1 conservation    2      0        1      1
 #> 11110  1  restoration    6      0        0      1
 #> 2      2 conservation    2      0        1      1
-#> 11111  2  restoration    6      0        1      1
+#> 11111  2  restoration    6      0        0      1
 #> 3      3 conservation    2      0        1      1
-#> 11112  3  restoration    6      0        1      1
+#> 11112  3  restoration    6      0        0      1
 ```
 
 When the result is a multi-objective solution set, you can also inspect

@@ -65,7 +65,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="section level1">
 <div class="page-header">
-<img src="logo.png" class="logo" alt=""><h1 id="paretoscape-multi-objective-spatial-planning-in-r">paretoscape: Multi-Objective Spatial Planning in R<a class="anchor" aria-label="anchor" href="#paretoscape-multi-objective-spatial-planning-in-r"></a>
+<img src="logo.png" class="logo" alt=""><h1 id="paretoscape-multi-objective-integrated-spatial-planning-in-r">paretoscape: Multi-Objective integrated spatial Planning in R<a class="anchor" aria-label="anchor" href="#paretoscape-multi-objective-integrated-spatial-planning-in-r"></a>
 </h1>
 </div>
 <!-- badges: start -->
@@ -149,19 +149,19 @@ The tables <code>sim_features</code> and <code>sim_dist_features</code> define t
 <span><span class="co">#&gt; │├─costs: min: 1, max: 1</span></span>
 <span><span class="co">#&gt; │└─features: 155 total ("ACCGENT", "ACCNISU", "ACRARUN", ...)</span></span>
 <span><span class="co">#&gt; └─actions and effects</span></span>
-<span><span class="co">#&gt; │├─actions: none specified</span></span>
-<span><span class="co">#&gt; │├─dist_actions: none</span></span>
-<span><span class="co">#&gt; │├─dist_effects: none specified</span></span>
-<span><span class="co">#&gt; │└─dist_profit: none specified</span></span>
+<span><span class="co">#&gt; │├─actions: none</span></span>
+<span><span class="co">#&gt; │├─feasible action pairs: none</span></span>
+<span><span class="co">#&gt; │├─effect data: none</span></span>
+<span><span class="co">#&gt; │└─profit data: none</span></span>
 <span><span class="co">#&gt; └─spatial</span></span>
 <span><span class="co">#&gt; │├─geometry: sf (11109 rows)</span></span>
-<span><span class="co">#&gt; │├─pu_coords: 11109 rows (x: 2868900..3007900, y: 2110700..2280700)</span></span>
+<span><span class="co">#&gt; │├─coordinates: 11109 rows (x: 2868900..3007900, y: 2110700..2280700)</span></span>
 <span><span class="co">#&gt; │└─relations: none</span></span>
 <span><span class="co">#&gt; └─targets and constraints</span></span>
 <span><span class="co">#&gt; │├─targets: none</span></span>
 <span><span class="co">#&gt; │├─area constraints: none</span></span>
-<span><span class="co">#&gt; │├─pu_locks: none</span></span>
-<span><span class="co">#&gt; │└─action_locks: none</span></span>
+<span><span class="co">#&gt; │├─planning-unit locks: none</span></span>
+<span><span class="co">#&gt; │└─action locks: none</span></span>
 <span><span class="co">#&gt; └─model</span></span>
 <span><span class="co">#&gt; │├─status: not built yet (will build in solve())</span></span>
 <span><span class="co">#&gt; │├─objectives: none</span></span>
@@ -207,19 +207,19 @@ The tables <code>sim_features</code> and <code>sim_dist_features</code> define t
 <span><span class="co">#&gt; │└─features: 155 total ("ACCGENT", "ACCNISU", "ACRARUN", ...)</span></span>
 <span><span class="co">#&gt; └─actions and effects</span></span>
 <span><span class="co">#&gt; │├─actions: 2 total ("Conservation", "Restoration")</span></span>
-<span><span class="co">#&gt; │├─dist_actions: 22218 feasible rows</span></span>
+<span><span class="co">#&gt; │├─feasible action pairs: 22218 feasible rows</span></span>
 <span><span class="co">#&gt; │├─action costs: min: 2, max: 6</span></span>
-<span><span class="co">#&gt; │├─dist_effects: none specified</span></span>
-<span><span class="co">#&gt; │└─dist_profit: none specified</span></span>
+<span><span class="co">#&gt; │├─effect data: none</span></span>
+<span><span class="co">#&gt; │└─profit data: none</span></span>
 <span><span class="co">#&gt; └─spatial</span></span>
 <span><span class="co">#&gt; │├─geometry: sf (11109 rows)</span></span>
-<span><span class="co">#&gt; │├─pu_coords: 11109 rows (x: 2868900..3007900, y: 2110700..2280700)</span></span>
+<span><span class="co">#&gt; │├─coordinates: 11109 rows (x: 2868900..3007900, y: 2110700..2280700)</span></span>
 <span><span class="co">#&gt; │└─relations: none</span></span>
 <span><span class="co">#&gt; └─targets and constraints</span></span>
 <span><span class="co">#&gt; │├─targets: none</span></span>
 <span><span class="co">#&gt; │├─area constraints: none</span></span>
-<span><span class="co">#&gt; │├─pu_locks: none</span></span>
-<span><span class="co">#&gt; │└─action_locks: none</span></span>
+<span><span class="co">#&gt; │├─planning-unit locks: none</span></span>
+<span><span class="co">#&gt; │└─action locks: none</span></span>
 <span><span class="co">#&gt; └─model</span></span>
 <span><span class="co">#&gt; │├─status: not built yet (will build in solve())</span></span>
 <span><span class="co">#&gt; │├─objectives: none</span></span>
@@ -277,20 +277,20 @@ The tables <code>sim_features</code> and <code>sim_dist_features</code> define t
 <span><span class="co">#&gt; │└─features: 155 total ("ACCGENT", "ACCNISU", "ACRARUN", ...)</span></span>
 <span><span class="co">#&gt; └─actions and effects</span></span>
 <span><span class="co">#&gt; │├─actions: 2 total ("Conservation", "Restoration")</span></span>
-<span><span class="co">#&gt; │├─dist_actions: 22218 feasible rows</span></span>
+<span><span class="co">#&gt; │├─feasible action pairs: 22218 feasible rows</span></span>
 <span><span class="co">#&gt; │├─action costs: min: 2, max: 6</span></span>
-<span><span class="co">#&gt; │├─dist_effects: 696042 rows</span></span>
+<span><span class="co">#&gt; │├─effect data: 696042 rows</span></span>
 <span><span class="co">#&gt; │├─effect mode: benefit only</span></span>
-<span><span class="co">#&gt; │└─dist_profit: none specified</span></span>
+<span><span class="co">#&gt; │└─profit data: none</span></span>
 <span><span class="co">#&gt; └─spatial</span></span>
 <span><span class="co">#&gt; │├─geometry: sf (11109 rows)</span></span>
-<span><span class="co">#&gt; │├─pu_coords: 11109 rows (x: 2868900..3007900, y: 2110700..2280700)</span></span>
+<span><span class="co">#&gt; │├─coordinates: 11109 rows (x: 2868900..3007900, y: 2110700..2280700)</span></span>
 <span><span class="co">#&gt; │└─relations: boundary (21693 edges, w: 1..1)</span></span>
 <span><span class="co">#&gt; └─targets and constraints</span></span>
 <span><span class="co">#&gt; │├─targets: none</span></span>
 <span><span class="co">#&gt; │├─area constraints: none</span></span>
-<span><span class="co">#&gt; │├─pu_locks: none</span></span>
-<span><span class="co">#&gt; │└─action_locks: none</span></span>
+<span><span class="co">#&gt; │├─planning-unit locks: none</span></span>
+<span><span class="co">#&gt; │└─action locks: none</span></span>
 <span><span class="co">#&gt; └─model</span></span>
 <span><span class="co">#&gt; │├─status: not built yet (will build in solve())</span></span>
 <span><span class="co">#&gt; │├─objectives: none</span></span>
@@ -307,7 +307,7 @@ The tables <code>sim_features</code> and <code>sim_dist_features</code> define t
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/add_targets_relative.html">add_targets_relative</a></span><span class="op">(</span></span>
 <span>  x <span class="op">=</span> <span class="va">p</span>,</span>
-<span>  targets <span class="op">=</span> <span class="fl">0.20</span></span>
+<span>  targets <span class="op">=</span> <span class="fl">0.03</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="reference/print.html">print</a></span><span class="op">(</span><span class="va">p</span><span class="op">)</span></span>
@@ -318,21 +318,21 @@ The tables <code>sim_features</code> and <code>sim_dist_features</code> define t
 <span><span class="co">#&gt; │└─features: 155 total ("ACCGENT", "ACCNISU", "ACRARUN", ...)</span></span>
 <span><span class="co">#&gt; └─actions and effects</span></span>
 <span><span class="co">#&gt; │├─actions: 2 total ("Conservation", "Restoration")</span></span>
-<span><span class="co">#&gt; │├─dist_actions: 22218 feasible rows</span></span>
+<span><span class="co">#&gt; │├─feasible action pairs: 22218 feasible rows</span></span>
 <span><span class="co">#&gt; │├─action costs: min: 2, max: 6</span></span>
-<span><span class="co">#&gt; │├─dist_effects: 696042 rows</span></span>
+<span><span class="co">#&gt; │├─effect data: 696042 rows</span></span>
 <span><span class="co">#&gt; │├─effect mode: benefit only</span></span>
-<span><span class="co">#&gt; │└─dist_profit: none specified</span></span>
+<span><span class="co">#&gt; │└─profit data: none</span></span>
 <span><span class="co">#&gt; └─spatial</span></span>
 <span><span class="co">#&gt; │├─geometry: sf (11109 rows)</span></span>
-<span><span class="co">#&gt; │├─pu_coords: 11109 rows (x: 2868900..3007900, y: 2110700..2280700)</span></span>
+<span><span class="co">#&gt; │├─coordinates: 11109 rows (x: 2868900..3007900, y: 2110700..2280700)</span></span>
 <span><span class="co">#&gt; │└─relations: boundary (21693 edges, w: 1..1)</span></span>
 <span><span class="co">#&gt; └─targets and constraints</span></span>
 <span><span class="co">#&gt; │├─targets: 155 rows</span></span>
-<span><span class="co">#&gt; │├─target preview: "ACCGENT" &gt;= 721.4, "ACCNISU" &gt;= 806.2, "ACRARUN" &gt;= 102.2</span></span>
+<span><span class="co">#&gt; │├─target preview: "ACCGENT" &gt;= 108.2, "ACCNISU" &gt;= 120.9, "ACRARUN" &gt;= 15.33</span></span>
 <span><span class="co">#&gt; │├─area constraints: none</span></span>
-<span><span class="co">#&gt; │├─pu_locks: none</span></span>
-<span><span class="co">#&gt; │└─action_locks: none</span></span>
+<span><span class="co">#&gt; │├─planning-unit locks: none</span></span>
+<span><span class="co">#&gt; │└─action locks: none</span></span>
 <span><span class="co">#&gt; └─model</span></span>
 <span><span class="co">#&gt; │├─status: not built yet (will build in solve())</span></span>
 <span><span class="co">#&gt; │├─objectives: none</span></span>
@@ -368,21 +368,21 @@ The tables <code>sim_features</code> and <code>sim_dist_features</code> define t
 <span><span class="co">#&gt; │└─features: 155 total ("ACCGENT", "ACCNISU", "ACRARUN", ...)</span></span>
 <span><span class="co">#&gt; └─actions and effects</span></span>
 <span><span class="co">#&gt; │├─actions: 2 total ("Conservation", "Restoration")</span></span>
-<span><span class="co">#&gt; │├─dist_actions: 22218 feasible rows</span></span>
+<span><span class="co">#&gt; │├─feasible action pairs: 22218 feasible rows</span></span>
 <span><span class="co">#&gt; │├─action costs: min: 2, max: 6</span></span>
-<span><span class="co">#&gt; │├─dist_effects: 696042 rows</span></span>
+<span><span class="co">#&gt; │├─effect data: 696042 rows</span></span>
 <span><span class="co">#&gt; │├─effect mode: benefit only</span></span>
-<span><span class="co">#&gt; │└─dist_profit: none specified</span></span>
+<span><span class="co">#&gt; │└─profit data: none</span></span>
 <span><span class="co">#&gt; └─spatial</span></span>
 <span><span class="co">#&gt; │├─geometry: sf (11109 rows)</span></span>
-<span><span class="co">#&gt; │├─pu_coords: 11109 rows (x: 2868900..3007900, y: 2110700..2280700)</span></span>
+<span><span class="co">#&gt; │├─coordinates: 11109 rows (x: 2868900..3007900, y: 2110700..2280700)</span></span>
 <span><span class="co">#&gt; │└─relations: boundary (21693 edges, w: 1..1)</span></span>
 <span><span class="co">#&gt; └─targets and constraints</span></span>
 <span><span class="co">#&gt; │├─targets: 155 rows</span></span>
-<span><span class="co">#&gt; │├─target preview: "ACCGENT" &gt;= 721.4, "ACCNISU" &gt;= 806.2, "ACRARUN" &gt;= 102.2</span></span>
+<span><span class="co">#&gt; │├─target preview: "ACCGENT" &gt;= 108.2, "ACCNISU" &gt;= 120.9, "ACRARUN" &gt;= 15.33</span></span>
 <span><span class="co">#&gt; │├─area constraints: none</span></span>
-<span><span class="co">#&gt; │├─pu_locks: none</span></span>
-<span><span class="co">#&gt; │└─action_locks: none</span></span>
+<span><span class="co">#&gt; │├─planning-unit locks: none</span></span>
+<span><span class="co">#&gt; │└─action locks: none</span></span>
 <span><span class="co">#&gt; └─model</span></span>
 <span><span class="co">#&gt; │├─status: not built yet (will build in solve())</span></span>
 <span><span class="co">#&gt; │├─objectives: 3 registered (benefit, cost, frag)</span></span>
@@ -440,9 +440,9 @@ The tables <code>sim_features</code> and <code>sim_dist_features</code> define t
 <span><span class="co">#&gt; 1      1 conservation    2      0        1      1</span></span>
 <span><span class="co">#&gt; 11110  1  restoration    6      0        0      1</span></span>
 <span><span class="co">#&gt; 2      2 conservation    2      0        1      1</span></span>
-<span><span class="co">#&gt; 11111  2  restoration    6      0        1      1</span></span>
+<span><span class="co">#&gt; 11111  2  restoration    6      0        0      1</span></span>
 <span><span class="co">#&gt; 3      3 conservation    2      0        1      1</span></span>
-<span><span class="co">#&gt; 11112  3  restoration    6      0        1      1</span></span></code></pre></div>
+<span><span class="co">#&gt; 11112  3  restoration    6      0        0      1</span></span></code></pre></div>
 <p>When the result is a multi-objective solution set, you can also inspect trade-offs across runs:</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/plot_tradeoff.html">plot_tradeoff</a></span><span class="op">(</span><span class="va">res</span><span class="op">)</span></span></code></pre></div>
