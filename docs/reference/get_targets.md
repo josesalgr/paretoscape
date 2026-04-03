@@ -2,7 +2,7 @@
 
 Extract a user-facing target-achievement table from a `Solution` or
 `SolutionSet` object returned by
-[`solve`](https://josesalgr.github.io/paretoscape/reference/solve.md).
+[`solve`](https://josesalgr.github.io/multiscape/reference/solve.md).
 
 The returned table summarizes, for each stored target, the target level,
 the achieved value in the solution, the gap between achieved and
@@ -19,7 +19,7 @@ get_targets(x, run = NULL)
 - x:
 
   A `Solution` or `SolutionSet` object returned by
-  [`solve`](https://josesalgr.github.io/paretoscape/reference/solve.md).
+  [`solve`](https://josesalgr.github.io/multiscape/reference/solve.md).
 
 - run:
 
@@ -35,7 +35,7 @@ not contain targets. Typical columns include `feature`, `feature_name`,
 
 ## Details
 
-Targets are optional in `paretoscape`. If the solution object does not
+Targets are optional in `multiscape`. If the solution object does not
 contain a targets summary table at `x$summary$targets`, this function
 returns `NULL` without error.
 
@@ -79,6 +79,6 @@ present, it typically represents: \$\$ \mathrm{gap} =
 
 ## See also
 
-[`get_pu`](https://josesalgr.github.io/paretoscape/reference/get_pu.md),
-[`get_actions`](https://josesalgr.github.io/paretoscape/reference/get_actions.md),
-[`get_features`](https://josesalgr.github.io/paretoscape/reference/get_features.md)
+[`get_pu`](https://josesalgr.github.io/multiscape/reference/get_pu.md),
+[`get_actions`](https://josesalgr.github.io/multiscape/reference/get_actions.md),
+[`get_features`](https://josesalgr.github.io/multiscape/reference/get_features.md)

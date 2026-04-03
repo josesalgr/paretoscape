@@ -3,25 +3,25 @@ test_that("get_actions returns selected actions for Solution", {
 
   toy <- toy_equivalent_basic()
 
-  p <- paretoscape::input_data(
+  p <- multiscape::input_data(
     pu = toy$pu,
     features = toy$features,
     dist_features = toy$dist_features,
     cost = "cost"
   ) |>
-    paretoscape::add_actions(actions = toy$actions, cost = 0) |>
-    paretoscape::add_effects(effects = toy$effects, effect_type = "after") |>
-    paretoscape::add_targets_relative(0.5) |>
-    paretoscape::add_objective_min_cost(alias = "cost") |>
-    paretoscape::set_solver_cbc(gap_limit = 0, verbose = FALSE)
+    multiscape::add_actions(actions = toy$actions, cost = 0) |>
+    multiscape::add_effects(effects = toy$effects, effect_type = "after") |>
+    multiscape::add_targets_relative(0.5) |>
+    multiscape::add_objective_min_cost(alias = "cost") |>
+    multiscape::set_solver_cbc(gap_limit = 0, verbose = FALSE)
 
-  s <- paretoscape::solve(p)
+  s <- multiscape::solve(p)
 
-  a_all <- paretoscape::get_actions(s)
+  a_all <- multiscape::get_actions(s)
   expect_true(is.data.frame(a_all))
   expect_gt(nrow(a_all), 0)
 
-  a_sel <- paretoscape::get_actions(s, only_selected = TRUE)
+  a_sel <- multiscape::get_actions(s, only_selected = TRUE)
   expect_true(is.data.frame(a_sel))
 })
 
@@ -30,26 +30,26 @@ test_that("get_actions returns actions for SolutionSet run", {
 
   toy <- toy_equivalent_basic()
 
-  p <- paretoscape::input_data(
+  p <- multiscape::input_data(
     pu = toy$pu,
     features = toy$features,
     dist_features = toy$dist_features,
     cost = "cost"
   ) |>
-    paretoscape::add_actions(actions = toy$actions, cost = 0) |>
-    paretoscape::add_effects(effects = toy$effects, effect_type = "after") |>
-    paretoscape::add_targets_relative(0.5) |>
-    paretoscape::add_spatial_boundary(boundary = toy$boundary, include_self = TRUE) |>
-    paretoscape::add_objective_min_cost(alias = "cost") |>
-    paretoscape::add_objective_min_fragmentation(alias = "frag") |>
-    paretoscape::set_method_weighted(
+    multiscape::add_actions(actions = toy$actions, cost = 0) |>
+    multiscape::add_effects(effects = toy$effects, effect_type = "after") |>
+    multiscape::add_targets_relative(0.5) |>
+    multiscape::add_spatial_boundary(boundary = toy$boundary, include_self = TRUE) |>
+    multiscape::add_objective_min_cost(alias = "cost") |>
+    multiscape::add_objective_min_fragmentation(alias = "frag") |>
+    multiscape::set_method_weighted(
       aliases = c("cost", "frag"),
       weights = c(1, 1)
     ) |>
-    paretoscape::set_solver_cbc(gap_limit = 0, verbose = FALSE)
+    multiscape::set_solver_cbc(gap_limit = 0, verbose = FALSE)
 
-  s <- paretoscape::solve(p)
+  s <- multiscape::solve(p)
 
-  a <- paretoscape::get_actions(s, run = 1)
+  a <- multiscape::get_actions(s, run = 1)
   expect_true(is.data.frame(a))
 })

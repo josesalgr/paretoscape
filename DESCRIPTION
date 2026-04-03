@@ -1,4 +1,4 @@
-Package: paretoscape
+Package: multiscape
 Type: Package
 Version: 1.0.4
 Title: Multi-objective integrated spatial planning
@@ -66,8 +66,8 @@ LazyData: true
 License: GPL (>= 3)
 Language: en-US
 RoxygenNote: 7.3.3
-URL: https://josesalgr.github.io/paretoscape/
-BugReports: https://github.com/josesalgr/paretoscape/issues
+URL: https://josesalgr.github.io/multiscape/
+BugReports: https://github.com/josesalgr/multiscape/issues
 VignetteBuilder: knitr
 Collate: 
     'RcppExports.R'

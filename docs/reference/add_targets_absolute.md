@@ -110,7 +110,7 @@ Internally, targets added by this function are stored with:
 
 ## See also
 
-[`add_targets_relative`](https://josesalgr.github.io/paretoscape/reference/add_targets_relative.md)
+[`add_targets_relative`](https://josesalgr.github.io/multiscape/reference/add_targets_relative.md)
 
 ## Examples
 

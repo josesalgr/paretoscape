@@ -72,7 +72,7 @@
       nobj <- if (is.data.frame(args$objectives)) nrow(args$objectives) else length(args$objectives)
       if (is.finite(nobj) && nobj > 1) {
         .pa_abort(
-          "Multiple objectives detected (", nobj, "). paretoscape builds a single-objective MILP.\n",
+          "Multiple objectives detected (", nobj, "). multiscape builds a single-objective MILP.\n",
           "Use a multiobjective method for epsilon-constraint/AUGMECON/interactive methods (e.g., set_method_weighted)."
         )
       }
@@ -512,7 +512,7 @@
   if (isTRUE(has_actions_model) && isTRUE(has_targets) && !isTRUE(has_effects_model)) {
     .pa_abort(
       "This problem includes actions and feature targets, but no action effects were provided.\n",
-      "Because targets are defined on features, paretoscape needs to know how each action affects each feature.\n",
+      "Because targets are defined on features, multiscape needs to know how each action affects each feature.\n",
       "Run add_effects() after add_actions() before solve()."
     )
   }

@@ -1,6 +1,6 @@
 # load packages
 library(testthat)
-library(paretoscape)
+library(multiscape)
 
 # load solver packages
 # require(gurobi)
@@ -8,4 +8,4 @@ library(paretoscape)
 # require(Rcplex)
 # require(rcbc)
 
-test_check("paretoscape")
+test_check("multiscape")

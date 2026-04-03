@@ -13,14 +13,14 @@ knitr::opts_chunk$set(
 )
 ```
 
-# paretoscape: Multi-Objective integrated spatial Planning in R
+# multiscape: Multi-Objective integrated spatial Planning in R
 
 <!-- badges: start -->
 [![lifecycle](https://img.shields.io/badge/Lifecycle-stable-brightgreen.svg)](https://lifecycle.r-lib.org/articles/stages.html)
-[![R-CMD-check](https://github.com/josesalgr/paretoscape/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/josesalgr/paretoscape/actions/workflows/R-CMD-check.yaml)
+[![R-CMD-check](https://github.com/josesalgr/multiscape/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/josesalgr/multiscape/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
-`paretoscape` provides an exact optimisation framework for **multi-objective spatial planning** in problems where decisions are expressed as **management actions** applied across planning units.
+`multiscape` provides an exact optimisation framework for **multi-objective spatial planning** in problems where decisions are expressed as **management actions** applied across planning units.
 
 The package allows users to:
 
@@ -30,11 +30,11 @@ The package allows users to:
 - register **atomic objectives** such as cost, benefit, profit, and fragmentation,
 - and explore trade-offs using exact **multi-objective optimisation** methods such as weighted-sum, epsilon-constraint, and AUGMECON.
 
-`paretoscape` is designed for reproducible research workflows in conservation planning, restoration planning, and other spatial decision-support problems where actions, costs, ecological effects, and spatial structure interact.
+`multiscape` is designed for reproducible research workflows in conservation planning, restoration planning, and other spatial decision-support problems where actions, costs, ecological effects, and spatial structure interact.
 
 ## Experimental status
 
-`paretoscape` is currently an experimental research package under active development.  
+`multiscape` is currently an experimental research package under active development.  
 The API may still evolve as the package moves toward a first stable CRAN release.
 
 ## Installation
@@ -46,12 +46,12 @@ if (!requireNamespace("remotes", quietly = TRUE)) {
   install.packages("remotes")
 }
 
-remotes::install_github("josesalgr/paretoscape")
+remotes::install_github("josesalgr/multiscape")
 ```
 
 ## Core workflow
 
-A typical `paretoscape` workflow has five steps:
+A typical `multiscape` workflow has five steps:
 
 1. Build a `Problem` object from planning units, features, and baseline feature amounts.
 2. Add feasible actions and define how those actions affect features.
@@ -66,11 +66,11 @@ The example below illustrates this workflow using package data with polygon plan
 ### Load the package and example data
 
 ```{r}
-library(paretoscape)
+library(multiscape)
 
-data("sim_pu_sf", package = "paretoscape")
-data("sim_features", package = "paretoscape")
-data("sim_dist_features", package = "paretoscape")
+data("sim_pu_sf", package = "multiscape")
+data("sim_features", package = "multiscape")
+data("sim_dist_features", package = "multiscape")
 ```
 
 The dataset `sim_pu_sf` contains planning-unit polygons and a `cost` column.  
@@ -179,7 +179,7 @@ print(p)
 
 ### Register atomic objectives
 
-A key idea in `paretoscape` is that objectives are registered as **atomic objectives** under user-defined aliases. These aliases can later be combined in multi-objective methods.
+A key idea in `multiscape` is that objectives are registered as **atomic objectives** under user-defined aliases. These aliases can later be combined in multi-objective methods.
 
 Here we register three objectives:
 
@@ -201,7 +201,7 @@ print(p)
 
 ### Configure a multi-objective method
 
-There are several ways to explore trade-offs in `paretoscape`. A simple option is to use a weighted-sum formulation.
+There are several ways to explore trade-offs in `multiscape`. A simple option is to use a weighted-sum formulation.
 
 ```{r}
 p_mo <- set_method_weighted(
@@ -242,7 +242,7 @@ Depending on the selected method, `solve()` returns either:
 
 ### Inspect results
 
-For solved problems, `paretoscape` provides helper functions to extract user-facing summaries:
+For solved problems, `multiscape` provides helper functions to extract user-facing summaries:
 
 ```{r}
 solution_actions <- get_actions(res)
@@ -263,7 +263,7 @@ plot_spatial(res, what = "actions")
 
 ## Why this example matters
 
-This example illustrates the main modelling logic of `paretoscape`.
+This example illustrates the main modelling logic of `multiscape`.
 
 The problem is not only about selecting planning units. Instead, it is about deciding **which action** should be feasible and selected in each planning unit, while accounting for:
 
@@ -288,4 +288,4 @@ To explore the package further, see:
 
 If you find a bug or want to suggest an improvement, please open an issue at:
 
-<https://github.com/josesalgr/paretoscape/issues>
+<https://github.com/josesalgr/multiscape/issues>

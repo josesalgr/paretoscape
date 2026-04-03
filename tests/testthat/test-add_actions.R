@@ -1,14 +1,14 @@
 test_that("add_actions creates one feasible row per pu-action pair", {
   toy <- toy_equivalent_basic()
 
-  p <- paretoscape::input_data(
+  p <- multiscape::input_data(
     pu = toy$pu,
     features = toy$features,
     dist_features = toy$dist_features,
     cost = "cost"
   )
 
-  p <- paretoscape::add_actions(
+  p <- multiscape::add_actions(
     p,
     actions = toy$actions,
     cost = 0
@@ -30,14 +30,14 @@ test_that("add_actions creates one feasible row per pu-action pair", {
 test_that("add_actions stores a constant action cost correctly", {
   toy <- toy_equivalent_basic()
 
-  p <- paretoscape::input_data(
+  p <- multiscape::input_data(
     pu = toy$pu,
     features = toy$features,
     dist_features = toy$dist_features,
     cost = "cost"
   )
 
-  p <- paretoscape::add_actions(
+  p <- multiscape::add_actions(
     p,
     actions = toy$actions,
     cost = 7

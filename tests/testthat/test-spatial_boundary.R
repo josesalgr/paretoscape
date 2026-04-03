@@ -1,14 +1,14 @@
 test_that("add_spatial_boundary stores non-diagonal relations correctly", {
   toy <- toy_equivalent_basic()
 
-  p <- paretoscape::input_data(
+  p <- multiscape::input_data(
     pu = toy$pu,
     features = toy$features,
     dist_features = toy$dist_features,
     cost = "cost"
   )
 
-  p <- paretoscape::add_spatial_boundary(
+  p <- multiscape::add_spatial_boundary(
     p,
     boundary = toy$boundary,
     include_self = FALSE
@@ -27,14 +27,14 @@ test_that("add_spatial_boundary stores non-diagonal relations correctly", {
 test_that("add_spatial_boundary with include_self = TRUE adds diagonal rows", {
   toy <- toy_equivalent_basic()
 
-  p <- paretoscape::input_data(
+  p <- multiscape::input_data(
     pu = toy$pu,
     features = toy$features,
     dist_features = toy$dist_features,
     cost = "cost"
   )
 
-  p <- paretoscape::add_spatial_boundary(
+  p <- multiscape::add_spatial_boundary(
     p,
     boundary = toy$boundary,
     include_self = TRUE

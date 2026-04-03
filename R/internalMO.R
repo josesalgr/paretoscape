@@ -27,7 +27,7 @@
 
 
 # -------------------------------------------------------------------------
-# Atomic objective registry accessors (stored in paretoscape::Problem)
+# Atomic objective registry accessors (stored in multiscape::Problem)
 # Registry: x$data$objectives[[alias]] = list(...)
 # -------------------------------------------------------------------------
 
@@ -646,7 +646,7 @@
 }
 
 # -------------------------------------------------------------------------
-# Activate an IR as a single-objective config in paretoscape::Problem
+# Activate an IR as a single-objective config in multiscape::Problem
 # (Used by the "rebuild + pad" objective vector strategy)
 # -------------------------------------------------------------------------
 
@@ -1452,7 +1452,7 @@ add_objective <- function(x, objective) {
     stop("add_objective() expects an objective of class 'pa_objective'.", call. = FALSE)
   }
 
-  # store it as an atomic spec in the paretoscape registry
+  # store it as an atomic spec in the multiscape registry
   if (is.null(x$data$objectives) || !is.list(x$data$objectives)) {
     x$data$objectives <- list()
   }
@@ -1979,13 +1979,13 @@ add_objective <- function(x, objective) {
   # 4) combinar pesos -> objetivo final
   obj_w <- Reduce(`+`, Map(`*`, objvecs, as.list(weights)))
 
-  # 5) IMPORTANTÍSIMO: inyectar runtime update para que paretoscape lo use en solve()
+  # 5) IMPORTANTÍSIMO: inyectar runtime update para que multiscape lo use en solve()
   base2$data$runtime_updates <- list(
     obj = obj_w,
     modelsense = "min"
   )
 
-  # 6) asegurar que paretoscape NO reconstruya el modelo y no te borre runtime_updates
+  # 6) asegurar que multiscape NO reconstruya el modelo y no te borre runtime_updates
   base2$data$meta$model_dirty <- FALSE
   base2$data$has_model <- TRUE
 
@@ -2003,7 +2003,7 @@ add_objective <- function(x, objective) {
 }
 
 # ---------------------------------------------------------
-# Internal: solve a single run using paretoscape as engine
+# Internal: solve a single run using multiscape as engine
 # ---------------------------------------------------------
 .pamo_solve_one <- function(x, spec) {
 
@@ -2235,7 +2235,7 @@ add_objective <- function(x, objective) {
 }
 
 # ---------------------------------------------------------
-# Internal: extract (minimal) results from paretoscape Solution
+# Internal: extract (minimal) results from multiscape Solution
 # ---------------------------------------------------------
 .pamo_extract_solution <- function(out) {
   objval <- tryCatch(out$solution$objective, error = function(e) NA_real_)
@@ -2309,7 +2309,7 @@ add_objective <- function(x, objective) {
 
 
 # -------------------------------------------------------------------------
-# Internal: extract raw decision vector from a paretoscape Solution
+# Internal: extract raw decision vector from a multiscape Solution
 # -------------------------------------------------------------------------
 .pamo_get_solution_vector <- function(sol) {
 

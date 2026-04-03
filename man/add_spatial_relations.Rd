@@ -36,7 +36,7 @@ An updated \code{Problem} object with the relation stored in
 }
 \description{
 Register an externally computed spatial relation inside a \code{Problem}
-object using the unified internal representation adopted by \code{paretoscape}.
+object using the unified internal representation adopted by \code{mulstiscape}.
 
 Most users will typically prefer one of the convenience constructors such as
 \code{\link{add_spatial_boundary}}, \code{\link{add_spatial_rook}},

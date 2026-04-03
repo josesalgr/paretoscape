@@ -3,19 +3,19 @@ test_that("solve uses restoration when restoration-only feature target requires 
 
   toy <- toy_multiaction_semantics()
 
-  p <- paretoscape::input_data(
+  p <- multiscape::input_data(
     pu = toy$pu,
     features = toy$features,
     dist_features = toy$dist_features,
     cost = "cost"
   ) |>
-    paretoscape::add_actions(actions = toy$actions, cost = 0) |>
-    paretoscape::add_effects(effects = toy$effects, effect_type = "after") |>
-    paretoscape::add_targets_relative(0.8, features = 2) |>
-    paretoscape::add_objective_min_cost(alias = "cost") |>
-    paretoscape::set_solver_cbc(gap_limit = 0, verbose = FALSE)
+    multiscape::add_actions(actions = toy$actions, cost = 0) |>
+    multiscape::add_effects(effects = toy$effects, effect_type = "after") |>
+    multiscape::add_targets_relative(0.8, features = 2) |>
+    multiscape::add_objective_min_cost(alias = "cost") |>
+    multiscape::set_solver_cbc(gap_limit = 0, verbose = FALSE)
 
-  s <- paretoscape::solve(p)
+  s <- multiscape::solve(p)
 
   expect_s3_class(s, "Solution")
   expect_true(is.data.frame(s$summary$actions))

@@ -1,6 +1,6 @@
-# paretoscape: Multi-Objective integrated spatial Planning in R
+# multiscape: Multi-Objective integrated spatial Planning in R
 
-`paretoscape` provides an exact optimisation framework for
+`multiscape` provides an exact optimisation framework for
 **multi-objective spatial planning** in problems where decisions are
 expressed as **management actions** applied across planning units.
 
@@ -15,14 +15,14 @@ The package allows users to:
 - and explore trade-offs using exact **multi-objective optimisation**
   methods such as weighted-sum, epsilon-constraint, and AUGMECON.
 
-`paretoscape` is designed for reproducible research workflows in
+`multiscape` is designed for reproducible research workflows in
 conservation planning, restoration planning, and other spatial
 decision-support problems where actions, costs, ecological effects, and
 spatial structure interact.
 
 ## Experimental status
 
-`paretoscape` is currently an experimental research package under active
+`multiscape` is currently an experimental research package under active
 development.  
 The API may still evolve as the package moves toward a first stable CRAN
 release.
@@ -36,12 +36,12 @@ if (!requireNamespace("remotes", quietly = TRUE)) {
   install.packages("remotes")
 }
 
-remotes::install_github("josesalgr/paretoscape")
+remotes::install_github("josesalgr/multiscape")
 ```
 
 ## Core workflow
 
-A typical `paretoscape` workflow has five steps:
+A typical `multiscape` workflow has five steps:
 
 1.  Build a `Problem` object from planning units, features, and baseline
     feature amounts.
@@ -58,16 +58,16 @@ polygon planning units stored as an `sf` object.
 ### Load the package and example data
 
 ``` r
-library(paretoscape)
+library(multiscape)
 #> 
-#> S'està adjuntant el paquet: 'paretoscape'
+#> S'està adjuntant el paquet: 'multiscape'
 #> L'objecte següent està emmascarat per 'package:base':
 #> 
 #>     solve
 
-data("sim_pu_sf", package = "paretoscape")
-data("sim_features", package = "paretoscape")
-data("sim_dist_features", package = "paretoscape")
+data("sim_pu_sf", package = "multiscape")
+data("sim_features", package = "multiscape")
+data("sim_dist_features", package = "multiscape")
 ```
 
 The dataset `sim_pu_sf` contains planning-unit polygons and a `cost`
@@ -88,7 +88,7 @@ p <- input_data(
 #> Warning: The following pu's do not contain features: 8012 8033 8147 8263
 
 print(p)
-#> A paretoscape object (<Problem>)
+#> A multiscape object (<Problem>)
 #> ├─data
 #> │├─planning units: <tbl_df> (11109 total)
 #> │├─costs: min: 1, max: 1
@@ -144,7 +144,7 @@ p <- add_actions(
 )
 
 print(p)
-#> A paretoscape object (<Problem>)
+#> A multiscape object (<Problem>)
 #> ├─data
 #> │├─planning units: <tbl_df> (11109 total)
 #> │├─costs: min: 1, max: 1
@@ -219,7 +219,7 @@ p <- add_spatial_distance(
 )
 
 print(p)
-#> A paretoscape object (<Problem>)
+#> A multiscape object (<Problem>)
 #> ├─data
 #> │├─planning units: <tbl_df> (11109 total)
 #> │├─costs: min: 1, max: 1
@@ -264,7 +264,7 @@ p <- add_targets_relative(
 )
 
 print(p)
-#> A paretoscape object (<Problem>)
+#> A multiscape object (<Problem>)
 #> ├─data
 #> │├─planning units: <tbl_df> (11109 total)
 #> │├─costs: min: 1, max: 1
@@ -297,9 +297,9 @@ print(p)
 
 ### Register atomic objectives
 
-A key idea in `paretoscape` is that objectives are registered as
-**atomic objectives** under user-defined aliases. These aliases can
-later be combined in multi-objective methods.
+A key idea in `multiscape` is that objectives are registered as **atomic
+objectives** under user-defined aliases. These aliases can later be
+combined in multi-objective methods.
 
 Here we register three objectives:
 
@@ -317,7 +317,7 @@ p <- p |>
   )
 
 print(p)
-#> A paretoscape object (<Problem>)
+#> A multiscape object (<Problem>)
 #> ├─data
 #> │├─planning units: <tbl_df> (11109 total)
 #> │├─costs: min: 1, max: 1
@@ -351,7 +351,7 @@ print(p)
 
 ### Configure a multi-objective method
 
-There are several ways to explore trade-offs in `paretoscape`. A simple
+There are several ways to explore trade-offs in `multiscape`. A simple
 option is to use a weighted-sum formulation.
 
 ``` r
@@ -380,11 +380,11 @@ p_mo <- set_solver_cbc(
 ```
 
 You can also use convenience wrappers such as
-[`set_solver_gurobi()`](https://josesalgr.github.io/paretoscape/reference/set_solver_gurobi.md),
-[`set_solver_cplex()`](https://josesalgr.github.io/paretoscape/reference/set_solver_cplex.md),
-[`set_solver_cbc()`](https://josesalgr.github.io/paretoscape/reference/set_solver_cbc.md),
+[`set_solver_gurobi()`](https://josesalgr.github.io/multiscape/reference/set_solver_gurobi.md),
+[`set_solver_cplex()`](https://josesalgr.github.io/multiscape/reference/set_solver_cplex.md),
+[`set_solver_cbc()`](https://josesalgr.github.io/multiscape/reference/set_solver_cbc.md),
 or
-[`set_solver_symphony()`](https://josesalgr.github.io/paretoscape/reference/set_solver_symphony.md).
+[`set_solver_symphony()`](https://josesalgr.github.io/multiscape/reference/set_solver_symphony.md).
 
 ### Solve the problem
 
@@ -393,7 +393,7 @@ res <- solve(p_mo)
 ```
 
 Depending on the selected method,
-[`solve()`](https://josesalgr.github.io/paretoscape/reference/solve.md)
+[`solve()`](https://josesalgr.github.io/multiscape/reference/solve.md)
 returns either:
 
 - a `Solution` object for a single-objective solve, or
@@ -401,7 +401,7 @@ returns either:
 
 ### Inspect results
 
-For solved problems, `paretoscape` provides helper functions to extract
+For solved problems, `multiscape` provides helper functions to extract
 user-facing summaries:
 
 ``` r
@@ -436,7 +436,7 @@ plot_spatial(res, what = "actions")
 
 ## Why this example matters
 
-This example illustrates the main modelling logic of `paretoscape`.
+This example illustrates the main modelling logic of `multiscape`.
 
 The problem is not only about selecting planning units. Instead, it is
 about deciding **which action** should be feasible and selected in each
@@ -459,18 +459,18 @@ To explore the package further, see:
 
 - the function reference at the package website,
 - the documentation of
-  [`input_data()`](https://josesalgr.github.io/paretoscape/reference/input_data.md),
-  [`add_actions()`](https://josesalgr.github.io/paretoscape/reference/add_actions.md),
-  [`add_effects()`](https://josesalgr.github.io/paretoscape/reference/add_effects.md),
+  [`input_data()`](https://josesalgr.github.io/multiscape/reference/input_data.md),
+  [`add_actions()`](https://josesalgr.github.io/multiscape/reference/add_actions.md),
+  [`add_effects()`](https://josesalgr.github.io/multiscape/reference/add_effects.md),
   and
-  [`solve()`](https://josesalgr.github.io/paretoscape/reference/solve.md),
+  [`solve()`](https://josesalgr.github.io/multiscape/reference/solve.md),
 - and the multi-objective methods
-  [`set_method_weighted()`](https://josesalgr.github.io/paretoscape/reference/set_method_weighted.md),
-  [`set_method_epsilon_constraint()`](https://josesalgr.github.io/paretoscape/reference/set_method_epsilon_constraint.md),
+  [`set_method_weighted()`](https://josesalgr.github.io/multiscape/reference/set_method_weighted.md),
+  [`set_method_epsilon_constraint()`](https://josesalgr.github.io/multiscape/reference/set_method_epsilon_constraint.md),
   and
-  [`set_method_augmecon()`](https://josesalgr.github.io/paretoscape/reference/set_method_augmecon.md).
+  [`set_method_augmecon()`](https://josesalgr.github.io/multiscape/reference/set_method_augmecon.md).
 
 If you find a bug or want to suggest an improvement, please open an
 issue at:
 
-<https://github.com/josesalgr/paretoscape/issues>
+<https://github.com/josesalgr/multiscape/issues>

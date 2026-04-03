@@ -102,14 +102,14 @@ of \code{"mean"} or \code{"sum"}.}
 \item{...}{Additional arguments forwarded to internal builders.}
 }
 \value{
-A \code{Problem} object to be used in downstream \code{paretoscape}
+A \code{Problem} object to be used in downstream \code{multiscape}
 workflows. The object always contains a tabular internal planning core and
 may additionally contain spatial metadata depending on the input mode.
 }
 \description{
 Create a \code{Problem} object from tabular or spatial inputs.
 
-This is the main entry point to the \code{paretoscape} workflow. The function
+This is the main entry point to the \code{multiscape} workflow. The function
 standardizes planning-unit data, feature definitions, and feature
 distributions into the internal structure required by downstream functions
 such as \code{add_actions()}, \code{add_effects()},
@@ -124,7 +124,7 @@ coordinates, geometry, raster references, or raw planning-unit attributes.
 \strong{Overview}
 
 The role of \code{input_data()} is to construct the internal input data model
-used by \code{paretoscape}. Regardless of the input mode, the function aims to
+used by \code{multiscape}. Regardless of the input mode, the function aims to
 produce a consistent problem representation containing, at minimum:
 \itemize{
 \item a planning-unit table \code{x$data$pu},

@@ -8,14 +8,14 @@ test_that("add_effects with delta separates benefit and loss correctly", {
     delta = c(5, -2, 0, -7)
   )
 
-  p <- paretoscape::input_data(
+  p <- multiscape::input_data(
     pu = toy$pu,
     features = toy$features,
     dist_features = toy$dist_features,
     cost = "cost"
   ) |>
-    paretoscape::add_actions(actions = toy$actions, cost = 0) |>
-    paretoscape::add_effects(effects = effects_delta, effect_type = "delta")
+    multiscape::add_actions(actions = toy$actions, cost = 0) |>
+    multiscape::add_effects(effects = effects_delta, effect_type = "delta")
 
   de <- p$data$dist_effects
 
@@ -48,14 +48,14 @@ test_that("add_effects with after computes delta from baseline amounts", {
   # baseline: pu1-feature1 = 8 ; pu2-feature2 = 2
   # delta esperado: +2 y -1
 
-  p <- paretoscape::input_data(
+  p <- multiscape::input_data(
     pu = toy$pu,
     features = toy$features,
     dist_features = toy$dist_features,
     cost = "cost"
   ) |>
-    paretoscape::add_actions(actions = toy$actions, cost = 0) |>
-    paretoscape::add_effects(effects = effects_after, effect_type = "after")
+    multiscape::add_actions(actions = toy$actions, cost = 0) |>
+    multiscape::add_effects(effects = effects_after, effect_type = "after")
 
   de <- p$data$dist_effects
 

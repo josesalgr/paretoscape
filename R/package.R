@@ -1,4 +1,4 @@
 #' @importFrom Rcpp evalCpp
-#' @useDynLib paretoscape, .registration = TRUE
+#' @useDynLib multiscape, .registration = TRUE
 NULL
 

@@ -3,20 +3,20 @@ test_that("get_features returns a feature summary for Solution", {
 
   toy <- toy_equivalent_basic()
 
-  p <- paretoscape::input_data(
+  p <- multiscape::input_data(
     pu = toy$pu,
     features = toy$features,
     dist_features = toy$dist_features,
     cost = "cost"
   ) |>
-    paretoscape::add_actions(actions = toy$actions, cost = 0) |>
-    paretoscape::add_effects(effects = toy$effects, effect_type = "after") |>
-    paretoscape::add_targets_relative(0.5) |>
-    paretoscape::add_objective_min_cost(alias = "cost") |>
-    paretoscape::set_solver_cbc(gap_limit = 0, verbose = FALSE)
+    multiscape::add_actions(actions = toy$actions, cost = 0) |>
+    multiscape::add_effects(effects = toy$effects, effect_type = "after") |>
+    multiscape::add_targets_relative(0.5) |>
+    multiscape::add_objective_min_cost(alias = "cost") |>
+    multiscape::set_solver_cbc(gap_limit = 0, verbose = FALSE)
 
-  s <- paretoscape::solve(p)
-  f <- paretoscape::get_features(s)
+  s <- multiscape::solve(p)
+  f <- multiscape::get_features(s)
 
   expect_true(is.data.frame(f))
   expect_gt(nrow(f), 0)
@@ -28,26 +28,26 @@ test_that("get_features returns a feature summary for SolutionSet run", {
 
   toy <- toy_equivalent_basic()
 
-  p <- paretoscape::input_data(
+  p <- multiscape::input_data(
     pu = toy$pu,
     features = toy$features,
     dist_features = toy$dist_features,
     cost = "cost"
   ) |>
-    paretoscape::add_actions(actions = toy$actions, cost = 0) |>
-    paretoscape::add_effects(effects = toy$effects, effect_type = "after") |>
-    paretoscape::add_targets_relative(0.5) |>
-    paretoscape::add_spatial_boundary(boundary = toy$boundary, include_self = TRUE) |>
-    paretoscape::add_objective_min_cost(alias = "cost") |>
-    paretoscape::add_objective_min_fragmentation(alias = "frag") |>
-    paretoscape::set_method_weighted(
+    multiscape::add_actions(actions = toy$actions, cost = 0) |>
+    multiscape::add_effects(effects = toy$effects, effect_type = "after") |>
+    multiscape::add_targets_relative(0.5) |>
+    multiscape::add_spatial_boundary(boundary = toy$boundary, include_self = TRUE) |>
+    multiscape::add_objective_min_cost(alias = "cost") |>
+    multiscape::add_objective_min_fragmentation(alias = "frag") |>
+    multiscape::set_method_weighted(
       aliases = c("cost", "frag"),
       weights = c(1, 1)
     ) |>
-    paretoscape::set_solver_cbc(gap_limit = 0, verbose = FALSE)
+    multiscape::set_solver_cbc(gap_limit = 0, verbose = FALSE)
 
-  s <- paretoscape::solve(p)
-  f <- paretoscape::get_features(s, run = 1)
+  s <- multiscape::solve(p)
+  f <- multiscape::get_features(s, run = 1)
 
   expect_true(is.data.frame(f))
   expect_gt(nrow(f), 0)
@@ -58,28 +58,28 @@ test_that("get_features errors for invalid run in SolutionSet", {
 
   toy <- toy_equivalent_basic()
 
-  p <- paretoscape::input_data(
+  p <- multiscape::input_data(
     pu = toy$pu,
     features = toy$features,
     dist_features = toy$dist_features,
     cost = "cost"
   ) |>
-    paretoscape::add_actions(actions = toy$actions, cost = 0) |>
-    paretoscape::add_effects(effects = toy$effects, effect_type = "after") |>
-    paretoscape::add_targets_relative(0.5) |>
-    paretoscape::add_spatial_boundary(boundary = toy$boundary, include_self = TRUE) |>
-    paretoscape::add_objective_min_cost(alias = "cost") |>
-    paretoscape::add_objective_min_fragmentation(alias = "frag") |>
-    paretoscape::set_method_weighted(
+    multiscape::add_actions(actions = toy$actions, cost = 0) |>
+    multiscape::add_effects(effects = toy$effects, effect_type = "after") |>
+    multiscape::add_targets_relative(0.5) |>
+    multiscape::add_spatial_boundary(boundary = toy$boundary, include_self = TRUE) |>
+    multiscape::add_objective_min_cost(alias = "cost") |>
+    multiscape::add_objective_min_fragmentation(alias = "frag") |>
+    multiscape::set_method_weighted(
       aliases = c("cost", "frag"),
       weights = c(1, 1)
     ) |>
-    paretoscape::set_solver_cbc(gap_limit = 0, verbose = FALSE)
+    multiscape::set_solver_cbc(gap_limit = 0, verbose = FALSE)
 
-  s <- paretoscape::solve(p)
+  s <- multiscape::solve(p)
 
   expect_error(
-    paretoscape::get_features(s, run = 999),
+    multiscape::get_features(s, run = 999),
     "run"
   )
 })

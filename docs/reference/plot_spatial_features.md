@@ -135,7 +135,7 @@ Planning-unit geometry must be available in `x$problem$data$pu_sf`.
 
 ## See also
 
-[`get_features`](https://josesalgr.github.io/paretoscape/reference/get_features.md),
-[`plot_spatial`](https://josesalgr.github.io/paretoscape/reference/plot_spatial.md),
-[`plot_spatial_pu`](https://josesalgr.github.io/paretoscape/reference/plot_spatial_pu.md),
-[`plot_spatial_actions`](https://josesalgr.github.io/paretoscape/reference/plot_spatial_actions.md)
+[`get_features`](https://josesalgr.github.io/multiscape/reference/get_features.md),
+[`plot_spatial`](https://josesalgr.github.io/multiscape/reference/plot_spatial.md),
+[`plot_spatial_pu`](https://josesalgr.github.io/multiscape/reference/plot_spatial_pu.md),
+[`plot_spatial_actions`](https://josesalgr.github.io/multiscape/reference/plot_spatial_actions.md)

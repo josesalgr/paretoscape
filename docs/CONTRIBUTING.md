@@ -130,7 +130,7 @@ Please try to keep contributions consistent with the current design of
 - `inputData()` builds the problem object,
 - `add_*()` functions enrich the problem,
 - `set_*()` functions configure methods or solver settings,
-- [`solve()`](https://josesalgr.github.io/paretoscape/reference/solve.md)
+- [`solve()`](https://josesalgr.github.io/multiscape/reference/solve.md)
   executes the optimization workflow,
 - `get_*()` and plotting functions expose results.
 
