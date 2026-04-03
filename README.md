@@ -1,7 +1,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# multiscape: Multi-Objective integrated spatial Planning in R
+# multiscape: Multi-Objective integrated spatial Planning in R <img src="man/figures/logo.png" align="right" width=15% />
 
 <!-- badges: start -->
 
