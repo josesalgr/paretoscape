@@ -169,7 +169,7 @@ only function that should normally materialize the optimization model.
 [`solution-class`](https://josesalgr.github.io/multiscape/reference/solution-class.md),
 [`solutionset-class`](https://josesalgr.github.io/multiscape/reference/solutionset-class.md),
 [`set_solver`](https://josesalgr.github.io/multiscape/reference/set_solver.md),
-`set_method_weighted`,
+[`set_method_weighted_sum`](https://josesalgr.github.io/multiscape/reference/set_method_weighted_sum.md),
 [`set_method_epsilon_constraint`](https://josesalgr.github.io/multiscape/reference/set_method_epsilon_constraint.md),
 [`set_method_augmecon`](https://josesalgr.github.io/multiscape/reference/set_method_augmecon.md)
 
@@ -198,7 +198,7 @@ sol <- solve(x)
 # ------------------------------------------------------------
 x <- x |>
   add_objective_min_fragmentation(alias = "frag") |>
-  set_method_weighted(
+  set_method_weighted_sum(
     aliases = c("cost", "frag"),
     weights = c(0.5, 0.5),
     normalize_weights = TRUE

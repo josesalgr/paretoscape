@@ -112,7 +112,7 @@ is raised.
 
 [`create_problem`](https://josesalgr.github.io/multiscape/reference/create_problem.md),
 [`add_actions`](https://josesalgr.github.io/multiscape/reference/add_actions.md),
-`add_locked_actions`
+[`add_constraint_locked_actions`](https://josesalgr.github.io/multiscape/reference/add_constraint_locked_actions.md)
 
 ## Examples
 

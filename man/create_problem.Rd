@@ -256,7 +256,7 @@ Marxan-style status codes. Such information may be preserved in
 \code{x$data$pu_data_raw}, but it is not activated automatically.
 
 Locked planning units should be defined later with
-\code{\link{add_locked_pu}}.
+\code{\link{add_constraint_locked_pu}}.
 
 \strong{Feature identifiers}
 
@@ -355,7 +355,7 @@ print(p2)
 }
 \seealso{
 \code{\link{add_actions}},
-\code{\link{add_locked_pu}},
+\code{\link{add_constraint_locked_pu}},
 \code{\link{add_spatial_boundary}},
 \code{\link{add_spatial_knn}},
 \code{\link{solve}}

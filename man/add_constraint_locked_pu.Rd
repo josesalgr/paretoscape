@@ -150,5 +150,5 @@ p3$data$pu[, c("id", "locked_in", "locked_out")]
 \seealso{
 \code{\link{create_problem}},
 \code{\link{add_actions}},
-\code{\link{add_locked_actions}}
+\code{\link{add_constraint_locked_actions}}
 }

@@ -162,7 +162,7 @@ sol <- solve(x)
 # ------------------------------------------------------------
 x <- x |>
   add_objective_min_fragmentation(alias = "frag") |>
-  set_method_weighted(
+  set_method_weighted_sum(
     aliases = c("cost", "frag"),
     weights = c(0.5, 0.5),
     normalize_weights = TRUE
@@ -177,7 +177,7 @@ solset <- solve(x)
 \code{\link{solution-class}},
 \code{\link{solutionset-class}},
 \code{\link{set_solver}},
-\code{\link{set_method_weighted}},
+\code{\link{set_method_weighted_sum}},
 \code{\link{set_method_epsilon_constraint}},
 \code{\link{set_method_augmecon}}
 }

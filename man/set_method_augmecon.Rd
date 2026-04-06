@@ -247,6 +247,6 @@ problems. \emph{Applied Mathematics and Computation}, 213(2), 455--465.
 }
 \seealso{
 \code{\link{set_method_epsilon_constraint}},
-\code{\link{set_method_weighted}},
+\code{\link{set_method_weighted_sum}},
 \code{\link{solve}}
 }

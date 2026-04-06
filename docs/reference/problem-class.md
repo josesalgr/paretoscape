@@ -73,9 +73,10 @@ After creation, downstream functions such as
 [`add_actions`](https://josesalgr.github.io/multiscape/reference/add_actions.md),
 [`add_effects`](https://josesalgr.github.io/multiscape/reference/add_effects.md),
 [`add_profit`](https://josesalgr.github.io/multiscape/reference/add_profit.md),
-`add_targets_absolute`, `add_targets_relative`, spatial relation
-constructors, objective setters, and solver setters extend the internal
-`data` list.
+[`add_constraint_targets_absolute`](https://josesalgr.github.io/multiscape/reference/add_constraint_targets_absolute.md),
+[`add_constraint_targets_relative`](https://josesalgr.github.io/multiscape/reference/add_constraint_targets_relative.md),
+spatial relation constructors, objective setters, and solver setters
+extend the internal `data` list.
 
 **Internal storage**
 

@@ -326,7 +326,8 @@ the input data contain fields such as `locked_in`, `locked_out`, or
 Marxan-style status codes. Such information may be preserved in
 `x$data$pu_data_raw`, but it is not activated automatically.
 
-Locked planning units should be defined later with `add_locked_pu`.
+Locked planning units should be defined later with
+[`add_constraint_locked_pu`](https://josesalgr.github.io/multiscape/reference/add_constraint_locked_pu.md).
 
 **Feature identifiers**
 
@@ -387,7 +388,7 @@ planning units.
 ## See also
 
 [`add_actions`](https://josesalgr.github.io/multiscape/reference/add_actions.md),
-`add_locked_pu`,
+[`add_constraint_locked_pu`](https://josesalgr.github.io/multiscape/reference/add_constraint_locked_pu.md),
 [`add_spatial_boundary`](https://josesalgr.github.io/multiscape/reference/add_spatial_boundary.md),
 [`add_spatial_knn`](https://josesalgr.github.io/multiscape/reference/add_spatial_knn.md),
 [`solve`](https://josesalgr.github.io/multiscape/reference/solve.md)
