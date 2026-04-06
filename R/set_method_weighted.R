@@ -148,7 +148,7 @@
 #'   amount = c(1, 1, 1, 1)
 #' )
 #'
-#' x <- input_data(
+#' x <- create_problem(
 #'   pu = pu,
 #'   features = features,
 #'   dist_features = dist_features
@@ -163,7 +163,7 @@
 #' x <- add_spatial_boundary(x, boundary = bnd, name = "boundary")
 #'
 #' x <- x |>
-#'   add_targets_relative(0.5) |>
+#'   add_constraint_targets_relative(0.5) |>
 #'   add_objective_min_cost(alias = "cost") |>
 #'   add_objective_min_fragmentation(
 #'     alias = "frag",

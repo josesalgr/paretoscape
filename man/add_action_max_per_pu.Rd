@@ -4,7 +4,7 @@
 \alias{add_action_max_per_pu}
 \title{Limit the number of actions per planning unit (maximum)}
 \arguments{
-\item{x}{A \code{Problem} object created with \code{\link{input_data}}. Must already contain actions (i.e., run
+\item{x}{A \code{Problem} object created with \code{\link{create_problem}}. Must already contain actions (i.e., run
 \code{\link{add_actions}} first).}
 
 \item{max}{Integer scalar \eqn{\ge 0}. Maximum number of actions allowed per PU.

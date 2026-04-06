@@ -148,7 +148,7 @@
 #' describing the stored representation and input interpretation are written to
 #' \code{x$data$effects_meta}.
 #'
-#' @param x A \code{Problem} object created with \code{\link{input_data}}. It
+#' @param x A \code{Problem} object created with \code{\link{create_problem}}. It
 #'   must already contain \code{x$data$dist_actions}; run
 #'   \code{\link{add_actions}} first.
 #'
@@ -210,7 +210,7 @@
 #'   amount = c(10, 5, 8, 4)
 #' )
 #'
-#' p <- input_data(
+#' p <- create_problem(
 #'   pu = pu,
 #'   features = features,
 #'   dist_features = dist_features
@@ -327,7 +327,7 @@ add_effects <- function(
   assertthat::assert_that(!is.null(x$data), msg = "x does not look like a multiscape Problem object")
   assertthat::assert_that(
     !is.null(x$data$pu), !is.null(x$data$features), !is.null(x$data$dist_features),
-    msg = "x must be created with input_data()"
+    msg = "x must be created with create_problem()"
   )
   assertthat::assert_that(!is.null(x$data$dist_actions), msg = "No actions found. Run add_actions() first.")
 
@@ -808,7 +808,7 @@ add_effects <- function(
 #' features <- data.frame(id = 1, name = "sp1")
 #' dist_features <- data.frame(pu = 1:2, feature = 1, amount = c(5, 10))
 #'
-#' p <- input_data(pu = pu, features = features, dist_features = dist_features)
+#' p <- create_problem(pu = pu, features = features, dist_features = dist_features)
 #' p <- add_actions(p, data.frame(id = "restoration"))
 #'
 #' eff <- data.frame(
@@ -886,7 +886,7 @@ add_benefits <- function(
 #' features <- data.frame(id = 1, name = "sp1")
 #' dist_features <- data.frame(pu = 1:2, feature = 1, amount = c(5, 10))
 #'
-#' p <- input_data(pu = pu, features = features, dist_features = dist_features)
+#' p <- create_problem(pu = pu, features = features, dist_features = dist_features)
 #' p <- add_actions(p, data.frame(id = "harvest"))
 #'
 #' eff <- data.frame(

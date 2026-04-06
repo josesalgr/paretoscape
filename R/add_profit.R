@@ -100,7 +100,7 @@
 #' \max \sum_{(i,a) \in \mathcal{F}} \pi_{ia} x_{ia}.
 #' }
 #'
-#' @param x A \code{Problem} object created with \code{\link{input_data}}. It
+#' @param x A \code{Problem} object created with \code{\link{create_problem}}. It
 #'   must already contain \code{x$data$dist_actions} and \code{x$data$actions};
 #'   run \code{\link{add_actions}} first.
 #'
@@ -139,7 +139,7 @@
 #'   amount = c(1, 2, 1, 3, 2, 1)
 #' )
 #'
-#' p <- input_data(
+#' p <- create_problem(
 #'   pu = pu,
 #'   features = features,
 #'   dist_features = dist_features
@@ -191,7 +191,7 @@ add_profit <- function(
   # ---- checks: x
   assertthat::assert_that(!is.null(x), msg = "x is NULL")
   assertthat::assert_that(!is.null(x$data), msg = "x does not look like a mulstiscape Problem object")
-  assertthat::assert_that(!is.null(x$data$pu), msg = "x$data$pu is missing. Run input_data() first.")
+  assertthat::assert_that(!is.null(x$data$pu), msg = "x$data$pu is missing. Run create_problem() first.")
   assertthat::assert_that(!is.null(x$data$dist_actions), msg = "No actions found. Run add_actions() first.")
   assertthat::assert_that(!is.null(x$data$actions), msg = "No action catalog found. Run add_actions() first.")
 

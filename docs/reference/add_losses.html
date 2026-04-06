@@ -25,11 +25,11 @@ x$data$dist_loss.'><meta property="og:image" content="https://josesalgr.github.i
   gtag('js', new Date());
 
   gtag('config', 'G-6YB8F3838H');
-</script></head><body>
+</script><link rel="stylesheet" href="extra.css"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
-    <nav class="navbar navbar-expand-lg fixed-top bg-light" data-bs-theme="light" aria-label="Site navigation"><div class="container">
+    <nav class="navbar navbar-expand-lg fixed-top bg-primary" data-bs-theme="dark" aria-label="Site navigation"><div class="container">
 
     <a class="navbar-brand me-2" href="../index.html">multiscape</a>
 
@@ -43,7 +43,9 @@ x$data$dist_loss.'><meta property="og:image" content="https://josesalgr.github.i
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
-      </ul><ul class="navbar-nav"><li class="nav-item"><a class="external-link nav-link" href="https://github.com/josesalgr/multiscape" aria-label="GitHub repository"><span class="fa fa-github"></span></a></li>
+      </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
+ <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/josesalgr/multiscape" aria-label="GitHub repository"><span class="fa fa-github"></span></a></li>
       </ul></div>
 
 
@@ -82,7 +84,7 @@ consequences of actions. Internally, it calls <code><a href="add_effects.html">a
 
 
 <dl><dt id="arg-x">x<a class="anchor" aria-label="anchor" href="#arg-x"></a></dt>
-<dd><p>A <code>Problem</code> object created with <code><a href="input_data.html">input_data</a></code>. It
+<dd><p>A <code>Problem</code> object created with <code><a href="create_problem.html">create_problem</a></code>. It
 must already contain <code>x$data$dist_actions</code>; run
 <code><a href="add_actions.html">add_actions</a></code> first.</p></dd>
 
@@ -133,7 +135,7 @@ component.</p></dd>
 <span class="r-in"><span><span class="va">features</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>id <span class="op">=</span> <span class="fl">1</span>, name <span class="op">=</span> <span class="st">"sp1"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">dist_features</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>pu <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">2</span>, feature <span class="op">=</span> <span class="fl">1</span>, amount <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">5</span>, <span class="fl">10</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="input_data.html">input_data</a></span><span class="op">(</span>pu <span class="op">=</span> <span class="va">pu</span>, features <span class="op">=</span> <span class="va">features</span>, dist_features <span class="op">=</span> <span class="va">dist_features</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="create_problem.html">create_problem</a></span><span class="op">(</span>pu <span class="op">=</span> <span class="va">pu</span>, features <span class="op">=</span> <span class="va">features</span>, dist_features <span class="op">=</span> <span class="va">dist_features</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="add_actions.html">add_actions</a></span><span class="op">(</span><span class="va">p</span>, <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>id <span class="op">=</span> <span class="st">"harvest"</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">eff</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>

@@ -6,7 +6,8 @@
 - Provides a modular workflow for exact multi-objective spatial planning
   based on mixed-integer programming (MIP).
 - Introduces the core `Problem`, `Solution`, and `SolutionSet` classes.
-- Adds support for modular problem construction through `inputData()`,
+- Adds support for modular problem construction through
+  [`create_problem()`](https://josesalgr.github.io/multiscape/reference/create_problem.md),
   `add_*()`, `set_*()`, and
   [`solve()`](https://josesalgr.github.io/multiscape/reference/solve.md).
 - Supports atomic objective registration and multi-objective solution

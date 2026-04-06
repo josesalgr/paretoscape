@@ -9,7 +9,7 @@ The package allows users to:
 - build planning problems from **tabular** or **spatial** inputs,
 - define **feasible management actions** and their **action-specific
   effects** on features,
-- add **targets**, **constraints**, and **spatial relations**,
+- add **constraints**, and **spatial relations**,
 - register **atomic objectives** such as cost, benefit, profit, and
   fragmentation,
 - and explore trade-offs using exact **multi-objective optimisation**
@@ -46,7 +46,7 @@ A typical `multiscape` workflow has five steps:
 1.  Build a `Problem` object from planning units, features, and baseline
     feature amounts.
 2.  Add feasible actions and define how those actions affect features.
-3.  Add targets, constraints, and spatial relations if needed.
+3.  Add constraints, and spatial relations if needed.
 4.  Register one or more atomic objectives.
 5.  Solve the problem in single-objective or multi-objective mode.
 
@@ -79,7 +79,7 @@ planning units.
 ### Build the planning problem
 
 ``` r
-p <- input_data(
+p <- create_problem(
   pu = sim_pu_sf,
   features = sim_features,
   dist_features = sim_dist_features,
@@ -258,7 +258,7 @@ We now add a relative target requiring each feature to reach at least
 20% of its baseline total contribution:
 
 ``` r
-p <- add_targets_relative(
+p <- add_constraint_targets_relative(
   x = p,
   targets = 0.03
 )
@@ -459,7 +459,7 @@ To explore the package further, see:
 
 - the function reference at the package website,
 - the documentation of
-  [`input_data()`](https://josesalgr.github.io/multiscape/reference/input_data.md),
+  [`create_problem()`](https://josesalgr.github.io/multiscape/reference/create_problem.md),
   [`add_actions()`](https://josesalgr.github.io/multiscape/reference/add_actions.md),
   [`add_effects()`](https://josesalgr.github.io/multiscape/reference/add_effects.md),
   and

@@ -4,15 +4,14 @@
 
 Core workflow to create a planning problem, configure it, and solve it.
 
-- [`input_data()`](https://josesalgr.github.io/multiscape/reference/input_data.md)
+- [`create_problem()`](https://josesalgr.github.io/multiscape/reference/create_problem.md)
   : Create a planning problem input object
 - [`solve()`](https://josesalgr.github.io/multiscape/reference/solve.md)
   : Solve a planning problem
 
-## Actions, effects, profits and locks
+## Actions, effects and profits
 
-Define feasible actions, their effects, optional profits, and fixed
-decisions.
+Define feasible actions, their effects and optional profits.
 
 - [`add_actions()`](https://josesalgr.github.io/multiscape/reference/add_actions.md)
   : Add management actions to a planning problem
@@ -24,23 +23,23 @@ decisions.
   : Add losses
 - [`add_profit()`](https://josesalgr.github.io/multiscape/reference/add_profit.md)
   : Add profit to a planning problem
-- [`add_locked_actions()`](https://josesalgr.github.io/multiscape/reference/add_locked_actions.md)
-  : Add locked action decisions to a planning problem
-- [`add_locked_pu()`](https://josesalgr.github.io/multiscape/reference/add_locked_pu.md)
-  : Add locked planning units to a problem
 
-## Targets and constraints
+## Constraints
 
 Define target requirements and area-related constraints.
 
-- [`add_targets_absolute()`](https://josesalgr.github.io/multiscape/reference/add_targets_absolute.md)
+- [`add_constraint_targets_absolute()`](https://josesalgr.github.io/multiscape/reference/add_constraint_targets_absolute.md)
   : Add absolute targets
-- [`add_targets_relative()`](https://josesalgr.github.io/multiscape/reference/add_targets_relative.md)
+- [`add_constraint_targets_relative()`](https://josesalgr.github.io/multiscape/reference/add_constraint_targets_relative.md)
   : Add relative targets
-- [`add_area_min_constraint()`](https://josesalgr.github.io/multiscape/reference/add_area_min_constraint.md)
+- [`add_constraint_area_min()`](https://josesalgr.github.io/multiscape/reference/add_constraint_area_min.md)
   : Add minimum selected area constraint
-- [`add_area_max_constraint()`](https://josesalgr.github.io/multiscape/reference/add_area_max_constraint.md)
+- [`add_constraint_area_max()`](https://josesalgr.github.io/multiscape/reference/add_constraint_area_max.md)
   : Add maximum selected area constraint
+- [`add_constraint_locked_actions()`](https://josesalgr.github.io/multiscape/reference/add_constraint_locked_actions.md)
+  : Add locked action decisions to a planning problem
+- [`add_constraint_locked_pu()`](https://josesalgr.github.io/multiscape/reference/add_constraint_locked_pu.md)
+  : Add locked planning units to a problem
 
 ## Spatial relations
 

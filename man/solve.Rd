@@ -10,7 +10,7 @@ solve(x, ...)
 \method{solve}{Problem}(x, ...)
 }
 \arguments{
-\item{x}{A \code{Problem} object created with \code{\link{input_data}} and
+\item{x}{A \code{Problem} object created with \code{\link{create_problem}} and
 optionally enriched with actions, effects, targets, constraints,
 objectives, spatial relations, method settings, and solver settings.}
 
@@ -41,7 +41,7 @@ single-objective or multi-objective.
 
 The typical \pkg{multiscape} workflow is:
 \preformatted{
-x <- input_data(...)
+x <- create_problem(...)
 x <- add_...(x, ...)
 x <- set_...(x, ...)
 res <- solve(x)
@@ -144,14 +144,14 @@ the only function that should normally materialize the optimization model.
 # ------------------------------------------------------------
 # Single-objective solve
 # ------------------------------------------------------------
-x <- input_data(
+x <- create_problem(
   pu = pu,
   features = features,
   dist_features = dist_features
 )
 
 x <- x |>
-  add_targets_relative(0.3) |>
+  add_constraint_targets_relative(0.3) |>
   add_objective_min_cost(alias = "cost") |>
   set_solver_gurobi(time_limit = 300, gap_limit = 0.01)
 

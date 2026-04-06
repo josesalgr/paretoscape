@@ -5,12 +5,16 @@ template:
   bootstrap: 5
   math-rendering: mathjax
   logo: man/figures/logo.png
+  bslib:
+    bootswatch: flatly
+  includes:
+    in_header: |
+      <link rel="stylesheet" href="extra.css">
   params:
     docsearch:
       api_key: f00985ff93067595b4da97a65fe69f1a
       index_name: multiscape
     ganalytics: G-6YB8F3838H
-
 destination: docs
 
 navbar:
@@ -21,6 +25,7 @@ navbar:
       - articles
       - news
     right:
+      - search
       - github
   components:
     github:
@@ -33,27 +38,27 @@ reference:
   - title: Build and solve problems
     desc: Core workflow to create a planning problem, configure it, and solve it.
     contents:
-      - input_data
+      - create_problem
       - solve
 
-  - title: Actions, effects, profits and locks
-    desc: Define feasible actions, their effects, optional profits, and fixed decisions.
+  - title: Actions, effects and profits
+    desc: Define feasible actions, their effects and optional profits.
     contents:
       - add_actions
       - add_effects
       - add_benefits
       - add_losses
       - add_profit
-      - add_locked_actions
-      - add_locked_pu
 
-  - title: Targets and constraints
+  - title: Constraints
     desc: Define target requirements and area-related constraints.
     contents:
-      - add_targets_absolute
-      - add_targets_relative
-      - add_area_min_constraint
-      - add_area_max_constraint
+      - add_constraint_targets_absolute
+      - add_constraint_targets_relative
+      - add_constraint_area_min
+      - add_constraint_area_max
+      - add_constraint_locked_actions
+      - add_constraint_locked_pu
 
   - title: Spatial relations
     desc: Register boundary and graph-based spatial relations from tables, polygons, or coordinates.

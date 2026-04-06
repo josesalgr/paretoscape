@@ -29,7 +29,7 @@ add_losses(
 - x:
 
   A `Problem` object created with
-  [`input_data`](https://josesalgr.github.io/multiscape/reference/input_data.md).
+  [`create_problem`](https://josesalgr.github.io/multiscape/reference/create_problem.md).
   It must already contain `x$data$dist_actions`; run
   [`add_actions`](https://josesalgr.github.io/multiscape/reference/add_actions.md)
   first.
@@ -83,7 +83,7 @@ pu <- data.frame(id = 1:2, cost = c(1, 2))
 features <- data.frame(id = 1, name = "sp1")
 dist_features <- data.frame(pu = 1:2, feature = 1, amount = c(5, 10))
 
-p <- input_data(pu = pu, features = features, dist_features = dist_features)
+p <- create_problem(pu = pu, features = features, dist_features = dist_features)
 p <- add_actions(p, data.frame(id = "harvest"))
 
 eff <- data.frame(

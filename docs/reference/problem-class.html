@@ -14,7 +14,7 @@ registrations, solver settings, and, when available, a built optimization
 model or model snapshot.
 In other words, Problem is the persistent object that connects the full
 multiscape workflow:
-input_data()
+create_problem()
 -&amp;gt; add_*() / set_*()
 -&amp;gt; solve()
 
@@ -27,7 +27,7 @@ registrations, solver settings, and, when available, a built optimization
 model or model snapshot.
 In other words, Problem is the persistent object that connects the full
 multiscape workflow:
-input_data()
+create_problem()
 -&amp;gt; add_*() / set_*()
 -&amp;gt; solve()
 
@@ -37,11 +37,11 @@ input_data()
   gtag('js', new Date());
 
   gtag('config', 'G-6YB8F3838H');
-</script></head><body>
+</script><link rel="stylesheet" href="extra.css"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
-    <nav class="navbar navbar-expand-lg fixed-top bg-light" data-bs-theme="light" aria-label="Site navigation"><div class="container">
+    <nav class="navbar navbar-expand-lg fixed-top bg-primary" data-bs-theme="dark" aria-label="Site navigation"><div class="container">
 
     <a class="navbar-brand me-2" href="../index.html">multiscape</a>
 
@@ -55,7 +55,9 @@ input_data()
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
-      </ul><ul class="navbar-nav"><li class="nav-item"><a class="external-link nav-link" href="https://github.com/josesalgr/multiscape" aria-label="GitHub repository"><span class="fa fa-github"></span></a></li>
+      </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
+ <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/josesalgr/multiscape" aria-label="GitHub repository"><span class="fa fa-github"></span></a></li>
       </ul></div>
 
 
@@ -78,7 +80,7 @@ registrations, solver settings, and, when available, a built optimization
 model or model snapshot.</p>
 <p>In other words, <code>Problem</code> is the persistent object that connects the full
 <code>multiscape</code> workflow:</p><div class="sourceCode"><pre><code>
-input_data()
+create_problem()
 -&gt; add_*() / set_*()
 -&gt; solve()
 </code></pre></div>
@@ -120,10 +122,10 @@ where \(a_{if}\) is the baseline amount of feature \(f\) in planning unit
 <p>Subsequent functions then add action feasibility, effects, profit, targets,
 spatial relations, and optimization settings to this baseline representation.</p>
 <p><strong>How objects are created</strong></p>
-<p><code>Problem</code> objects are usually created by <code><a href="input_data.html">input_data</a></code>.</p>
+<p><code>Problem</code> objects are usually created by <code><a href="create_problem.html">create_problem</a></code>.</p>
 <p>After creation, downstream functions such as <code><a href="add_actions.html">add_actions</a></code>,
 <code><a href="add_effects.html">add_effects</a></code>, <code><a href="add_profit.html">add_profit</a></code>,
-<code><a href="add_targets_absolute.html">add_targets_absolute</a></code>, <code><a href="add_targets_relative.html">add_targets_relative</a></code>,
+<code>add_targets_absolute</code>, <code>add_targets_relative</code>,
 spatial relation constructors, objective setters, and solver setters extend
 the internal <code>data</code> list.</p>
 <p><strong>Internal storage</strong></p>
@@ -278,10 +280,10 @@ a built optimization model.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
-    <div class="dont-index"><p><code><a href="input_data.html">input_data</a></code>,
+    <div class="dont-index"><p><code><a href="create_problem.html">create_problem</a></code>,
 <code><a href="add_actions.html">add_actions</a></code>,
 <code><a href="add_effects.html">add_effects</a></code>,
-<code><a href="add_targets_absolute.html">add_targets_absolute</a></code>,
+<code>add_targets_absolute</code>,
 <code><a href="solve.html">solve</a></code></p></div>
     </div>
 

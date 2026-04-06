@@ -13,7 +13,7 @@ add_actions(
 )
 }
 \arguments{
-\item{x}{A \code{Problem} object created with \code{\link{input_data}}.}
+\item{x}{A \code{Problem} object created with \code{\link{create_problem}}.}
 
 \item{actions}{A \code{data.frame} defining the action catalogue. It must
 contain a unique \code{id} column. A column named \code{action} is also
@@ -126,7 +126,7 @@ In the spatial case, feasible planning units are identified using
 This function only determines whether a \code{(pu, action)} pair exists in
 the model. It does not force a feasible action to be selected or forbidden
 beyond structural infeasibility. Fixed decisions should instead be imposed
-later with \code{\link{add_locked_actions}}.
+later with \code{\link{add_constraint_locked_actions}}.
 
 \strong{Costs.}
 
@@ -181,7 +181,7 @@ dist_features <- data.frame(
   amount = c(1, 2, 1, 3, 2, 1)
 )
 
-p <- input_data(
+p <- create_problem(
   pu = pu,
   features = features,
   dist_features = dist_features
@@ -235,6 +235,6 @@ p3$data$dist_actions
 
 }
 \seealso{
-\code{\link{input_data}},
-\code{\link{add_locked_actions}}
+\code{\link{create_problem}},
+\code{\link{add_constraint_locked_actions}}
 }

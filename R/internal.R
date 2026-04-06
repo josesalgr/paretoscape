@@ -164,7 +164,7 @@ pproto <- function(`_class` = NULL, `_inherit` = NULL, ...) {
 #' sim_boundary_data)
 #'
 #' ## Create data instance
-#' problem_data <- input_data(
+#' problem_data <- create_problem(
 #'   pu = sim_pu_data, features = sim_features_data, dist_features = sim_dist_features_data,
 #'   threats = sim_threats_data, dist_threats = sim_dist_threats_data,
 #'   sensitivity = sim_sensitivity_data, boundary = sim_boundary_data
@@ -808,7 +808,7 @@ available_to_solve <- function(package = ""){
     return(invisible(x))
   }
   if (is.null(x$data$model_ptr)) {
-    stop("No active model pointer found in x$data$model_ptr. Run add_targets_*() before applying targets.", call. = FALSE)
+    stop("No active model pointer found in x$data$model_ptr. Run add_constraint_targets_*() before applying targets.", call. = FALSE)
   }
 
   t <- x$data$targets
@@ -2494,7 +2494,7 @@ available_to_solve <- function(package = ""){
 # -------------------------------------------------------------------------
 # Internal helpers spatial relations
 # -------------------------------------------------------------------------
-.pa_input_data_tabular_impl <- function(pu, features, dist_features, boundary = NULL, ...) {
+.pa_create_problem_tabular_impl <- function(pu, features, dist_features, boundary = NULL, ...) {
 
   dots <- list(...)
   `%||%` <- function(a, b) if (!is.null(a)) a else b
@@ -2952,7 +2952,7 @@ available_to_solve <- function(package = ""){
 .pa_ensure_pu_index <- function(x) {
   stopifnot(inherits(x, "Problem"))
   if (is.null(x$data$pu) || !inherits(x$data$pu, "data.frame")) {
-    stop("x$data$pu is missing. Create the problem with input_data().", call. = FALSE)
+    stop("x$data$pu is missing. Create the problem with create_problem().", call. = FALSE)
   }
   if (is.null(x$data$pu$internal_id)) x$data$pu$internal_id <- seq_len(nrow(x$data$pu))
   if (is.null(x$data$pu$id)) {
@@ -3042,7 +3042,7 @@ available_to_solve <- function(package = ""){
   if (is.null(pu_sf)) {
     stop(
       arg_name, " is NULL and x$data$pu_sf is missing.\n",
-      "Provide ", arg_name, " (sf polygons with an 'id' column) or make sure input_data() stored x$data$pu_sf.",
+      "Provide ", arg_name, " (sf polygons with an 'id' column) or make sure create_problem() stored x$data$pu_sf.",
       call. = FALSE
     )
   }

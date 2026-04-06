@@ -13,7 +13,7 @@ add_effects(
 )
 }
 \arguments{
-\item{x}{A \code{Problem} object created with \code{\link{input_data}}. It
+\item{x}{A \code{Problem} object created with \code{\link{create_problem}}. It
 must already contain \code{x$data$dist_actions}; run
 \code{\link{add_actions}} first.}
 
@@ -222,7 +222,7 @@ dist_features <- data.frame(
   amount = c(10, 5, 8, 4)
 )
 
-p <- input_data(
+p <- create_problem(
   pu = pu,
   features = features,
   dist_features = dist_features

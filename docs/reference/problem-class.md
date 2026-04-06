@@ -13,7 +13,7 @@ optimization model or model snapshot.
 In other words, `Problem` is the persistent object that connects the
 full `multiscape` workflow:
 
-    input_data()
+    create_problem()
     -> add_*() / set_*()
     -> solve()
 
@@ -67,16 +67,15 @@ representation.
 **How objects are created**
 
 `Problem` objects are usually created by
-[`input_data`](https://josesalgr.github.io/multiscape/reference/input_data.md).
+[`create_problem`](https://josesalgr.github.io/multiscape/reference/create_problem.md).
 
 After creation, downstream functions such as
 [`add_actions`](https://josesalgr.github.io/multiscape/reference/add_actions.md),
 [`add_effects`](https://josesalgr.github.io/multiscape/reference/add_effects.md),
 [`add_profit`](https://josesalgr.github.io/multiscape/reference/add_profit.md),
-[`add_targets_absolute`](https://josesalgr.github.io/multiscape/reference/add_targets_absolute.md),
-[`add_targets_relative`](https://josesalgr.github.io/multiscape/reference/add_targets_relative.md),
-spatial relation constructors, objective setters, and solver setters
-extend the internal `data` list.
+`add_targets_absolute`, `add_targets_relative`, spatial relation
+constructors, objective setters, and solver setters extend the internal
+`data` list.
 
 **Internal storage**
 
@@ -262,8 +261,8 @@ already materialized as a built optimization model.
 
 ## See also
 
-[`input_data`](https://josesalgr.github.io/multiscape/reference/input_data.md),
+[`create_problem`](https://josesalgr.github.io/multiscape/reference/create_problem.md),
 [`add_actions`](https://josesalgr.github.io/multiscape/reference/add_actions.md),
 [`add_effects`](https://josesalgr.github.io/multiscape/reference/add_effects.md),
-[`add_targets_absolute`](https://josesalgr.github.io/multiscape/reference/add_targets_absolute.md),
+`add_targets_absolute`,
 [`solve`](https://josesalgr.github.io/multiscape/reference/solve.md)

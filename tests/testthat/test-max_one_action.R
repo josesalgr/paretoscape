@@ -3,7 +3,7 @@ test_that("solve selects at most one action per planning unit", {
 
   toy <- toy_multiaction_semantics()
 
-  p <- multiscape::input_data(
+  p <- multiscape::create_problem(
     pu = toy$pu,
     features = toy$features,
     dist_features = toy$dist_features,
@@ -11,7 +11,7 @@ test_that("solve selects at most one action per planning unit", {
   ) |>
     multiscape::add_actions(actions = toy$actions, cost = 0) |>
     multiscape::add_effects(effects = toy$effects, effect_type = "after") |>
-    multiscape::add_targets_relative(0.2, features = 1) |>
+    multiscape::add_constraint_targets_relative(0.2, features = 1) |>
     multiscape::add_objective_min_cost(alias = "cost") |>
     multiscape::set_solver_cbc(gap_limit = 0, verbose = FALSE)
 

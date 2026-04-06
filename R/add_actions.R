@@ -80,7 +80,7 @@
 #' This function only determines whether a \code{(pu, action)} pair exists in
 #' the model. It does not force a feasible action to be selected or forbidden
 #' beyond structural infeasibility. Fixed decisions should instead be imposed
-#' later with \code{\link{add_locked_actions}}.
+#' later with \code{\link{add_constraint_locked_actions}}.
 #'
 #' \strong{Costs.}
 #'
@@ -115,7 +115,7 @@
 #' Calling \code{add_actions()} replaces any previous action catalogue and
 #' feasible action table stored in the problem object.
 #'
-#' @param x A \code{Problem} object created with \code{\link{input_data}}.
+#' @param x A \code{Problem} object created with \code{\link{create_problem}}.
 #'
 #' @param actions A \code{data.frame} defining the action catalogue. It must
 #'   contain a unique \code{id} column. A column named \code{action} is also
@@ -150,8 +150,8 @@
 #' }
 #'
 #' @seealso
-#' \code{\link{input_data}},
-#' \code{\link{add_locked_actions}}
+#' \code{\link{create_problem}},
+#' \code{\link{add_constraint_locked_actions}}
 #'
 #' @examples
 #' # ------------------------------------------------------
@@ -173,7 +173,7 @@
 #'   amount = c(1, 2, 1, 3, 2, 1)
 #' )
 #'
-#' p <- input_data(
+#' p <- create_problem(
 #'   pu = pu,
 #'   features = features,
 #'   dist_features = dist_features
@@ -412,7 +412,7 @@ add_actions <- function(
     !is.null(x$data$pu),
     !is.null(x$data$features),
     !is.null(x$data$dist_features),
-    msg = "x must be created with input_data()"
+    msg = "x must be created with create_problem()"
   )
 
   if (is.null(x$data$pu$internal_id)) {

@@ -8,7 +8,7 @@ test_that("add_effects with delta separates benefit and loss correctly", {
     delta = c(5, -2, 0, -7)
   )
 
-  p <- multiscape::input_data(
+  p <- multiscape::create_problem(
     pu = toy$pu,
     features = toy$features,
     dist_features = toy$dist_features,
@@ -48,7 +48,7 @@ test_that("add_effects with after computes delta from baseline amounts", {
   # baseline: pu1-feature1 = 8 ; pu2-feature2 = 2
   # delta esperado: +2 y -1
 
-  p <- multiscape::input_data(
+  p <- multiscape::create_problem(
     pu = toy$pu,
     features = toy$features,
     dist_features = toy$dist_features,

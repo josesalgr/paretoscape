@@ -1,7 +1,7 @@
 test_that("compile_model builds MO superset with boundary auxiliaries when fragmentation is included", {
   toy <- toy_equivalent_basic()
 
-  p2 <- multiscape::input_data(
+  p2 <- multiscape::create_problem(
     pu = toy$pu,
     features = toy$features,
     dist_features = toy$dist_features,
@@ -9,7 +9,7 @@ test_that("compile_model builds MO superset with boundary auxiliaries when fragm
   ) |>
     multiscape::add_actions(actions = toy$actions, cost = 0) |>
     multiscape::add_effects(effects = toy$effects, effect_type = "after") |>
-    multiscape::add_targets_relative(0.5) |>
+    multiscape::add_constraint_targets_relative(0.5) |>
     multiscape::add_spatial_boundary(boundary = toy$boundary, include_self = TRUE) |>
     multiscape::add_objective_min_cost(alias = "cost") |>
     multiscape::add_objective_min_fragmentation(alias = "frag") |>

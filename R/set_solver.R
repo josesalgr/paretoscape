@@ -153,7 +153,7 @@
 #'
 #' @examples
 #' \dontrun{
-#' x <- input_data(
+#' x <- create_problem(
 #'   pu = pu,
 #'   features = features,
 #'   dist_features = dist_features

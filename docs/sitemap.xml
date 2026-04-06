@@ -10,6 +10,12 @@
 <url><loc>https://josesalgr.github.io/multiscape/reference/add_area_max_constraint.html</loc></url>
 <url><loc>https://josesalgr.github.io/multiscape/reference/add_area_min_constraint.html</loc></url>
 <url><loc>https://josesalgr.github.io/multiscape/reference/add_benefits.html</loc></url>
+<url><loc>https://josesalgr.github.io/multiscape/reference/add_constraint_area_max.html</loc></url>
+<url><loc>https://josesalgr.github.io/multiscape/reference/add_constraint_area_min.html</loc></url>
+<url><loc>https://josesalgr.github.io/multiscape/reference/add_constraint_locked_actions.html</loc></url>
+<url><loc>https://josesalgr.github.io/multiscape/reference/add_constraint_locked_pu.html</loc></url>
+<url><loc>https://josesalgr.github.io/multiscape/reference/add_constraint_targets_absolute.html</loc></url>
+<url><loc>https://josesalgr.github.io/multiscape/reference/add_constraint_targets_relative.html</loc></url>
 <url><loc>https://josesalgr.github.io/multiscape/reference/add_effects.html</loc></url>
 <url><loc>https://josesalgr.github.io/multiscape/reference/add_locked_actions.html</loc></url>
 <url><loc>https://josesalgr.github.io/multiscape/reference/add_locked_pu.html</loc></url>
@@ -32,6 +38,7 @@
 <url><loc>https://josesalgr.github.io/multiscape/reference/add_targets_absolute.html</loc></url>
 <url><loc>https://josesalgr.github.io/multiscape/reference/add_targets_relative.html</loc></url>
 <url><loc>https://josesalgr.github.io/multiscape/reference/compile_model.html</loc></url>
+<url><loc>https://josesalgr.github.io/multiscape/reference/create_problem.html</loc></url>
 <url><loc>https://josesalgr.github.io/multiscape/reference/dot-pa_build_model.html</loc></url>
 <url><loc>https://josesalgr.github.io/multiscape/reference/get_actions.html</loc></url>
 <url><loc>https://josesalgr.github.io/multiscape/reference/get_features.html</loc></url>
@@ -44,6 +51,10 @@
 <url><loc>https://josesalgr.github.io/multiscape/reference/inputData,ANY,data.frame,data.frame-method.html</loc></url>
 <url><loc>https://josesalgr.github.io/multiscape/reference/inputData,data.frame,data.frame,data.frame-method.html</loc></url>
 <url><loc>https://josesalgr.github.io/multiscape/reference/inputData.html</loc></url>
+<url><loc>https://josesalgr.github.io/multiscape/reference/input_data,ANY,ANY,missing-method.html</loc></url>
+<url><loc>https://josesalgr.github.io/multiscape/reference/input_data,ANY,ANY,NULL-method.html</loc></url>
+<url><loc>https://josesalgr.github.io/multiscape/reference/input_data,ANY,data.frame,data.frame-method.html</loc></url>
+<url><loc>https://josesalgr.github.io/multiscape/reference/input_data,data.frame,data.frame,data.frame-method.html</loc></url>
 <url><loc>https://josesalgr.github.io/multiscape/reference/input_data.html</loc></url>
 <url><loc>https://josesalgr.github.io/multiscape/reference/pipe.html</loc></url>
 <url><loc>https://josesalgr.github.io/multiscape/reference/plot_spatial.html</loc></url>

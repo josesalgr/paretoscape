@@ -1,7 +1,7 @@
 test_that("compile_model errors when no objective is configured", {
   toy <- toy_equivalent_basic()
 
-  p <- multiscape::input_data(
+  p <- multiscape::create_problem(
     pu = toy$pu,
     features = toy$features,
     dist_features = toy$dist_features,
@@ -9,7 +9,7 @@ test_that("compile_model errors when no objective is configured", {
   ) |>
     multiscape::add_actions(actions = toy$actions, cost = 0) |>
     multiscape::add_effects(effects = toy$effects, effect_type = "after") |>
-    multiscape::add_targets_relative(0.5)
+    multiscape::add_constraint_targets_relative(0.5)
 
   expect_error(
     multiscape::compile_model(p),
@@ -20,7 +20,7 @@ test_that("compile_model errors when no objective is configured", {
 test_that("solve errors when multiple objectives are registered without a MO method", {
   toy <- toy_equivalent_basic()
 
-  p <- multiscape::input_data(
+  p <- multiscape::create_problem(
     pu = toy$pu,
     features = toy$features,
     dist_features = toy$dist_features,
@@ -28,7 +28,7 @@ test_that("solve errors when multiple objectives are registered without a MO met
   ) |>
     multiscape::add_actions(actions = toy$actions, cost = 0) |>
     multiscape::add_effects(effects = toy$effects, effect_type = "after") |>
-    multiscape::add_targets_relative(0.5) |>
+    multiscape::add_constraint_targets_relative(0.5) |>
     multiscape::add_spatial_boundary(boundary = toy$boundary, include_self = TRUE) |>
     multiscape::add_objective_min_cost(alias = "cost") |>
     multiscape::add_objective_min_fragmentation(alias = "frag") |>
@@ -43,7 +43,7 @@ test_that("solve errors when multiple objectives are registered without a MO met
 test_that("compile_model errors when multiple objectives are registered without a MO method", {
   toy <- toy_equivalent_basic()
 
-  p <- multiscape::input_data(
+  p <- multiscape::create_problem(
     pu = toy$pu,
     features = toy$features,
     dist_features = toy$dist_features,
@@ -51,7 +51,7 @@ test_that("compile_model errors when multiple objectives are registered without 
   ) |>
     multiscape::add_actions(actions = toy$actions, cost = 0) |>
     multiscape::add_effects(effects = toy$effects, effect_type = "after") |>
-    multiscape::add_targets_relative(0.5) |>
+    multiscape::add_constraint_targets_relative(0.5) |>
     multiscape::add_spatial_boundary(boundary = toy$boundary, include_self = TRUE) |>
     multiscape::add_objective_min_cost(alias = "cost") |>
     multiscape::add_objective_min_fragmentation(alias = "frag")

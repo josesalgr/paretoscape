@@ -5,7 +5,7 @@ test_that("single-objective solve returns a Solution and respects locked units",
   toy$pu$locked_in[1] <- 1
   toy$pu$locked_out[4] <- 1
 
-  p <- multiscape::input_data(
+  p <- multiscape::create_problem(
     pu = toy$pu,
     features = toy$features,
     dist_features = toy$dist_features,
@@ -13,8 +13,8 @@ test_that("single-objective solve returns a Solution and respects locked units",
   ) |>
     multiscape::add_actions(actions = toy$actions, cost = 0) |>
     multiscape::add_effects(effects = toy$effects, effect_type = "after") |>
-    multiscape::add_targets_relative(0.5) |>
-    multiscape::add_locked_pu(locked_in = "locked_in", locked_out = "locked_out") |>
+    multiscape::add_constraint_targets_relative(0.5) |>
+    multiscape::add_constraint_locked_pu(locked_in = "locked_in", locked_out = "locked_out") |>
     multiscape::add_objective_min_cost(alias = "cost") |>
     multiscape::set_solver_cbc(gap_limit = 0, verbose = FALSE)
 

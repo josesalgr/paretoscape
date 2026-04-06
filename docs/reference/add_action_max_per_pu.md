@@ -15,7 +15,7 @@ model builder (e.g., `.pa_build_model_apply_constraints()`).
 - x:
 
   A `Problem` object created with
-  [`input_data`](https://josesalgr.github.io/multiscape/reference/input_data.md).
+  [`create_problem`](https://josesalgr.github.io/multiscape/reference/create_problem.md).
   Must already contain actions (i.e., run
   [`add_actions`](https://josesalgr.github.io/multiscape/reference/add_actions.md)
   first).

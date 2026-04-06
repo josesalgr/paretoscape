@@ -23,8 +23,7 @@ add_spatial_distance(
 
 - x:
 
-  A `Problem` object created with
-  [`input_data`](https://josesalgr.github.io/multiscape/reference/input_data.md).
+  A `Problem` object created with `input_data`.
 
 - coords:
 

@@ -1,7 +1,7 @@
 test_that("set_method_weighted errors when aliases and weights have different lengths", {
   toy <- toy_equivalent_basic()
 
-  p <- multiscape::input_data(
+  p <- multiscape::create_problem(
     pu = toy$pu,
     features = toy$features,
     dist_features = toy$dist_features,
@@ -28,7 +28,7 @@ test_that("set_method_weighted errors when aliases and weights have different le
 test_that("set_method_weighted errors when aliases contain duplicates", {
   toy <- toy_equivalent_basic()
 
-  p <- multiscape::input_data(
+  p <- multiscape::create_problem(
     pu = toy$pu,
     features = toy$features,
     dist_features = toy$dist_features,

@@ -12,7 +12,7 @@ add_losses(
 )
 }
 \arguments{
-\item{x}{A \code{Problem} object created with \code{\link{input_data}}. It
+\item{x}{A \code{Problem} object created with \code{\link{create_problem}}. It
 must already contain \code{x$data$dist_actions}; run
 \code{\link{add_actions}} first.}
 
@@ -58,7 +58,7 @@ pu <- data.frame(id = 1:2, cost = c(1, 2))
 features <- data.frame(id = 1, name = "sp1")
 dist_features <- data.frame(pu = 1:2, feature = 1, amount = c(5, 10))
 
-p <- input_data(pu = pu, features = features, dist_features = dist_features)
+p <- create_problem(pu = pu, features = features, dist_features = dist_features)
 p <- add_actions(p, data.frame(id = "harvest"))
 
 eff <- data.frame(

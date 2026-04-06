@@ -7,7 +7,7 @@
 .pa_build_model(x)
 }
 \arguments{
-\item{x}{Problem object (class "Problem") created with input_data().}
+\item{x}{Problem object (class "Problem") created with create_problem().}
 }
 \value{
 Updated \code{Problem} object with model pointer and model snapshot.

@@ -8,7 +8,7 @@ test_that("multiscape matches prioritizr on a one-action boundary-penalized prob
   names(bnd)[names(bnd) == "pu1"] <- "id1"
   names(bnd)[names(bnd) == "pu2"] <- "id2"
 
-  p_multiscape <- multiscape::input_data(
+  p_multiscape <- multiscape::create_problem(
     pu = toy$pu,
     features = toy$features,
     dist_features = toy$dist_features,
@@ -16,7 +16,7 @@ test_that("multiscape matches prioritizr on a one-action boundary-penalized prob
   ) |>
     multiscape::add_actions(actions = toy$actions, cost = 0) |>
     multiscape::add_effects(effects = toy$effects, effect_type = "after") |>
-    multiscape::add_targets_relative(0.5) |>
+    multiscape::add_constraint_targets_relative(0.5) |>
     multiscape::add_spatial_boundary(boundary = toy$boundary, include_self = FALSE) |>
     multiscape::add_objective_min_cost(alias = "cost") |>
     multiscape::add_objective_min_fragmentation(alias = "frag") |>

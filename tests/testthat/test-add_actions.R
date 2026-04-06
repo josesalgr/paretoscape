@@ -1,7 +1,7 @@
 test_that("add_actions creates one feasible row per pu-action pair", {
   toy <- toy_equivalent_basic()
 
-  p <- multiscape::input_data(
+  p <- multiscape::create_problem(
     pu = toy$pu,
     features = toy$features,
     dist_features = toy$dist_features,
@@ -30,7 +30,7 @@ test_that("add_actions creates one feasible row per pu-action pair", {
 test_that("add_actions stores a constant action cost correctly", {
   toy <- toy_equivalent_basic()
 
-  p <- multiscape::input_data(
+  p <- multiscape::create_problem(
     pu = toy$pu,
     features = toy$features,
     dist_features = toy$dist_features,

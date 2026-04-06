@@ -21,7 +21,7 @@ NULL
 #' In other words, \code{Problem} is the persistent object that connects the full
 #' \code{multiscape} workflow:
 #' \preformatted{
-#' input_data()
+#' create_problem()
 #' -> add_*() / set_*()
 #' -> solve()
 #' }
@@ -67,7 +67,7 @@ NULL
 #'
 #' \strong{How objects are created}
 #'
-#' \code{Problem} objects are usually created by \code{\link{input_data}}.
+#' \code{Problem} objects are usually created by \code{\link{create_problem}}.
 #'
 #' After creation, downstream functions such as \code{\link{add_actions}},
 #' \code{\link{add_effects}}, \code{\link{add_profit}},
@@ -180,7 +180,7 @@ NULL
 #' @return No return value. This page documents the \code{Problem} class.
 #'
 #' @seealso
-#' \code{\link{input_data}},
+#' \code{\link{create_problem}},
 #' \code{\link{add_actions}},
 #' \code{\link{add_effects}},
 #' \code{\link{add_targets_absolute}},

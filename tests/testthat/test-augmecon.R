@@ -7,7 +7,7 @@ test_that("augmecon returns a SolutionSet with runs", {
   names(bnd)[names(bnd) == "id1"] <- "pu1"
   names(bnd)[names(bnd) == "id2"] <- "pu2"
 
-  p <- multiscape::input_data(
+  p <- multiscape::create_problem(
     pu = toy$pu,
     features = toy$features,
     dist_features = toy$dist_features,
@@ -15,7 +15,7 @@ test_that("augmecon returns a SolutionSet with runs", {
   ) |>
     multiscape::add_actions(actions = toy$actions, cost = 0) |>
     multiscape::add_effects(effects = toy$effects, effect_type = "after") |>
-    multiscape::add_targets_relative(0.5) |>
+    multiscape::add_constraint_targets_relative(0.5) |>
     multiscape::add_spatial_boundary(
       boundary = bnd,
       weight_col = "boundary",

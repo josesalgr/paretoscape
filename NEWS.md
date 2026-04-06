@@ -3,7 +3,7 @@
 - First CRAN release of `multiscape`.
 - Provides a modular workflow for exact multi-objective spatial planning based on mixed-integer programming (MIP).
 - Introduces the core `Problem`, `Solution`, and `SolutionSet` classes.
-- Adds support for modular problem construction through `inputData()`, `add_*()`, `set_*()`, and `solve()`.
+- Adds support for modular problem construction through `create_problem()`, `add_*()`, `set_*()`, and `solve()`.
 - Supports atomic objective registration and multi-objective solution methods, including weighted-sum, epsilon-constraint, and AUGMECON.
 - Includes support for spatial relations such as boundary, rook, queen, k-nearest neighbours, and distance-based relations.
 - Supports commercial and open-source solvers, including Gurobi, CPLEX, CBC, and SYMPHONY.

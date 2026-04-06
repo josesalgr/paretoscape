@@ -6,7 +6,7 @@
 #' Materializes (builds) the optimization model using the current state of the `Problem` object:
 #' prepared data tables, stored objective settings, and stored constraints (e.g., targets).
 #'
-#' @param x Problem object (class "Problem") created with input_data().
+#' @param x Problem object (class "Problem") created with create_problem().
 #'
 #' @return Updated `Problem` object with model pointer and model snapshot.
 #' @keywords internal
@@ -215,7 +215,7 @@
     if (is.null(x$data$targets) || !inherits(x$data$targets, "data.frame") || nrow(x$data$targets) == 0) {
       .pa_abort(
         "model_type='minimizeCosts' requires targets, but x$data$targets is empty.\n",
-        "Run add_target_*() before solve()."
+        "Run add_constraint_target_*() before solve()."
       )
     }
   }

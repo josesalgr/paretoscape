@@ -16,9 +16,8 @@ add_spatial_rook(x, geometry = NULL, name = "rook", weight = 1)
 
 - x:
 
-  A `Problem` object created with
-  [`input_data`](https://josesalgr.github.io/multiscape/reference/input_data.md)
-  or another object containing aligned planning-unit polygons.
+  A `Problem` object created with `input_data` or another object
+  containing aligned planning-unit polygons.
 
 - geometry:
 

@@ -7,7 +7,7 @@
 add_profit(x, profit = NULL)
 }
 \arguments{
-\item{x}{A \code{Problem} object created with \code{\link{input_data}}. It
+\item{x}{A \code{Problem} object created with \code{\link{create_problem}}. It
 must already contain \code{x$data$dist_actions} and \code{x$data$actions};
 run \code{\link{add_actions}} first.}
 
@@ -145,7 +145,7 @@ dist_features <- data.frame(
   amount = c(1, 2, 1, 3, 2, 1)
 )
 
-p <- input_data(
+p <- create_problem(
   pu = pu,
   features = features,
   dist_features = dist_features

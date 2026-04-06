@@ -11,11 +11,11 @@
   gtag('js', new Date());
 
   gtag('config', 'G-6YB8F3838H');
-</script></head><body>
+</script><link rel="stylesheet" href="extra.css"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
-    <nav class="navbar navbar-expand-lg fixed-top bg-light" data-bs-theme="light" aria-label="Site navigation"><div class="container">
+    <nav class="navbar navbar-expand-lg fixed-top bg-primary" data-bs-theme="dark" aria-label="Site navigation"><div class="container">
 
     <a class="navbar-brand me-2" href="../index.html">multiscape</a>
 
@@ -29,7 +29,9 @@
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
-      </ul><ul class="navbar-nav"><li class="nav-item"><a class="external-link nav-link" href="https://github.com/josesalgr/multiscape" aria-label="GitHub repository"><span class="fa fa-github"></span></a></li>
+      </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
+ <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/josesalgr/multiscape" aria-label="GitHub repository"><span class="fa fa-github"></span></a></li>
       </ul></div>
 
 
@@ -52,7 +54,7 @@
 
       <dl><dt>
 
-          <code><a href="input_data.html">input_data()</a></code>
+          <code><a href="create_problem.html">create_problem()</a></code>
 
         </dt>
         <dd>Create a planning problem input object</dd>
@@ -64,9 +66,9 @@
         </dt>
         <dd>Solve a planning problem</dd>
       </dl></div><div class="section level2">
-      <h2 id="actions-effects-profits-and-locks">Actions, effects, profits and locks<a class="anchor" aria-label="anchor" href="#actions-effects-profits-and-locks"></a></h2>
+      <h2 id="actions-effects-and-profits">Actions, effects and profits<a class="anchor" aria-label="anchor" href="#actions-effects-and-profits"></a></h2>
 
-      <div class="section-desc"><p>Define feasible actions, their effects, optional profits, and fixed decisions.</p></div>
+      <div class="section-desc"><p>Define feasible actions, their effects and optional profits.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -107,22 +109,8 @@
 
         </dt>
         <dd>Add profit to a planning problem</dd>
-
-        <dt>
-
-          <code><a href="add_locked_actions.html">add_locked_actions()</a></code>
-
-        </dt>
-        <dd>Add locked action decisions to a planning problem</dd>
-
-        <dt>
-
-          <code><a href="add_locked_pu.html">add_locked_pu()</a></code>
-
-        </dt>
-        <dd>Add locked planning units to a problem</dd>
       </dl></div><div class="section level2">
-      <h2 id="targets-and-constraints">Targets and constraints<a class="anchor" aria-label="anchor" href="#targets-and-constraints"></a></h2>
+      <h2 id="constraints">Constraints<a class="anchor" aria-label="anchor" href="#constraints"></a></h2>
 
       <div class="section-desc"><p>Define target requirements and area-related constraints.</p></div>
 
@@ -133,31 +121,45 @@
 
       <dl><dt>
 
-          <code><a href="add_targets_absolute.html">add_targets_absolute()</a></code>
+          <code><a href="add_constraint_targets_absolute.html">add_constraint_targets_absolute()</a></code>
 
         </dt>
         <dd>Add absolute targets</dd>
 
         <dt>
 
-          <code><a href="add_targets_relative.html">add_targets_relative()</a></code>
+          <code><a href="add_constraint_targets_relative.html">add_constraint_targets_relative()</a></code>
 
         </dt>
         <dd>Add relative targets</dd>
 
         <dt>
 
-          <code><a href="add_area_min_constraint.html">add_area_min_constraint()</a></code>
+          <code><a href="add_constraint_area_min.html">add_constraint_area_min()</a></code>
 
         </dt>
         <dd>Add minimum selected area constraint</dd>
 
         <dt>
 
-          <code><a href="add_area_max_constraint.html">add_area_max_constraint()</a></code>
+          <code><a href="add_constraint_area_max.html">add_constraint_area_max()</a></code>
 
         </dt>
         <dd>Add maximum selected area constraint</dd>
+
+        <dt>
+
+          <code><a href="add_constraint_locked_actions.html">add_constraint_locked_actions()</a></code>
+
+        </dt>
+        <dd>Add locked action decisions to a planning problem</dd>
+
+        <dt>
+
+          <code><a href="add_constraint_locked_pu.html">add_constraint_locked_pu()</a></code>
+
+        </dt>
+        <dd>Add locked planning units to a problem</dd>
       </dl></div><div class="section level2">
       <h2 id="spatial-relations">Spatial relations<a class="anchor" aria-label="anchor" href="#spatial-relations"></a></h2>
 

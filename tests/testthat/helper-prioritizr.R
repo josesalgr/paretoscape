@@ -24,7 +24,7 @@ build_prioritizr_basic <- function(toy, target = 0.5, boundary_matrix = NULL) {
     cost_column = "cost"
   ) |>
     prioritizr::add_min_set_objective() |>
-    prioritizr::add_relative_targets(target)
+    prioritizr::add_constraint_targets_relative(target)
 
   if (!is.null(boundary_matrix)) {
     p <- p |>

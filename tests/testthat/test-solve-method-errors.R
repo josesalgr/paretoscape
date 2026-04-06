@@ -1,7 +1,7 @@
 test_that("solve errors for unknown MO method configuration", {
   toy <- toy_equivalent_basic()
 
-  p <- multiscape::input_data(
+  p <- multiscape::create_problem(
     pu = toy$pu,
     features = toy$features,
     dist_features = toy$dist_features,

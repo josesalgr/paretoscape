@@ -26,7 +26,7 @@ solve(x, ...)
 - x:
 
   A `Problem` object created with
-  [`input_data`](https://josesalgr.github.io/multiscape/reference/input_data.md)
+  [`create_problem`](https://josesalgr.github.io/multiscape/reference/create_problem.md)
   and optionally enriched with actions, effects, targets, constraints,
   objectives, spatial relations, method settings, and solver settings.
 
@@ -53,7 +53,7 @@ Either:
 
 The typical multiscape workflow is:
 
-    x <- input_data(...)
+    x <- create_problem(...)
     x <- add_...(x, ...)
     x <- set_...(x, ...)
     res <- solve(x)
@@ -180,14 +180,14 @@ if (FALSE) { # \dontrun{
 # ------------------------------------------------------------
 # Single-objective solve
 # ------------------------------------------------------------
-x <- input_data(
+x <- create_problem(
   pu = pu,
   features = features,
   dist_features = dist_features
 )
 
 x <- x |>
-  add_targets_relative(0.3) |>
+  add_constraint_targets_relative(0.3) |>
   add_objective_min_cost(alias = "cost") |>
   set_solver_gurobi(time_limit = 300, gap_limit = 0.01)
 

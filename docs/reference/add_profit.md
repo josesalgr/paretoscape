@@ -22,7 +22,7 @@ add_profit(x, profit = NULL)
 - x:
 
   A `Problem` object created with
-  [`input_data`](https://josesalgr.github.io/multiscape/reference/input_data.md).
+  [`create_problem`](https://josesalgr.github.io/multiscape/reference/create_problem.md).
   It must already contain `x$data$dist_actions` and `x$data$actions`;
   run
   [`add_actions`](https://josesalgr.github.io/multiscape/reference/add_actions.md)
@@ -173,7 +173,7 @@ dist_features <- data.frame(
   amount = c(1, 2, 1, 3, 2, 1)
 )
 
-p <- input_data(
+p <- create_problem(
   pu = pu,
   features = features,
   dist_features = dist_features
