@@ -364,7 +364,7 @@ There are several ways to explore trade-offs in `multiscape`. A simple
 option is to use a weighted-sum formulation.
 
 ``` r
-p_mo <- set_method_weighted(
+p_mo <- set_method_weighted_sum(
   x = p,
   aliases = c("cost", "benefit", "frag"),
   weights = c(1, 1, 1),
@@ -463,7 +463,7 @@ To explore the package further, see:
 - the function reference at the package website,
 - the documentation of `create_problem()`, `add_actions()`,
   `add_effects()`, and `solve()`,
-- and the multi-objective methods `set_method_weighted()`,
+- and the multi-objective methods `set_method_weighted_sum()`,
   `set_method_epsilon_constraint()`, and `set_method_augmecon()`.
 
 If you find a bug or want to suggest an improvement, please open an

@@ -85,7 +85,7 @@ reference:
   - title: Multi-objective methods
     desc: Configure weighted-sum, epsilon-constraint, and AUGMECON workflows.
     contents:
-      - set_method_weighted
+      - set_method_weighted_sum
       - set_method_epsilon_constraint
       - set_method_augmecon
 

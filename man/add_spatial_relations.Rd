@@ -7,7 +7,7 @@
 add_spatial_relations(x, relations, name, directed = FALSE, allow_self = FALSE)
 }
 \arguments{
-\item{x}{A \code{Problem} object created with \code{\link{input_data}}.}
+\item{x}{A \code{Problem} object created with \code{\link{create_problem}}.}
 
 \item{relations}{A \code{data.frame} describing relation edges. It must
 contain either:
@@ -84,7 +84,7 @@ dist_features <- data.frame(
  amount = c(1, 1, 1)
 )
 
-p <- input_data(
+p <- create_problem(
  pu = pu,
  features = features,
  dist_features = dist_features

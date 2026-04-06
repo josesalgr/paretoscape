@@ -1,4 +1,4 @@
-test_that("set_method_weighted errors when aliases and weights have different lengths", {
+test_that("set_method_weighted_sum errors when aliases and weights have different lengths", {
   toy <- toy_equivalent_basic()
 
   p <- multiscape::create_problem(
@@ -16,7 +16,7 @@ test_that("set_method_weighted errors when aliases and weights have different le
     multiscape::add_objective_min_fragmentation(alias = "frag")
 
   expect_error(
-    multiscape::set_method_weighted(
+    multiscape::set_method_weighted_sum(
       p,
       aliases = c("cost", "frag"),
       weights = c(1)
@@ -25,7 +25,7 @@ test_that("set_method_weighted errors when aliases and weights have different le
   )
 })
 
-test_that("set_method_weighted errors when aliases contain duplicates", {
+test_that("set_method_weighted_sum errors when aliases contain duplicates", {
   toy <- toy_equivalent_basic()
 
   p <- multiscape::create_problem(
@@ -43,7 +43,7 @@ test_that("set_method_weighted errors when aliases contain duplicates", {
     multiscape::add_objective_min_fragmentation(alias = "frag")
 
   expect_error(
-    multiscape::set_method_weighted(
+    multiscape::set_method_weighted_sum(
       p,
       aliases = c("cost", "cost"),
       weights = c(1, 1)

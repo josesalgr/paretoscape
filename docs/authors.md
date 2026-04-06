@@ -3,10 +3,11 @@
 ## Authors
 
 - **Jose Salgado-Rojas**. Author, maintainer.
+  [](https://orcid.org/0000-0001-9817-2625)
 
 - **Matias Moreno-Faguett**. Author.
 
-- **Nuria Aquilue**. Author.
+- **Nuria Aquilue**. Author. [](https://orcid.org/0000-0001-7911-3144)
 
 ## Citation
 

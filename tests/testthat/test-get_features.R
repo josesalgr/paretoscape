@@ -40,7 +40,7 @@ test_that("get_features returns a feature summary for SolutionSet run", {
     multiscape::add_spatial_boundary(boundary = toy$boundary, include_self = TRUE) |>
     multiscape::add_objective_min_cost(alias = "cost") |>
     multiscape::add_objective_min_fragmentation(alias = "frag") |>
-    multiscape::set_method_weighted(
+    multiscape::set_method_weighted_sum(
       aliases = c("cost", "frag"),
       weights = c(1, 1)
     ) |>
@@ -70,7 +70,7 @@ test_that("get_features errors for invalid run in SolutionSet", {
     multiscape::add_spatial_boundary(boundary = toy$boundary, include_self = TRUE) |>
     multiscape::add_objective_min_cost(alias = "cost") |>
     multiscape::add_objective_min_fragmentation(alias = "frag") |>
-    multiscape::set_method_weighted(
+    multiscape::set_method_weighted_sum(
       aliases = c("cost", "frag"),
       weights = c(1, 1)
     ) |>

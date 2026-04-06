@@ -169,7 +169,7 @@ only function that should normally materialize the optimization model.
 [`solution-class`](https://josesalgr.github.io/multiscape/reference/solution-class.md),
 [`solutionset-class`](https://josesalgr.github.io/multiscape/reference/solutionset-class.md),
 [`set_solver`](https://josesalgr.github.io/multiscape/reference/set_solver.md),
-[`set_method_weighted`](https://josesalgr.github.io/multiscape/reference/set_method_weighted.md),
+`set_method_weighted`,
 [`set_method_epsilon_constraint`](https://josesalgr.github.io/multiscape/reference/set_method_epsilon_constraint.md),
 [`set_method_augmecon`](https://josesalgr.github.io/multiscape/reference/set_method_augmecon.md)
 

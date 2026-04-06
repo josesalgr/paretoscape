@@ -24,7 +24,8 @@ add_spatial_knn(
 
 - x:
 
-  A `Problem` object created with `input_data`.
+  A `Problem` object created with
+  [`create_problem`](https://josesalgr.github.io/multiscape/reference/create_problem.md).
 
 - coords:
 

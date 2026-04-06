@@ -163,5 +163,5 @@ p2$data$dist_actions
 }
 \seealso{
 \code{\link{add_actions}},
-\code{\link{add_locked_pu}}
+\code{\link{add_constraint_locked_pu}}
 }

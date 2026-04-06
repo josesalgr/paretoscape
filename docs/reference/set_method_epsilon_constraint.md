@@ -227,7 +227,7 @@ requires explicit user control.
 ## See also
 
 [`set_method_augmecon`](https://josesalgr.github.io/multiscape/reference/set_method_augmecon.md),
-[`set_method_weighted`](https://josesalgr.github.io/multiscape/reference/set_method_weighted.md),
+`set_method_weighted`,
 [`solve`](https://josesalgr.github.io/multiscape/reference/solve.md)
 
 ## Examples

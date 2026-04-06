@@ -14,7 +14,7 @@ add_spatial_distance(
 )
 }
 \arguments{
-\item{x}{A \code{Problem} object created with \code{\link{input_data}}.}
+\item{x}{A \code{Problem} object created with \code{\link{create_problem}}.}
 
 \item{coords}{Optional coordinates specification, following the same rules as
 in \code{\link{add_spatial_knn}}.}

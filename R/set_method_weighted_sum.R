@@ -171,7 +171,7 @@
 #'     weight_multiplier = 0.01
 #'   )
 #'
-#' x <- set_method_weighted(
+#' x <- set_method_weighted_sum(
 #'   x,
 #'   aliases = c("cost", "frag"),
 #'   weights = c(1, 1),
@@ -188,7 +188,7 @@
 #'
 #' for (i in seq_along(weight_grid)) {
 #'   w <- weight_grid[i]
-#'   xs[[i]] <- set_method_weighted(
+#'   xs[[i]] <- set_method_weighted_sum(
 #'     x,
 #'     aliases = c("cost", "frag"),
 #'     weights = c(1 - w, w),
@@ -200,7 +200,7 @@
 #' # ------------------------------------------------------------
 #' # Example 3: request objective scaling
 #' # ------------------------------------------------------------
-#' x <- set_method_weighted(
+#' x <- set_method_weighted_sum(
 #'   x,
 #'   aliases = c("cost", "frag"),
 #'   weights = c(0.7, 0.3),
@@ -215,7 +215,7 @@
 #' \code{\link{solve}}
 #'
 #' @export
-set_method_weighted <- function(x,
+set_method_weighted_sum <- function(x,
                                 aliases,
                                 weights,
                                 normalize_weights = FALSE,

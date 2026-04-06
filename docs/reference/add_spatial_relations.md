@@ -25,7 +25,8 @@ add_spatial_relations(x, relations, name, directed = FALSE, allow_self = FALSE)
 
 - x:
 
-  A `Problem` object created with `input_data`.
+  A `Problem` object created with
+  [`create_problem`](https://josesalgr.github.io/multiscape/reference/create_problem.md).
 
 - relations:
 
@@ -108,12 +109,11 @@ dist_features <- data.frame(
  amount = c(1, 1, 1)
 )
 
-p <- input_data(
+p <- create_problem(
  pu = pu,
  features = features,
  dist_features = dist_features
 )
-#> Error in input_data(pu = pu, features = features, dist_features = dist_features): could not find function "input_data"
 
 rel <- data.frame(
   pu1 = c(1, 1, 2),
@@ -126,8 +126,10 @@ p <- add_spatial_relations(
   relations = rel,
   name = "my_relation"
 )
-#> Error: object 'p' not found
 
 p$data$spatial_relations$my_relation
-#> Error: object 'p' not found
+#>   internal_pu1 internal_pu2 weight pu1 pu2 relation_name
+#> 1            1            2      1   1   2   my_relation
+#> 2            1            3      1   1   3   my_relation
+#> 3            2            3      2   2   3   my_relation
 ```

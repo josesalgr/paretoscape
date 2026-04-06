@@ -400,7 +400,7 @@ The tables <code>sim_features</code> and <code>sim_dist_features</code> define t
 </h3>
 <p>There are several ways to explore trade-offs in <code>multiscape</code>. A simple option is to use a weighted-sum formulation.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">p_mo</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/set_method_weighted.html">set_method_weighted</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">p_mo</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/set_method_weighted_sum.html">set_method_weighted_sum</a></span><span class="op">(</span></span>
 <span>  x <span class="op">=</span> <span class="va">p</span>,</span>
 <span>  aliases <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"cost"</span>, <span class="st">"benefit"</span>, <span class="st">"frag"</span><span class="op">)</span>,</span>
 <span>  weights <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">1</span><span class="op">)</span>,</span>
@@ -481,7 +481,7 @@ The tables <code>sim_features</code> and <code>sim_dist_features</code> define t
 <ul>
 <li>the function reference at the package website,</li>
 <li>the documentation of <code><a href="reference/create_problem.html">create_problem()</a></code>, <code><a href="reference/add_actions.html">add_actions()</a></code>, <code><a href="reference/add_effects.html">add_effects()</a></code>, and <code><a href="reference/solve.html">solve()</a></code>,</li>
-<li>and the multi-objective methods <code><a href="reference/set_method_weighted.html">set_method_weighted()</a></code>, <code><a href="reference/set_method_epsilon_constraint.html">set_method_epsilon_constraint()</a></code>, and <code><a href="reference/set_method_augmecon.html">set_method_augmecon()</a></code>.</li>
+<li>and the multi-objective methods <code><a href="reference/set_method_weighted_sum.html">set_method_weighted_sum()</a></code>, <code><a href="reference/set_method_epsilon_constraint.html">set_method_epsilon_constraint()</a></code>, and <code><a href="reference/set_method_augmecon.html">set_method_augmecon()</a></code>.</li>
 </ul>
 <p>If you find a bug or want to suggest an improvement, please open an issue at:</p>
 <p><a href="https://github.com/josesalgr/multiscape/issues" class="external-link uri">https://github.com/josesalgr/multiscape/issues</a></p>
@@ -520,9 +520,9 @@ The tables <code>sim_features</code> and <code>sim_dist_features</code> define t
 <div class="developers">
 <h2 data-toc-skip>Developers</h2>
 <ul class="list-unstyled">
-<li>Jose Salgado-Rojas <br><small class="roles"> Author, maintainer </small>   </li>
+<li>Jose Salgado-Rojas <br><small class="roles"> Author, maintainer </small> <a href="https://orcid.org/0000-0001-9817-2625" target="orcid.widget" aria-label="ORCID" class="external-link"><span class="fab fa-orcid orcid" aria-hidden="true"></span></a>  </li>
 <li>Matias Moreno-Faguett <br><small class="roles"> Author </small>   </li>
-<li>Nuria Aquilue <br><small class="roles"> Author </small>   </li>
+<li>Nuria Aquilue <br><small class="roles"> Author </small> <a href="https://orcid.org/0000-0001-7911-3144" target="orcid.widget" aria-label="ORCID" class="external-link"><span class="fab fa-orcid orcid" aria-hidden="true"></span></a>  </li>
 </ul>
 </div>
 

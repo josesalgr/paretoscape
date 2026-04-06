@@ -85,7 +85,7 @@ multi-objective workflows.
 
 Configure weighted-sum, epsilon-constraint, and AUGMECON workflows.
 
-- [`set_method_weighted()`](https://josesalgr.github.io/multiscape/reference/set_method_weighted.md)
+- [`set_method_weighted_sum()`](https://josesalgr.github.io/multiscape/reference/set_method_weighted_sum.md)
   : Set the weighted-sum multi-objective method
 - [`set_method_epsilon_constraint()`](https://josesalgr.github.io/multiscape/reference/set_method_epsilon_constraint.md)
   : Set the epsilon-constraint multi-objective method

@@ -134,7 +134,7 @@ NULL
 #'
 #' The final relation is stored in \code{x$data$spatial_relations[[name]]}.
 #'
-#' @param x A \code{Problem} object created with \code{\link{input_data}}.
+#' @param x A \code{Problem} object created with \code{\link{create_problem}}.
 #' @param relations A \code{data.frame} describing relation edges. It must
 #'   contain either:
 #'   \itemize{
@@ -170,7 +170,7 @@ NULL
 #'  amount = c(1, 1, 1)
 #')
 #'
-#' p <- input_data(
+#' p <- create_problem(
 #'  pu = pu,
 #'  features = features,
 #'  dist_features = dist_features
@@ -767,7 +767,7 @@ add_spatial_boundary <- function(x,
 #' The resulting relation is stored as an undirected spatial relation.
 #'
 #' @param x A \code{Problem} object created with
-#'   \code{\link{input_data}} or another object containing aligned
+#'   \code{\link{create_problem}} or another object containing aligned
 #'   planning-unit polygons.
 #' @param geometry Optional \code{sf} object with planning-unit polygons and an
 #'   \code{id} column. If \code{NULL}, \code{x$data$pu_sf} is used.
@@ -858,7 +858,7 @@ add_spatial_rook <- function(x,
 #' The resulting relation is stored as an undirected spatial relation.
 #'
 #' @param x A \code{Problem} object created with
-#'   \code{\link{input_data}} or another object containing aligned
+#'   \code{\link{create_problem}} or another object containing aligned
 #'   planning-unit polygons.
 #' @param geometry Optional \code{sf} object with planning-unit polygons and an
 #'   \code{id} column. If \code{NULL}, \code{x$data$pu_sf} is used.
@@ -961,7 +961,7 @@ add_spatial_queen <- function(x,
 #' If the \pkg{RANN} package is available, it is used for efficient nearest
 #' neighbour search. Otherwise, a full distance matrix is computed.
 #'
-#' @param x A \code{Problem} object created with \code{\link{input_data}}.
+#' @param x A \code{Problem} object created with \code{\link{create_problem}}.
 #' @param coords Optional coordinates specification. This may be:
 #'   \itemize{
 #'     \item a \code{data.frame(id, x, y)}, or
@@ -1091,7 +1091,7 @@ add_spatial_knn <- function(x,
 #'
 #' The resulting relation is registered as undirected.
 #'
-#' @param x A \code{Problem} object created with \code{\link{input_data}}.
+#' @param x A \code{Problem} object created with \code{\link{create_problem}}.
 #' @param coords Optional coordinates specification, following the same rules as
 #'   in \code{\link{add_spatial_knn}}.
 #' @param max_distance Positive numeric scalar giving the maximum distance for

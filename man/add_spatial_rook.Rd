@@ -8,7 +8,7 @@ add_spatial_rook(x, geometry = NULL, name = "rook", weight = 1)
 }
 \arguments{
 \item{x}{A \code{Problem} object created with
-\code{\link{input_data}} or another object containing aligned
+\code{\link{create_problem}} or another object containing aligned
 planning-unit polygons.}
 
 \item{geometry}{Optional \code{sf} object with planning-unit polygons and an

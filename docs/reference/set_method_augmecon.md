@@ -243,7 +243,7 @@ programming problems. *Applied Mathematics and Computation*, 213(2),
 ## See also
 
 [`set_method_epsilon_constraint`](https://josesalgr.github.io/multiscape/reference/set_method_epsilon_constraint.md),
-[`set_method_weighted`](https://josesalgr.github.io/multiscape/reference/set_method_weighted.md),
+`set_method_weighted`,
 [`solve`](https://josesalgr.github.io/multiscape/reference/solve.md)
 
 ## Examples

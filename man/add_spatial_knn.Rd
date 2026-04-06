@@ -14,7 +14,7 @@ add_spatial_knn(
 )
 }
 \arguments{
-\item{x}{A \code{Problem} object created with \code{\link{input_data}}.}
+\item{x}{A \code{Problem} object created with \code{\link{create_problem}}.}
 
 \item{coords}{Optional coordinates specification. This may be:
 \itemize{

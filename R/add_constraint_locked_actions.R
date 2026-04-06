@@ -157,7 +157,7 @@ NULL
 #'
 #' @seealso
 #' \code{\link{add_actions}},
-#' \code{\link{add_locked_pu}}
+#' \code{\link{add_constraint_locked_pu}}
 #'
 #' @export
 add_constraint_locked_actions <- function(

@@ -15,7 +15,7 @@ test_that("weighted method returns a SolutionSet with runs", {
     multiscape::add_spatial_boundary(boundary = toy$boundary, include_self = TRUE) |>
     multiscape::add_objective_min_cost(alias = "cost") |>
     multiscape::add_objective_min_fragmentation(alias = "frag") |>
-    multiscape::set_method_weighted(
+    multiscape::set_method_weighted_sum(
       aliases = c("cost", "frag"),
       weights = c(1, 1)
     ) |>

@@ -116,7 +116,7 @@ exclusions.
 ## See also
 
 [`add_actions`](https://josesalgr.github.io/multiscape/reference/add_actions.md),
-`add_locked_pu`
+[`add_constraint_locked_pu`](https://josesalgr.github.io/multiscape/reference/add_constraint_locked_pu.md)
 
 ## Examples
 

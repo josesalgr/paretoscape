@@ -12,7 +12,7 @@ so that it can be used later by
 ## Usage
 
 ``` r
-set_method_weighted(
+set_method_weighted_sum(
   x,
   aliases,
   weights,
@@ -212,7 +212,7 @@ x <- x |>
     weight_multiplier = 0.01
   )
 
-x <- set_method_weighted(
+x <- set_method_weighted_sum(
   x,
   aliases = c("cost", "frag"),
   weights = c(1, 1),
@@ -229,7 +229,7 @@ xs <- vector("list", length(weight_grid))
 
 for (i in seq_along(weight_grid)) {
   w <- weight_grid[i]
-  xs[[i]] <- set_method_weighted(
+  xs[[i]] <- set_method_weighted_sum(
     x,
     aliases = c("cost", "frag"),
     weights = c(1 - w, w),
@@ -241,7 +241,7 @@ for (i in seq_along(weight_grid)) {
 # ------------------------------------------------------------
 # Example 3: request objective scaling
 # ------------------------------------------------------------
-x <- set_method_weighted(
+x <- set_method_weighted_sum(
   x,
   aliases = c("cost", "frag"),
   weights = c(0.7, 0.3),

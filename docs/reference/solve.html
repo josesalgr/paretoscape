@@ -167,7 +167,7 @@ the only function that should normally materialize the optimization model.</p>
 <code><a href="solution-class.html">solution-class</a></code>,
 <code><a href="solutionset-class.html">solutionset-class</a></code>,
 <code><a href="set_solver.html">set_solver</a></code>,
-<code><a href="set_method_weighted.html">set_method_weighted</a></code>,
+<code>set_method_weighted</code>,
 <code><a href="set_method_epsilon_constraint.html">set_method_epsilon_constraint</a></code>,
 <code><a href="set_method_augmecon.html">set_method_augmecon</a></code></p></div>
     </div>
@@ -196,7 +196,7 @@ the only function that should normally materialize the optimization model.</p>
 <span class="r-in"><span><span class="co"># ------------------------------------------------------------</span></span></span>
 <span class="r-in"><span><span class="va">x</span> <span class="op">&lt;-</span> <span class="va">x</span> <span class="op">|&gt;</span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="add_objective_min_fragmentation.html">add_objective_min_fragmentation</a></span><span class="op">(</span>alias <span class="op">=</span> <span class="st">"frag"</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
-<span class="r-in"><span>  <span class="fu"><a href="set_method_weighted.html">set_method_weighted</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="fu">set_method_weighted</span><span class="op">(</span></span></span>
 <span class="r-in"><span>    aliases <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"cost"</span>, <span class="st">"frag"</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>    weights <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.5</span>, <span class="fl">0.5</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>    normalize_weights <span class="op">=</span> <span class="cn">TRUE</span></span></span>
