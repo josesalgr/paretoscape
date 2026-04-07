@@ -438,7 +438,7 @@ print(p1)
 #> │└─relations: none
 #> └─targets and constraints
 #> │├─targets: none
-#> │├─area constraints: none
+#> │├─area constraint: none
 #> │├─planning-unit locks: none
 #> │└─action locks: none
 #> └─model
@@ -478,7 +478,7 @@ print(p2)
 #> │└─relations: none
 #> └─targets and constraints
 #> │├─targets: none
-#> │├─area constraints: none
+#> │├─area constraint: none
 #> │├─planning-unit locks: none
 #> │└─action locks: none
 #> └─model

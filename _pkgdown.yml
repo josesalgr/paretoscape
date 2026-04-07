@@ -55,8 +55,7 @@ reference:
     contents:
       - add_constraint_targets_absolute
       - add_constraint_targets_relative
-      - add_constraint_area_min
-      - add_constraint_area_max
+      - add_constraint_area
       - add_constraint_locked_actions
       - add_constraint_locked_pu
 

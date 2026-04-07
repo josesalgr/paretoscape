@@ -1128,9 +1128,8 @@ available_to_solve <- function(package = ""){
   cons <- x$data$constraints %||% list()
   if (length(cons) == 0L) return(x)
 
-  if (is.null(cons$area_min) && is.null(cons$area_max)) {
-    return(x)
-  }
+  spec <- cons$area %||% NULL
+  if (is.null(spec)) return(x)
 
   if (is.null(x$data$model_ptr)) {
     stop("Model pointer is missing while applying area constraints.", call. = FALSE)
@@ -1151,58 +1150,81 @@ available_to_solve <- function(package = ""){
   w0 <- as.integer(ml$w_offset %||% 0L)
   j0 <- w0 + (0:(n_pu - 1L))
 
-  # ---- area_min
-  if (!is.null(cons$area_min)) {
-    spec <- cons$area_min
-    a <- .pa_get_area_vec(
-      x,
-      area_col = spec$area_col %||% NULL,
-      area_unit = spec$unit %||% "m2"
+  a <- .pa_get_area_vec(
+    x,
+    area_col = spec$area_col %||% NULL,
+    area_unit = spec$unit %||% "m2"
+  )
+
+  if (length(a) != n_pu) {
+    stop(
+      "Area vector length (", length(a), ") != n_pu (", n_pu,
+      ") while applying area constraint.",
+      call. = FALSE
     )
+  }
 
-    if (length(a) != n_pu) {
-      stop(
-        "Area vector length (", length(a), ") != n_pu (", n_pu,
-        ") while applying area_min constraint.",
-        call. = FALSE
-      )
-    }
+  sense <- as.character(spec$sense %||% NA_character_)[1]
+  rhs <- as.numeric(spec$value %||% NA_real_)[1]
+  tol <- as.numeric(spec$tolerance %||% 0)[1]
+  nm <- as.character(spec$name %||% "area")[1]
 
+  if (!sense %in% c("min", "max", "equal")) {
+    stop("Unknown area constraint sense: ", sense, call. = FALSE)
+  }
+  if (!is.finite(rhs) || is.na(rhs) || rhs < 0) {
+    stop("Invalid area constraint value.", call. = FALSE)
+  }
+  if (!is.finite(tol) || is.na(tol) || tol < 0) {
+    stop("Invalid area constraint tolerance.", call. = FALSE)
+  }
+
+  if (identical(sense, "min")) {
     x <- .pa_add_linear_constraint(
       x,
       var_index_0based = j0,
       coeff = a,
       sense = ">=",
-      rhs = as.numeric(spec$value),
-      name = spec$name %||% "area_min"
+      rhs = rhs,
+      name = nm
     )
-  }
-
-  # ---- area_max
-  if (!is.null(cons$area_max)) {
-    spec <- cons$area_max
-    a <- .pa_get_area_vec(
-      x,
-      area_col = spec$area_col %||% NULL,
-      area_unit = spec$unit %||% "m2"
-    )
-
-    if (length(a) != n_pu) {
-      stop(
-        "Area vector length (", length(a), ") != n_pu (", n_pu,
-        ") while applying area_max constraint.",
-        call. = FALSE
-      )
-    }
-
+  } else if (identical(sense, "max")) {
     x <- .pa_add_linear_constraint(
       x,
       var_index_0based = j0,
       coeff = a,
       sense = "<=",
-      rhs = as.numeric(spec$value),
-      name = spec$name %||% "area_max"
+      rhs = rhs,
+      name = nm
     )
+  } else if (identical(sense, "equal")) {
+    if (tol == 0) {
+      x <- .pa_add_linear_constraint(
+        x,
+        var_index_0based = j0,
+        coeff = a,
+        sense = "==",
+        rhs = rhs,
+        name = nm
+      )
+    } else {
+      x <- .pa_add_linear_constraint(
+        x,
+        var_index_0based = j0,
+        coeff = a,
+        sense = ">=",
+        rhs = rhs - tol,
+        name = paste0(nm, "_lower")
+      )
+      x <- .pa_add_linear_constraint(
+        x,
+        var_index_0based = j0,
+        coeff = a,
+        sense = "<=",
+        rhs = rhs + tol,
+        name = paste0(nm, "_upper")
+      )
+    }
   }
 
   x

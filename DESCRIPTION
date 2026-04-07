@@ -13,16 +13,17 @@ Description: Provides a modular framework for exact multi-objective spatial
     AUGMECON. Problems can be solved with commercial (e.g., Gurobi, CPLEX)
     and open-source (e.g., CBC, SYMPHONY) MIP solvers.
 Authors@R: c(
-    person('Jose', 'Salgado-Rojas',
+    person('José', 'Salgado-Rojas',
         email='jose.salgroj@gmail.com', 
         role = c('aut','cre'),
         comment = c(ORCID = "0000-0001-9817-2625")
     ),
-    person('Matias', 'Moreno-Faguett',
+    person('Matías', 'Moreno-Faguett',
         email='matias.moreno.faguett@gmail.com', 
-        role = c('aut')
+        role = c('aut'),
+        comment = c(ORCID = "0009-0003-6561-234X")
     ),
-    person('Nuria', 'Aquilue',
+    person('Núria', 'Aquilue',
         email='nuria.aquilue@ctfc.cat', 
         role = c('aut'),
         comment = c(ORCID = "0000-0001-7911-3144")

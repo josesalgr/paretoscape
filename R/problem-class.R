@@ -401,11 +401,10 @@ NULL
 
   # area constraints
   area_n <- 0L
-  if (is.list(cons)) {
-    if (!is.null(cons$area_min)) area_n <- area_n + 1L
-    if (!is.null(cons$area_max)) area_n <- area_n + 1L
+  if (is.list(cons) && !is.null(cons$area)) {
+    out$area_constraints <- 1L
+    out$area_sense <- as.character(cons$area$sense %||% NA_character_)[1]
   }
-  out$area_constraints <- area_n
 
   # planning-unit locks
   pu <- self$data$pu
@@ -789,13 +788,19 @@ Problem <- pproto(
     }
 
     if (cons_sum$area_constraints > 0) {
+      area_lab <- cons_sum$area_sense %||% "unknown"
+
+      if (!is.na(cons_sum$area_tolerance) && cons_sum$area_sense == "equal" && cons_sum$area_tolerance > 0) {
+        area_lab <- paste0(area_lab, " \u00B1 ", cons_sum$area_tolerance)
+      }
+
       cli::cli_text(
-        " {ch$v}{ch$j}{ch$b}area constraints: {cons_sum$area_constraints}",
+        " {ch$v}{ch$j}{ch$b}area constraint: {area_lab}",
         .envir = environment()
       )
     } else {
       cli::cli_text(
-        " {ch$v}{ch$j}{ch$b}area constraints: {.muted none}",
+        " {ch$v}{ch$j}{ch$b}area constraint: {.muted none}",
         .envir = environment()
       )
     }
