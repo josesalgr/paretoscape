@@ -56,6 +56,7 @@ reference:
       - add_constraint_targets_absolute
       - add_constraint_targets_relative
       - add_constraint_area
+      - add_constraint_budget
       - add_constraint_locked_actions
       - add_constraint_locked_pu
 

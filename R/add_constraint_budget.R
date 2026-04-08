@@ -1,0 +1,323 @@
+#' @include internal.R
+#'
+#' @title Add budget constraint
+#'
+#' @description
+#' Add a budget constraint to a planning problem.
+#'
+#' This function stores one budget-constraint specification in the
+#' \code{Problem} object so that it can later be incorporated when the
+#' optimization model is assembled. Multiple budget constraints can be added by
+#' calling this function repeatedly, provided that no duplicated combination of
+#' \code{actions} and \code{sense} is introduced.
+#'
+#' @details
+#' Let \eqn{\mathcal{P}} denote the set of planning units and let
+#' \eqn{\mathcal{A}} denote the set of actions. Let
+#' \eqn{w_i \in \{0,1\}} denote the binary variable indicating whether planning
+#' unit \eqn{i \in \mathcal{P}} is selected by at least one decision in the
+#' model, and let \eqn{x_{ia} \in \{0,1\}} denote the binary variable
+#' indicating whether action \eqn{a \in \mathcal{A}} is selected in planning
+#' unit \eqn{i \in \mathcal{P}}.
+#'
+#' The total constrained budget can include two cost components:
+#'
+#' \itemize{
+#'   \item planning-unit costs, associated with \eqn{w_i};
+#'   \item action costs, associated with \eqn{x_{ia}}.
+#' }
+#'
+#' The arguments \code{include_pu_cost} and \code{include_action_cost}
+#' determine which of these components are included in the stored budget
+#' constraint.
+#'
+#' When \code{actions = NULL}, the constraint refers to the total budget across
+#' the whole problem. In that case, depending on the values of
+#' \code{include_pu_cost} and \code{include_action_cost}, the constrained
+#' quantity is one of the following:
+#'
+#' If only planning-unit costs are included:
+#' \deqn{
+#' \sum_{i \in \mathcal{P}} c_i^{pu} w_i
+#' }
+#'
+#' If only action costs are included:
+#' \deqn{
+#' \sum_{i \in \mathcal{P}} \sum_{a \in \mathcal{A}} c_{ia}^{act} x_{ia}
+#' }
+#'
+#' If both components are included:
+#' \deqn{
+#' \sum_{i \in \mathcal{P}} c_i^{pu} w_i +
+#' \sum_{i \in \mathcal{P}} \sum_{a \in \mathcal{A}} c_{ia}^{act} x_{ia}
+#' }
+#'
+#' Depending on \code{sense}, this function stores one of the following
+#' constraints:
+#'
+#' If \code{sense = "min"}:
+#' \deqn{
+#' C \ge B
+#' }
+#'
+#' If \code{sense = "max"}:
+#' \deqn{
+#' C \le B
+#' }
+#'
+#' If \code{sense = "equal"} and \code{tolerance = 0}:
+#' \deqn{
+#' C = B
+#' }
+#'
+#' If \code{sense = "equal"} and \code{tolerance > 0}:
+#' \deqn{
+#' B - \tau \le C \le B + \tau
+#' }
+#'
+#' where \eqn{C} denotes the selected cost expression and \eqn{\tau} is the
+#' value supplied through \code{tolerance}.
+#'
+#' When \code{actions} is not \code{NULL}, the constraint is applied only to the
+#' selected decisions associated with the specified subset of actions. Let
+#' \eqn{\mathcal{A}^*} denote that subset. In that case, the constrained
+#' quantity is
+#' \deqn{
+#' \sum_{i \in \mathcal{P}} \sum_{a \in \mathcal{A}^*} c_{ia}^{act} x_{ia}.
+#' }
+#'
+#' Action-specific budget constraints only support action costs. Therefore,
+#' \code{include_pu_cost = TRUE} is only allowed when \code{actions = NULL},
+#' because planning-unit costs are not action-specific.
+#'
+#' This function only stores the constraint specification in
+#' \code{x$data$constraints$budget}; it does not validate the feasibility of
+#' the threshold against the available cost data at this stage.
+#'
+#' Multiple budget constraints can be stored in a \code{Problem} object.
+#' However, at most one can be stored for the same combination of action subset
+#' and constraint sense. Attempting to add a duplicated
+#' \code{actions}--\code{sense} combination results in an error.
+#'
+#' @param x A \code{Problem} object.
+#'
+#' @param budget Numeric scalar greater than or equal to zero. Target value for
+#'   the constrained budget.
+#'
+#' @param sense Character string indicating the type of budget constraint. Must
+#'   be one of \code{"min"}, \code{"max"}, or \code{"equal"}.
+#'
+#' @param tolerance Numeric scalar greater than or equal to zero. Only used when
+#'   \code{sense = "equal"}. In that case, equality is interpreted as a band
+#'   around \code{budget} with half-width \code{tolerance}. Ignored otherwise.
+#'
+#' @param actions Optional subset of actions to which the constraint applies.
+#'   If \code{NULL}, the constraint applies to the whole problem. Otherwise, it
+#'   applies only to the selected decision variables associated with the
+#'   specified subset of actions. This argument is resolved using the package's
+#'   standard action subset parser.
+#'
+#' @param include_pu_cost Logical scalar indicating whether planning-unit costs
+#'   should be included in the constrained budget. This is only supported when
+#'   \code{actions = NULL}.
+#'
+#' @param include_action_cost Logical scalar indicating whether action costs
+#'   should be included in the constrained budget.
+#'
+#' @param name Optional character string used as the label of the stored linear
+#'   constraint when it is later added to the optimization model. If
+#'   \code{NULL}, a default name is generated.
+#'
+#' @return An updated \code{Problem} object with the new budget-constraint
+#'   specification appended to \code{x$data$constraints$budget}.
+#'
+#' @seealso
+#' \code{\link{create_problem}}
+#'
+#' @examples
+#' pu <- data.frame(
+#'   id = 1:4,
+#'   cost = c(2, 3, 1, 4)
+#' )
+#'
+#' features <- data.frame(
+#'   id = 1:2,
+#'   name = c("sp1", "sp2")
+#' )
+#'
+#' dist_features <- data.frame(
+#'   pu = c(1, 1, 2, 3, 4, 4),
+#'   feature = c(1, 2, 1, 2, 1, 2),
+#'   amount = c(1, 2, 1, 3, 2, 1)
+#' )
+#'
+#' actions <- data.frame(
+#'   id = c("conservation", "restoration")
+#' )
+#'
+#' p <- create_problem(
+#'   pu = pu,
+#'   features = features,
+#'   dist_features = dist_features
+#' )
+#'
+#' p <- add_actions(
+#'   p,
+#'   actions = actions,
+#'   cost = c(conservation = 1, restoration = 2)
+#' )
+#'
+#' p <- add_constraint_budget(
+#'   x = p,
+#'   budget = 10,
+#'   sense = "max",
+#'   include_pu_cost = TRUE,
+#'   include_action_cost = TRUE
+#' )
+#'
+#' p <- add_constraint_budget(
+#'   x = p,
+#'   budget = 4,
+#'   sense = "max",
+#'   actions = "restoration",
+#'   include_pu_cost = FALSE,
+#'   include_action_cost = TRUE
+#' )
+#'
+#' p <- add_constraint_budget(
+#'   x = p,
+#'   budget = 1,
+#'   sense = "min",
+#'   actions = "restoration",
+#'   include_pu_cost = FALSE,
+#'   include_action_cost = TRUE
+#' )
+#'
+#' p$data$constraints$budget
+#'
+#' @export
+add_constraint_budget <- function(x,
+                                  budget,
+                                  sense,
+                                  tolerance = 0,
+                                  actions = NULL,
+                                  include_pu_cost = TRUE,
+                                  include_action_cost = TRUE,
+                                  name = NULL) {
+
+  stopifnot(inherits(x, "Problem"))
+
+  if (missing(sense) || is.null(sense)) {
+    stop(
+      "`sense` must be explicitly provided. Use one of: 'min', 'max', or 'equal'.",
+      call. = FALSE
+    )
+  }
+
+  sense <- match.arg(sense, c("min", "max", "equal"))
+
+  assertthat::assert_that(
+    assertthat::is.number(budget),
+    is.finite(budget),
+    budget >= 0
+  )
+
+  assertthat::assert_that(
+    assertthat::is.number(tolerance),
+    is.finite(tolerance),
+    tolerance >= 0
+  )
+
+  assertthat::assert_that(
+    is.logical(include_pu_cost),
+    length(include_pu_cost) == 1,
+    !is.na(include_pu_cost)
+  )
+
+  assertthat::assert_that(
+    is.logical(include_action_cost),
+    length(include_action_cost) == 1,
+    !is.na(include_action_cost)
+  )
+
+  if (!include_pu_cost && !include_action_cost) {
+    stop(
+      "At least one of `include_pu_cost` or `include_action_cost` must be TRUE.",
+      call. = FALSE
+    )
+  }
+
+  if (!is.null(actions) && isTRUE(include_pu_cost)) {
+    stop(
+      "`include_pu_cost = TRUE` is only supported when `actions = NULL`, because planning-unit costs are not action-specific.",
+      call. = FALSE
+    )
+  }
+
+  if (!is.null(name)) {
+    if (!is.character(name) || length(name) != 1 || is.na(name) || !nzchar(name)) {
+      stop("`name` must be NULL or a non-empty character string.", call. = FALSE)
+    }
+  }
+
+  if (sense != "equal" && tolerance > 0) {
+    warning(
+      "`tolerance` is only used when sense = 'equal'. It will be ignored.",
+      call. = FALSE,
+      immediate. = TRUE
+    )
+  }
+
+  x <- .pa_clone_data(x)
+
+  actions_txt <- NA_character_
+
+  if (!is.null(actions)) {
+    act_subset <- .pa_resolve_action_subset(x, subset = actions)
+
+    if (!is.data.frame(act_subset) || nrow(act_subset) == 0) {
+      stop("`actions` did not resolve to any valid actions.", call. = FALSE)
+    }
+
+    actions_txt <- .pa_subset_to_string(act_subset$id)
+  }
+
+  budget_name <- if (is.null(name)) {
+    prefix <- if (isTRUE(include_pu_cost) && isTRUE(include_action_cost)) {
+      "budget_total"
+    } else if (isTRUE(include_pu_cost)) {
+      "budget_pu"
+    } else {
+      "budget_action"
+    }
+
+    if (is.na(actions_txt)) {
+      paste0(prefix, "_", sense)
+    } else {
+      paste0(prefix, "_", sense, "_", gsub("\\|", "_", actions_txt))
+    }
+  } else {
+    as.character(name)[1]
+  }
+
+  budget_df <- data.frame(
+    type = "budget",
+    sense = sense,
+    value = as.numeric(budget),
+    tolerance = if (sense == "equal") as.numeric(tolerance) else 0,
+    actions = actions_txt,
+    include_pu_cost = include_pu_cost,
+    include_action_cost = include_action_cost,
+    name = budget_name,
+    stringsAsFactors = FALSE
+  )
+
+  x <- .pa_store_budget_constraints(x, budget_df)
+
+  if (!is.null(x$data$model_ptr)) {
+    x$data$meta <- x$data$meta %||% list()
+    x$data$meta$model_dirty <- TRUE
+  }
+
+  x
+}

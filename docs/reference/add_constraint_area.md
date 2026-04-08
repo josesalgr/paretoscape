@@ -1,10 +1,12 @@
 # Add area constraint
 
-Add a total selected area constraint to a planning problem.
+Add an area constraint to a planning problem.
 
-This function stores an area constraint in the `Problem` object so that
-it can be incorporated later by the model builder when the optimization
-model is assembled.
+This function stores one area-constraint specification in the `Problem`
+object so that it can later be incorporated when the optimization model
+is assembled. Multiple area constraints can be added by calling this
+function repeatedly, provided that no duplicated combination of
+`actions` and `sense` is introduced.
 
 ## Usage
 
@@ -16,7 +18,8 @@ add_constraint_area(
   tolerance = 0,
   area_col = NULL,
   area_unit = c("m2", "ha", "km2"),
-  name = "area"
+  actions = NULL,
+  name = NULL
 )
 ```
 
@@ -29,7 +32,7 @@ add_constraint_area(
 - area:
 
   Numeric scalar greater than or equal to zero. Target value for the
-  total selected area.
+  constrained area.
 
 - sense:
 
@@ -39,7 +42,7 @@ add_constraint_area(
 - tolerance:
 
   Numeric scalar greater than or equal to zero. Only used when
-  `sense = "equal"`. In that case, the equality is interpreted as a band
+  `sense = "equal"`. In that case, equality is interpreted as a band
   around `area` with half-width `tolerance`. Ignored otherwise.
 
 - area_col:
@@ -50,25 +53,38 @@ add_constraint_area(
 
 - area_unit:
 
-  Character string indicating the unit of `area`. Must be one of `"m2"`,
-  `"ha"`, or `"km2"`.
+  Character string indicating the unit of `area` and `tolerance`. Must
+  be one of `"m2"`, `"ha"`, or `"km2"`.
+
+- actions:
+
+  Optional subset of actions to which the constraint applies. If `NULL`,
+  the constraint applies to the total selected area in the problem
+  through the planning-unit selection variables. Otherwise, it applies
+  to the selected decision variables associated with the specified
+  subset of actions. This argument is resolved using the package's
+  standard action subset parser.
 
 - name:
 
-  Character string used as the label of the stored linear constraint
-  when it is later added to the optimization model.
+  Optional character string used as the label of the stored linear
+  constraint when it is later added to the optimization model. If
+  `NULL`, a default name is generated.
 
 ## Value
 
-An updated `Problem` object with a stored area constraint in
-`x$data$constraints$area`.
+An updated `Problem` object with the new area-constraint specification
+appended to `x$data$constraints$area`.
 
 ## Details
 
 Let \\\mathcal{P}\\ denote the set of planning units and let \\a_i \ge
-0\\ be the area associated with planning unit \\i \in \mathcal{P}\\. Let
-\\w_i \in \\0,1\\\\ denote the binary variable indicating whether
-planning unit \\i\\ is selected by at least one decision in the model.
+0\\ be the area associated with planning unit \\i \in \mathcal{P}\\.
+
+When `actions = NULL`, the constraint refers to the total selected area
+in the problem. In that case, let \\w_i \in \\0,1\\\\ denote the binary
+variable indicating whether planning unit \\i\\ is selected by at least
+one decision in the model.
 
 Depending on `sense`, this function stores one of the following
 constraints:
@@ -84,8 +100,19 @@ If `sense = "equal"` and `tolerance > 0`: \$\$ A - \tau \le \sum\_{i \in
 \mathcal{P}} a_i w_i \le A + \tau \$\$ where \\\tau\\ is the value
 supplied through `tolerance`.
 
+When `actions` is not `NULL`, the constraint is applied only to the
+selected decisions associated with the specified subset of actions. Let
+\\\mathcal{A}^\*\\ denote that subset and let \\x\_{ia} \in \\0,1\\\\
+denote the binary variable indicating whether action \\a \in
+\mathcal{A}^\*\\ is selected in planning unit \\i \in \mathcal{P}\\. In
+that case, the constrained quantity is \$\$ \sum\_{i \in \mathcal{P}}
+\sum\_{a \in \mathcal{A}^\*} a_i x\_{ia}. \$\$
+
+Under formulations where at most one action can be selected per planning
+unit, this coincides with the area allocated to that subset of actions.
+
 Areas are obtained from `x$data$pu`. If `area_col` is provided, that
-column is used. Otherwise, the model builder will later determine the
+column is used. Otherwise, the model builder later determines the
 default area source according to the internal rules of the package. The
 value of `area_unit` indicates the unit in which `area` and `tolerance`
 are expressed and therefore how the stored threshold should be
@@ -95,8 +122,10 @@ This function only stores the constraint specification in
 `x$data$constraints$area`; it does not validate the feasibility of the
 threshold against the available planning units at this stage.
 
-At most one area constraint can be stored in a `Problem` object. If one
-already exists, this function raises an error.
+Multiple area constraints can be stored in a `Problem` object. However,
+at most one can be stored for the same combination of action subset and
+constraint sense. Attempting to add a duplicated `actions`–`sense`
+combination results in an error.
 
 ## See also
 
@@ -122,10 +151,20 @@ dist_features <- data.frame(
   amount = c(1, 2, 1, 3, 2, 1)
 )
 
+actions <- data.frame(
+  id = c("conservation", "restoration")
+)
+
 p <- create_problem(
   pu = pu,
   features = features,
   dist_features = dist_features
+)
+
+p <- add_actions(
+  p,
+  actions = actions,
+  cost = c(conservation = 1, restoration = 2)
 )
 
 p <- add_constraint_area(
@@ -136,26 +175,27 @@ p <- add_constraint_area(
   area_unit = "ha"
 )
 
+p <- add_constraint_area(
+  x = p,
+  area = 15,
+  sense = "max",
+  area_col = "area_ha",
+  area_unit = "ha",
+  actions = "restoration"
+)
+
+p <- add_constraint_area(
+  x = p,
+  area = 5,
+  sense = "min",
+  area_col = "area_ha",
+  area_unit = "ha",
+  actions = "restoration"
+)
+
 p$data$constraints$area
-#> $type
-#> [1] "area"
-#> 
-#> $sense
-#> [1] "min"
-#> 
-#> $value
-#> [1] 25
-#> 
-#> $tolerance
-#> [1] 0
-#> 
-#> $unit
-#> [1] "ha"
-#> 
-#> $area_col
-#> [1] "area_ha"
-#> 
-#> $name
-#> [1] "area"
-#> 
+#>   type sense value tolerance unit area_col     actions                 name
+#> 1 area   min    25         0   ha  area_ha        <NA>             area_min
+#> 2 area   max    15         0   ha  area_ha restoration area_max_restoration
+#> 3 area   min     5         0   ha  area_ha restoration area_min_restoration
 ```

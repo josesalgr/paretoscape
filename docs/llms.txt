@@ -511,6 +511,8 @@ Define target requirements and area-related constraints.
   : Add relative targets
 - [`add_constraint_area()`](https://josesalgr.github.io/multiscape/reference/add_constraint_area.md)
   : Add area constraint
+- [`add_constraint_budget()`](https://josesalgr.github.io/multiscape/reference/add_constraint_budget.md)
+  : Add budget constraint
 - [`add_constraint_locked_actions()`](https://josesalgr.github.io/multiscape/reference/add_constraint_locked_actions.md)
   : Add locked action decisions to a planning problem
 - [`add_constraint_locked_pu()`](https://josesalgr.github.io/multiscape/reference/add_constraint_locked_pu.md)

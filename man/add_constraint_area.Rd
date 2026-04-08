@@ -38,7 +38,9 @@ the model builder.}
 
 \item{actions}{Optional subset of actions to which the constraint applies.
 If \code{NULL}, the constraint applies to the total selected area in the
-problem. This argument is resolved using the package's standard action
+problem through the planning-unit selection variables. Otherwise, it applies
+to the selected decision variables associated with the specified subset of
+actions. This argument is resolved using the package's standard action
 subset parser.}
 
 \item{name}{Optional character string used as the label of the stored linear
@@ -46,8 +48,8 @@ constraint when it is later added to the optimization model. If
 \code{NULL}, a default name is generated.}
 }
 \value{
-An updated \code{Problem} object with the new area constraint stored
-in \code{x$data$constraints$area}.
+An updated \code{Problem} object with the new area-constraint
+specification appended to \code{x$data$constraints$area}.
 }
 \description{
 Add an area constraint to a planning problem.
@@ -55,8 +57,8 @@ Add an area constraint to a planning problem.
 This function stores one area-constraint specification in the
 \code{Problem} object so that it can later be incorporated when the
 optimization model is assembled. Multiple area constraints can be added by
-calling this function repeatedly, provided that each constraint refers to a
-different subset of actions.
+calling this function repeatedly, provided that no duplicated combination of
+\code{actions} and \code{sense} is introduced.
 }
 \details{
 Let \eqn{\mathcal{P}} denote the set of planning units and let
@@ -91,10 +93,18 @@ A - \tau \le \sum_{i \in \mathcal{P}} a_i w_i \le A + \tau
 }
 where \eqn{\tau} is the value supplied through \code{tolerance}.
 
-When \code{actions} is not \code{NULL}, the constraint is stored for the
-specified subset of actions only. The exact linear form is resolved later by
-the model builder using the stored action subset and the internal model
-representation.
+When \code{actions} is not \code{NULL}, the constraint is applied only to the
+selected decisions associated with the specified subset of actions. Let
+\eqn{\mathcal{A}^*} denote that subset and let
+\eqn{x_{ia} \in \{0,1\}} denote the binary variable indicating whether action
+\eqn{a \in \mathcal{A}^*} is selected in planning unit
+\eqn{i \in \mathcal{P}}. In that case, the constrained quantity is
+\deqn{
+\sum_{i \in \mathcal{P}} \sum_{a \in \mathcal{A}^*} a_i x_{ia}.
+}
+
+Under formulations where at most one action can be selected per planning
+unit, this coincides with the area allocated to that subset of actions.
 
 Areas are obtained from \code{x$data$pu}. If \code{area_col} is provided, that
 column is used. Otherwise, the model builder later determines the default
@@ -107,9 +117,10 @@ This function only stores the constraint specification in
 \code{x$data$constraints$area}; it does not validate the feasibility of the
 threshold against the available planning units at this stage.
 
-Multiple area constraints can be stored in a \code{Problem} object, but at
-most one can be stored for the same action subset. Attempting to add a second
-area constraint for an already-used subset of actions results in an error.
+Multiple area constraints can be stored in a \code{Problem} object. However,
+at most one can be stored for the same combination of action subset and
+constraint sense. Attempting to add a duplicated
+\code{actions}--\code{sense} combination results in an error.
 }
 \examples{
 pu <- data.frame(
@@ -139,7 +150,11 @@ p <- create_problem(
   dist_features = dist_features
 )
 
-p <- add_actions(p, actions = actions, cost = c(conservation = 1, restoration = 2))
+p <- add_actions(
+  p,
+  actions = actions,
+  cost = c(conservation = 1, restoration = 2)
+)
 
 p <- add_constraint_area(
   x = p,
@@ -153,6 +168,15 @@ p <- add_constraint_area(
   x = p,
   area = 15,
   sense = "max",
+  area_col = "area_ha",
+  area_unit = "ha",
+  actions = "restoration"
+)
+
+p <- add_constraint_area(
+  x = p,
+  area = 5,
+  sense = "min",
   area_col = "area_ha",
   area_unit = "ha",
   actions = "restoration"

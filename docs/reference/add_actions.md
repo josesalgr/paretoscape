@@ -238,7 +238,8 @@ print(p1)
 #> │└─relations: none
 #> └─targets and constraints
 #> │├─targets: none
-#> │├─area constraint: none
+#> │├─area constraints: none
+#> │├─budget constraints: none
 #> │├─planning-unit locks: none
 #> │└─action locks: none
 #> └─model

@@ -4432,3 +4432,466 @@ NULL
 
   x
 }
+
+
+.pa_store_budget_constraints <- function(x, budget_df) {
+
+  stopifnot(inherits(x, "Problem"))
+  stopifnot(is.data.frame(budget_df))
+  stopifnot(nrow(budget_df) >= 1)
+
+  required_cols <- c(
+    "type", "sense", "value", "tolerance",
+    "actions", "include_pu_cost", "include_action_cost", "name"
+  )
+
+  miss <- setdiff(required_cols, names(budget_df))
+  if (length(miss) > 0) {
+    stop(
+      "Missing required columns in `budget_df`: ",
+      paste(miss, collapse = ", "),
+      ".",
+      call. = FALSE
+    )
+  }
+
+  if (any(budget_df$type != "budget")) {
+    stop("All rows in `budget_df` must have `type = 'budget'.", call. = FALSE)
+  }
+
+  if (any(is.na(budget_df$sense)) ||
+      any(!budget_df$sense %in% c("min", "max", "equal"))) {
+    stop(
+      "`budget_df$sense` must contain only 'min', 'max', or 'equal'.",
+      call. = FALSE
+    )
+  }
+
+  if (any(!is.finite(budget_df$value)) || any(budget_df$value < 0)) {
+    stop(
+      "`budget_df$value` must contain only finite values >= 0.",
+      call. = FALSE
+    )
+  }
+
+  if (any(!is.finite(budget_df$tolerance)) || any(budget_df$tolerance < 0)) {
+    stop(
+      "`budget_df$tolerance` must contain only finite values >= 0.",
+      call. = FALSE
+    )
+  }
+
+  if (!is.logical(budget_df$include_pu_cost) ||
+      any(is.na(budget_df$include_pu_cost))) {
+    stop(
+      "`budget_df$include_pu_cost` must contain only TRUE/FALSE values.",
+      call. = FALSE
+    )
+  }
+
+  if (!is.logical(budget_df$include_action_cost) ||
+      any(is.na(budget_df$include_action_cost))) {
+    stop(
+      "`budget_df$include_action_cost` must contain only TRUE/FALSE values.",
+      call. = FALSE
+    )
+  }
+
+  if (any(!budget_df$include_pu_cost & !budget_df$include_action_cost)) {
+    stop(
+      "Each row in `budget_df` must have at least one of ",
+      "`include_pu_cost` or `include_action_cost` set to TRUE.",
+      call. = FALSE
+    )
+  }
+
+  actions_chr <- as.character(budget_df$actions)
+  bad_action_pu_mix <- !is.na(actions_chr) & nzchar(actions_chr) & budget_df$include_pu_cost
+  if (any(bad_action_pu_mix)) {
+    stop(
+      "`include_pu_cost = TRUE` is only supported when `actions` is NA/NULL, ",
+      "because planning-unit costs are not action-specific.",
+      call. = FALSE
+    )
+  }
+
+  if (any(is.na(budget_df$name)) || any(!nzchar(budget_df$name))) {
+    stop(
+      "`budget_df$name` must contain only non-empty character strings.",
+      call. = FALSE
+    )
+  }
+
+  budget_df$type <- as.character(budget_df$type)
+  budget_df$sense <- as.character(budget_df$sense)
+  budget_df$actions <- actions_chr
+  budget_df$name <- as.character(budget_df$name)
+
+  new_actions_key <- ifelse(is.na(budget_df$actions), "__ALL__", budget_df$actions)
+  new_key <- paste(new_actions_key, budget_df$sense, sep = "||")
+
+  if (anyDuplicated(new_key)) {
+    dup <- unique(new_key[duplicated(new_key)])[1]
+    parts <- strsplit(dup, "\\|\\|")[[1]]
+    act_key <- parts[1]
+    sense_key <- parts[2]
+
+    subset_label <- if (identical(act_key, "__ALL__")) {
+      "all actions"
+    } else {
+      paste0("actions = {", act_key, "}")
+    }
+
+    stop(
+      "Duplicated budget constraints detected within `budget_df` for ",
+      subset_label,
+      " and sense = '", sense_key, "'.",
+      call. = FALSE
+    )
+  }
+
+  cons <- x$data$constraints %||% list()
+  old <- cons$budget
+
+  if (is.null(old)) {
+    cons$budget <- budget_df[, required_cols, drop = FALSE]
+    rownames(cons$budget) <- NULL
+    x$data$constraints <- cons
+    return(x)
+  }
+
+  if (!is.data.frame(old)) {
+    stop(
+      "Stored budget constraints must be a data.frame. Please rebuild the problem object.",
+      call. = FALSE
+    )
+  }
+
+  old_miss <- setdiff(required_cols, names(old))
+  if (length(old_miss) > 0) {
+    stop(
+      "Stored budget constraints are malformed. Missing columns: ",
+      paste(old_miss, collapse = ", "),
+      ".",
+      call. = FALSE
+    )
+  }
+
+  old$type <- as.character(old$type)
+  old$sense <- as.character(old$sense)
+  old$actions <- as.character(old$actions)
+  old$name <- as.character(old$name)
+
+  if (any(old$type != "budget")) {
+    stop(
+      "Stored budget constraints are malformed: `type` must be 'budget'.",
+      call. = FALSE
+    )
+  }
+
+  if (any(is.na(old$sense)) || any(!old$sense %in% c("min", "max", "equal"))) {
+    stop(
+      "Stored budget constraints are malformed: invalid values in `sense`.",
+      call. = FALSE
+    )
+  }
+
+  if (!is.logical(old$include_pu_cost) || any(is.na(old$include_pu_cost))) {
+    stop(
+      "Stored budget constraints are malformed: `include_pu_cost` must contain only TRUE/FALSE values.",
+      call. = FALSE
+    )
+  }
+
+  if (!is.logical(old$include_action_cost) || any(is.na(old$include_action_cost))) {
+    stop(
+      "Stored budget constraints are malformed: `include_action_cost` must contain only TRUE/FALSE values.",
+      call. = FALSE
+    )
+  }
+
+  old_bad_action_pu_mix <- !is.na(old$actions) & nzchar(old$actions) & old$include_pu_cost
+  if (any(old_bad_action_pu_mix)) {
+    stop(
+      "Stored budget constraints are malformed: action-specific rows cannot have `include_pu_cost = TRUE`.",
+      call. = FALSE
+    )
+  }
+
+  old_actions_key <- ifelse(is.na(old$actions), "__ALL__", old$actions)
+  old_key <- paste(old_actions_key, old$sense, sep = "||")
+
+  overlap <- intersect(old_key, new_key)
+  if (length(overlap) > 0) {
+    dup <- overlap[1]
+    parts <- strsplit(dup, "\\|\\|")[[1]]
+    act_key <- parts[1]
+    sense_key <- parts[2]
+
+    subset_label <- if (identical(act_key, "__ALL__")) {
+      "all actions"
+    } else {
+      paste0("actions = {", act_key, "}")
+    }
+
+    stop(
+      "A budget constraint already exists for the same subset of actions (",
+      subset_label,
+      ") and sense = '", sense_key, "'.",
+      call. = FALSE
+    )
+  }
+
+  out <- rbind(
+    old[, required_cols, drop = FALSE],
+    budget_df[, required_cols, drop = FALSE]
+  )
+  rownames(out) <- NULL
+
+  cons$budget <- out
+  x$data$constraints <- cons
+
+  x
+}
+
+
+.pa_apply_budget_constraints_if_present <- function(x) {
+  stopifnot(inherits(x, "Problem"))
+
+  cons <- x$data$constraints %||% list()
+  if (length(cons) == 0L) return(x)
+
+  specs <- cons$budget %||% NULL
+  if (is.null(specs)) return(x)
+
+  if (is.null(x$data$model_ptr)) {
+    stop("Model pointer is missing while applying budget constraints.", call. = FALSE)
+  }
+
+  x <- .pa_refresh_model_snapshot(x)
+
+  ml <- x$data$model_list
+  if (is.null(ml)) {
+    stop("Model snapshot is missing while applying budget constraints.", call. = FALSE)
+  }
+
+  if (!is.data.frame(specs)) {
+    stop("Stored budget constraints must be a data.frame.", call. = FALSE)
+  }
+
+  required_cols <- c(
+    "type", "sense", "value", "tolerance",
+    "actions", "include_pu_cost", "include_action_cost", "name"
+  )
+
+  miss <- setdiff(required_cols, names(specs))
+  if (length(miss) > 0) {
+    stop(
+      "Stored budget constraints are malformed. Missing columns: ",
+      paste(miss, collapse = ", "),
+      ".",
+      call. = FALSE
+    )
+  }
+
+  n_pu <- as.integer(ml$n_pu %||% 0L)
+  if (n_pu <= 0L) {
+    stop("Model has n_pu=0; cannot apply budget constraints.", call. = FALSE)
+  }
+
+  da <- x$data$dist_actions_model %||% NULL
+  if (is.null(da) || !is.data.frame(da) || nrow(da) == 0L) {
+    stop(
+      "Budget constraints require `x$data$dist_actions_model`.",
+      call. = FALSE
+    )
+  }
+
+  if (!("internal_row" %in% names(da))) {
+    stop(
+      "`dist_actions_model` must contain column `internal_row`.",
+      call. = FALSE
+    )
+  }
+
+  if (!("cost" %in% names(da))) {
+    stop(
+      "`dist_actions_model` must contain column `cost`.",
+      call. = FALSE
+    )
+  }
+
+  x0 <- as.integer(ml$x_offset %||% 0L)
+  w0 <- as.integer(ml$w_offset %||% 0L)
+
+  for (k in seq_len(nrow(specs))) {
+    spec <- specs[k, , drop = FALSE]
+
+    sense <- as.character(spec$sense)[1]
+    rhs <- as.numeric(spec$value)[1]
+    tol <- as.numeric(spec$tolerance)[1]
+    nm <- as.character(spec$name)[1]
+    actions_txt <- as.character(spec$actions)[1]
+    include_pu_cost <- isTRUE(spec$include_pu_cost[[1]])
+    include_action_cost <- isTRUE(spec$include_action_cost[[1]])
+
+    if (!sense %in% c("min", "max", "equal")) {
+      stop("Unknown budget constraint sense: ", sense, call. = FALSE)
+    }
+    if (!is.finite(rhs) || is.na(rhs) || rhs < 0) {
+      stop("Invalid budget constraint value in stored budget constraints.", call. = FALSE)
+    }
+    if (!is.finite(tol) || is.na(tol) || tol < 0) {
+      stop("Invalid budget constraint tolerance in stored budget constraints.", call. = FALSE)
+    }
+    if (is.na(nm) || !nzchar(nm)) {
+      stop("Stored budget constraint has invalid `name`.", call. = FALSE)
+    }
+    if (!include_pu_cost && !include_action_cost) {
+      stop(
+        "Stored budget constraint `", nm,
+        "` has both `include_pu_cost` and `include_action_cost` set to FALSE.",
+        call. = FALSE
+      )
+    }
+
+    var_index <- integer(0)
+    coeff <- numeric(0)
+
+    # ------------------------------------------------------------
+    # planning-unit cost component (only for global budget)
+    # ------------------------------------------------------------
+    if (include_pu_cost) {
+      if (!is.na(actions_txt) && nzchar(actions_txt)) {
+        stop(
+          "Stored budget constraint `", nm,
+          "` has `include_pu_cost = TRUE` with an action-specific subset, which is not supported.",
+          call. = FALSE
+        )
+      }
+
+      pu_cost <- .pa_get_cost_vec(x$data$pu)
+
+      if (length(pu_cost) != n_pu) {
+        stop(
+          "Planning-unit cost vector length (", length(pu_cost), ") != n_pu (", n_pu,
+          ") while applying budget constraint `", nm, "`.",
+          call. = FALSE
+        )
+      }
+
+      j0_w <- w0 + (0:(n_pu - 1L))
+      var_index <- c(var_index, j0_w)
+      coeff <- c(coeff, as.numeric(pu_cost))
+    }
+
+    # ------------------------------------------------------------
+    # action cost component
+    # ------------------------------------------------------------
+    if (include_action_cost) {
+      keep <- rep(TRUE, nrow(da))
+
+      if (!is.na(actions_txt) && nzchar(actions_txt)) {
+        actions_chr <- strsplit(actions_txt, "\\|", fixed = FALSE)[[1]]
+
+        act_subset <- .pa_resolve_action_subset(x, subset = actions_chr)
+        if (!is.data.frame(act_subset) || nrow(act_subset) == 0L) {
+          stop(
+            "Stored budget constraint `", nm,
+            "` refers to an invalid or empty action subset.",
+            call. = FALSE
+          )
+        }
+
+        keep <- da$action %in% act_subset$id
+      }
+
+      if (!any(keep)) {
+        stop(
+          "Stored budget constraint `", nm,
+          "` does not match any rows in `dist_actions_model`.",
+          call. = FALSE
+        )
+      }
+
+      var_index_x <- x0 + (as.integer(da$internal_row[keep]) - 1L)
+      coeff_x <- as.numeric(da$cost[keep])
+
+      if (length(var_index_x) != length(coeff_x) || length(coeff_x) == 0L) {
+        stop(
+          "Failed to assemble action-cost coefficients for budget constraint `", nm, "`.",
+          call. = FALSE
+        )
+      }
+
+      var_index <- c(var_index, var_index_x)
+      coeff <- c(coeff, coeff_x)
+    }
+
+    if (length(var_index) != length(coeff) || length(coeff) == 0L) {
+      stop(
+        "Failed to assemble coefficients for budget constraint `", nm, "`.",
+        call. = FALSE
+      )
+    }
+
+    if (identical(sense, "min")) {
+
+      x <- .pa_add_linear_constraint(
+        x,
+        var_index_0based = var_index,
+        coeff = coeff,
+        sense = ">=",
+        rhs = rhs,
+        name = nm
+      )
+
+    } else if (identical(sense, "max")) {
+
+      x <- .pa_add_linear_constraint(
+        x,
+        var_index_0based = var_index,
+        coeff = coeff,
+        sense = "<=",
+        rhs = rhs,
+        name = nm
+      )
+
+    } else if (identical(sense, "equal")) {
+
+      if (tol == 0) {
+
+        x <- .pa_add_linear_constraint(
+          x,
+          var_index_0based = var_index,
+          coeff = coeff,
+          sense = "==",
+          rhs = rhs,
+          name = nm
+        )
+
+      } else {
+
+        x <- .pa_add_linear_constraint(
+          x,
+          var_index_0based = var_index,
+          coeff = coeff,
+          sense = ">=",
+          rhs = rhs - tol,
+          name = paste0(nm, "_lower")
+        )
+
+        x <- .pa_add_linear_constraint(
+          x,
+          var_index_0based = var_index,
+          coeff = coeff,
+          sense = "<=",
+          rhs = rhs + tol,
+          name = paste0(nm, "_upper")
+        )
+      }
+    }
+  }
+
+  x
+}

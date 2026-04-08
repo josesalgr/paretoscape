@@ -391,6 +391,7 @@ NULL
 .pa_constraints_summary <- function(self) {
   out <- list(
     area_constraints = 0L,
+    budget_constraints = 0L,
     pu_locked_in = 0L,
     pu_locked_out = 0L,
     action_locked_in = 0L,
@@ -440,6 +441,51 @@ NULL
       out$area_labels <- paste0(
         "[", out$area_actions, "] ",
         as.character(area$sense %||% NA_character_)[1]
+      )
+    }
+  }
+
+  # budget constraints
+  if (is.list(cons) && !is.null(cons$budget)) {
+    budget <- cons$budget
+
+    if (is.data.frame(budget) && nrow(budget) > 0L) {
+      out$budget_constraints <- as.integer(nrow(budget))
+
+      if ("sense" %in% names(budget)) {
+        s <- unique(as.character(budget$sense))
+        s <- s[!is.na(s) & nzchar(s)]
+        out$budget_sense <- if (length(s) > 0L) paste(s, collapse = ", ") else NA_character_
+      }
+
+      if ("actions" %in% names(budget)) {
+        a <- as.character(budget$actions)
+        a_lab <- ifelse(is.na(a) | !nzchar(a), "all", a)
+        out$budget_actions <- a_lab
+      }
+
+      if (all(c("actions", "sense") %in% names(budget))) {
+        a <- as.character(budget$actions)
+        a_lab <- ifelse(is.na(a) | !nzchar(a), "all", a)
+        s <- as.character(budget$sense)
+        out$budget_labels <- paste0("[", a_lab, "] ", s)
+      }
+
+    } else if (is.list(budget)) {
+      # backward compatibility with older single-constraint format
+      out$budget_constraints <- 1L
+      out$budget_sense <- as.character(budget$sense %||% NA_character_)[1]
+
+      budget_actions <- budget$actions %||% NA_character_
+      budget_actions <- as.character(budget_actions)[1]
+      out$budget_actions <- if (is.na(budget_actions) || !nzchar(budget_actions)) {
+        "all"
+      } else {
+        budget_actions
+      }
+      out$budget_labels <- paste0(
+        "[", out$budget_actions, "] ",
+        as.character(budget$sense %||% NA_character_)[1]
       )
     }
   }
@@ -879,6 +925,60 @@ Problem <- pproto(
           extra <- length(labs) - max_show
           cli::cli_text(
             " {ch$v}{ch$j}{ch$b}{.muted ... +{extra} more area constraint(s)}",
+            .envir = environment()
+          )
+        }
+      }
+    }
+
+    if (cons_sum$budget_constraints == 0L) {
+
+      cli::cli_text(
+        " {ch$v}{ch$j}{ch$b}budget constraints: {.muted none}",
+        .envir = environment()
+      )
+
+    } else if (cons_sum$budget_constraints == 1L) {
+
+      budget_lab <- cons_sum$budget_labels %||% NA_character_
+      budget_lab <- as.character(budget_lab)[1]
+
+      if (is.na(budget_lab) || !nzchar(budget_lab)) {
+        budget_lab <- cons_sum$budget_sense %||% "unknown"
+      }
+
+      cli::cli_text(
+        " {ch$v}{ch$j}{ch$b}budget constraints: 1 ({budget_lab})",
+        .envir = environment()
+      )
+
+    } else {
+
+      n_budget <- as.integer(cons_sum$budget_constraints)
+      cli::cli_text(
+        " {ch$v}{ch$j}{ch$b}budget constraints: {n_budget} registered",
+        .envir = environment()
+      )
+
+      labs <- cons_sum$budget_labels %||% character(0)
+      labs <- as.character(labs)
+      labs <- labs[!is.na(labs) & nzchar(labs)]
+
+      max_show <- 4L
+      if (length(labs) > 0L) {
+        show_labs <- labs[seq_len(min(length(labs), max_show))]
+
+        for (lab in show_labs) {
+          cli::cli_text(
+            " {ch$v}{ch$j}{ch$b}- {lab}",
+            .envir = environment()
+          )
+        }
+
+        if (length(labs) > max_show) {
+          extra <- length(labs) - max_show
+          cli::cli_text(
+            " {ch$v}{ch$j}{ch$b}{.muted ... +{extra} more budget constraint(s)}",
             .envir = environment()
           )
         }

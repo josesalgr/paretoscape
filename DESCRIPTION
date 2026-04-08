@@ -23,7 +23,7 @@ Authors@R: c(
         role = c('aut'),
         comment = c(ORCID = "0009-0003-6561-234X")
     ),
-    person('Núria', 'Aquilue',
+    person('Núria', 'Aquilué',
         email='nuria.aquilue@ctfc.cat', 
         role = c('aut'),
         comment = c(ORCID = "0000-0001-7911-3144")
@@ -85,6 +85,7 @@ Collate:
     'add_action_max_per_pu.R'
     'add_actions.R'
     'add_constraint_area.R'
+    'add_constraint_budget.R'
     'add_constraint_locked_actions.R'
     'add_constraint_locked_pu.R'
     'add_constraint_targets.R'
