@@ -1,31 +1,25 @@
-# Multi-Objective spatial planning in R
+# multiscape: Multi-objective spatial planning in R
 
-`multiscape` provides an exact optimisation framework for
-**multi-objective spatial planning** in problems where decisions are
-expressed as **management actions** applied across planning units.
+## Overview
 
-The package allows users to:
-
-- build planning problems from **tabular** or **spatial** inputs,
-- define **feasible management actions** and their **action-specific
-  effects** on features,
-- add **constraints**, and **spatial relations**,
-- register **atomic objectives** such as cost, benefit, profit, and
-  fragmentation,
-- and explore trade-offs using exact **multi-objective optimisation**
-  methods such as weighted-sum, epsilon-constraint, and AUGMECON.
-
-`multiscape` is designed for reproducible research workflows in
-conservation planning, restoration planning, and other spatial
-decision-support problems where actions, costs, ecological effects, and
-spatial structure interact.
-
-## Experimental status
-
-`multiscape` is currently an experimental research package under active
-development.  
-The API may still evolve as the package moves toward a first stable CRAN
-release.
+`multiscape` is an exact optimisation framework for **multi-objective
+spatial planning** in R. It is designed for planning problems in which
+spatial data, ecological or socioeconomic features, constraints, and
+multiple competing objectives must be considered simultaneously within a
+single decision-support workflow. The package is built around
+**mixed-integer linear programming (MILP)** formulations, allowing users
+to represent spatial planning problems explicitly as optimisation models
+and solve them with exact methods. This makes `multiscape` especially
+suitable for applications where transparent model structure,
+reproducibility, and rigorous trade-off analysis are important.
+`multiscape` supports both general spatial planning formulations and
+action-based formulations in which decisions are expressed as
+**management actions** applied across planning units. With it, users can
+build planning problems from tabular or spatial inputs, define feasible
+actions and their effects, add targets and other constraints, register
+multiple objectives such as cost, benefit, profit, or fragmentation, and
+explore exact trade-offs using multi-objective methods such as
+weighted-sum, epsilon-constraint, and AUGMECON.
 
 ## Installation
 
@@ -39,21 +33,62 @@ if (!requireNamespace("remotes", quietly = TRUE)) {
 remotes::install_github("josesalgr/multiscape")
 ```
 
+## Why `multiscape`?
+
+`multiscape` brings together several key components of spatial planning
+in a single optimisation framework:
+
+- **exact MILP-based modelling** for rigorous spatial decision support,
+- **multi-objective optimisation** to analyse trade-offs instead of a
+  single optimum,
+- **spatially explicit formulations** with targets, constraints, and
+  spatial relations,
+- **flexible decision structures**, including both planning-unit and
+  action-based formulations,
+- and a **reproducible R workflow** for building and solving
+  optimisation problems.
+
 ## Core workflow
 
-A typical `multiscape` workflow has five steps:
+A typical `multiscape` workflow has five steps.
 
-1.  Build a `Problem` object from planning units, features, and baseline
-    feature amounts.
-2.  Add feasible actions and define how those actions affect features.
-3.  Add constraints, and spatial relations if needed.
-4.  Register one or more atomic objectives.
-5.  Solve the problem in single-objective or multi-objective mode.
+First, the user creates a `Problem` object from planning units,
+features, and baseline feature amounts. Second, the user adds feasible
+actions and, when relevant, defines how those actions affect the
+features of interest. Third, the user adds targets, constraints, and
+spatial relations. Fourth, the user registers one or more atomic
+objectives. Finally, the user solves the problem in single-objective or
+multi-objective mode.
 
-The example below illustrates this workflow using package data with
-polygon planning units stored as an `sf` object.
+In other words, `multiscape` separates problem definition from
+optimization. The `Problem` object stores the planning specification,
+and the solving stage later translates that specification into one or
+more exact optimization runs.
 
-## Worked example: spatial planning with actions and trade-offs
+## Multi-objective methods
+
+`multiscape` currently supports several exact multi-objective workflows.
+
+The **weighted-sum** method combines multiple registered objectives into
+a single scalar objective through user-defined weights. It is simple and
+useful for preference-driven exploration of trade-offs.
+
+The **epsilon-constraint** method optimizes one objective directly while
+transforming the remaining objectives into explicit performance
+constraints. This is especially useful when one objective should be
+prioritised while the others are controlled through thresholds.
+
+The **AUGMECON** method extends epsilon-constraint with an augmented
+formulation designed to reduce weakly efficient solutions and improve
+Pareto-front generation.
+
+Together, these methods allow users to move beyond a single â€œbestâ€?
+solution and instead analyse sets of efficient trade-off solutions.
+
+## Worked example
+
+The example below illustrates a typical `multiscape` workflow using
+package data with polygon planning units stored as an `sf` object.
 
 ### Load the package and example data
 
@@ -70,11 +105,10 @@ data("sim_features", package = "multiscape")
 data("sim_dist_features", package = "multiscape")
 ```
 
-The dataset `sim_pu_sf` contains planning-unit polygons and a `cost`
-column.  
-The tables `sim_features` and `sim_dist_features` define the feature
-catalogue and the baseline distribution of feature amounts across
-planning units.
+The object `sim_pu_sf` contains planning-unit polygons and a `cost`
+column. The tables `sim_features` and `sim_dist_features` define the
+feature catalogue and the baseline distribution of feature amounts
+across planning units.
 
 ### Build the planning problem
 
@@ -105,6 +139,7 @@ print(p)
 #> └─targets and constraints
 #> │├─targets: none
 #> │├─area constraints: none
+#> │├─budget constraints: none
 #> │├─planning-unit locks: none
 #> │└─action locks: none
 #> └─model
@@ -116,20 +151,11 @@ print(p)
 #> # ℹ Use `x$data` to inspect stored tables and model snapshots.
 ```
 
-At this stage, the problem contains:
-
-- planning units,
-- features,
-- baseline feature amounts,
-- and spatial geometry that can later be used for plotting and spatial
-  relations.
+At this stage, the problem contains the planning units, the feature
+definitions, the baseline feature amounts, and the spatial geometry that
+can later be used for spatial relations and visualisation.
 
 ### Add management actions
-
-We now define a simple action catalogue with two actions:
-
-- `conservation`, representing low-cost maintenance actions,
-- `restoration`, representing more intensive interventions.
 
 ``` r
 actions <- data.frame(
@@ -162,6 +188,7 @@ print(p)
 #> └─targets and constraints
 #> │├─targets: none
 #> │├─area constraints: none
+#> │├─budget constraints: none
 #> │├─planning-unit locks: none
 #> │└─action locks: none
 #> └─model
@@ -173,16 +200,10 @@ print(p)
 #> # ℹ Use `x$data` to inspect stored tables and model snapshots.
 ```
 
-This creates the action catalogue in `p$data$actions` and the feasible
-planning unit–action table in `p$data$dist_actions`.
+This adds an action catalogue and creates the feasible planning
+unitâ€“action table used later by the optimisation model.
 
 ### Add action effects
-
-Next, we define how actions affect features. In this example, we use a
-simple multiplier specification:
-
-- `conservation` provides a small positive effect on all features,
-- `restoration` provides a larger positive effect.
 
 ``` r
 effects_tbl <- expand.grid(
@@ -203,18 +224,15 @@ p <- add_effects(
 )
 ```
 
-Internally, effects are stored in canonical form with non-negative
-`benefit` and `loss` columns for each `(pu, action, feature)` triple.
+In this example, conservation produces a small positive effect on all
+features, whereas restoration produces a larger positive effect.
 
 ### Add a spatial relation
-
-To represent spatial cohesion, we add a boundary-based spatial relation
-from the planning-unit polygons:
 
 ``` r
 p <- add_spatial_distance(
   x = p,
-  name = "boundary",
+  name = "distance",
   max_distance = 1000
 )
 
@@ -234,10 +252,11 @@ print(p)
 #> └─spatial
 #> │├─geometry: sf (11109 rows)
 #> │├─coordinates: 11109 rows (x: 2868900..3007900, y: 2110700..2280700)
-#> │└─relations: boundary (21693 edges, w: 1..1)
+#> │└─relations: distance (21693 edges, w: 1..1)
 #> └─targets and constraints
 #> │├─targets: none
 #> │├─area constraints: none
+#> │├─budget constraints: none
 #> │├─planning-unit locks: none
 #> │└─action locks: none
 #> └─model
@@ -249,13 +268,10 @@ print(p)
 #> # ℹ Use `x$data` to inspect stored tables and model snapshots.
 ```
 
-This stores a spatial relation that can later be used by fragmentation
-objectives.
+This stores a spatial relation that can later be used by spatial
+objectives or diagnostics.
 
 ### Add a target
-
-We now add a relative target requiring each feature to reach at least
-20% of its baseline total contribution:
 
 ``` r
 p <- add_constraint_targets_relative(
@@ -279,11 +295,12 @@ print(p)
 #> └─spatial
 #> │├─geometry: sf (11109 rows)
 #> │├─coordinates: 11109 rows (x: 2868900..3007900, y: 2110700..2280700)
-#> │└─relations: boundary (21693 edges, w: 1..1)
+#> │└─relations: distance (21693 edges, w: 1..1)
 #> └─targets and constraints
 #> │├─targets: 155 rows
 #> │├─target preview: "ACCGENT" >= 108.2, "ACCNISU" >= 120.9, "ACRARUN" >= 15.33
 #> │├─area constraints: none
+#> │├─budget constraints: none
 #> │├─planning-unit locks: none
 #> │└─action locks: none
 #> └─model
@@ -295,17 +312,10 @@ print(p)
 #> # ℹ Use `x$data` to inspect stored tables and model snapshots.
 ```
 
+This requires each feature to reach at least a specified proportion of
+its baseline total.
+
 ### Register atomic objectives
-
-A key idea in `multiscape` is that objectives are registered as **atomic
-objectives** under user-defined aliases. These aliases can later be
-combined in multi-objective methods.
-
-Here we register three objectives:
-
-- minimise total cost,
-- maximise ecological benefit,
-- minimise fragmentation.
 
 ``` r
 p <- p |>
@@ -313,7 +323,7 @@ p <- p |>
   add_objective_max_benefit(alias = "benefit") |>
   add_objective_min_fragmentation(
     alias = "frag",
-    relation_name = "boundary"
+    relation_name = "distance"
   )
 
 print(p)
@@ -332,11 +342,12 @@ print(p)
 #> └─spatial
 #> │├─geometry: sf (11109 rows)
 #> │├─coordinates: 11109 rows (x: 2868900..3007900, y: 2110700..2280700)
-#> │└─relations: boundary (21693 edges, w: 1..1)
+#> │└─relations: distance (21693 edges, w: 1..1)
 #> └─targets and constraints
 #> │├─targets: 155 rows
 #> │├─target preview: "ACCGENT" >= 108.2, "ACCNISU" >= 120.9, "ACRARUN" >= 15.33
 #> │├─area constraints: none
+#> │├─budget constraints: none
 #> │├─planning-unit locks: none
 #> │└─action locks: none
 #> └─model
@@ -349,10 +360,11 @@ print(p)
 #> # ℹ Use `x$data` to inspect stored tables and model snapshots.
 ```
 
-### Configure a multi-objective method
+A key idea in `multiscape` is that objectives are first registered as
+**atomic objectives** under user-defined aliases. These aliases can
+later be combined through a multi-objective method.
 
-There are several ways to explore trade-offs in `multiscape`. A simple
-option is to use a weighted-sum formulation.
+### Configure a multi-objective method
 
 ``` r
 p_mo <- set_method_weighted_sum(
@@ -363,12 +375,10 @@ p_mo <- set_method_weighted_sum(
 )
 ```
 
-This stores the multi-objective configuration in the problem object. It
+This stores the multi-objective configuration in the problem object but
 does not solve the problem yet.
 
 ### Configure the solver
-
-Before solving, we store solver settings in the problem object:
 
 ``` r
 p_mo <- set_solver_cbc(
@@ -379,12 +389,14 @@ p_mo <- set_solver_cbc(
 )
 ```
 
-You can also use convenience wrappers such as
+Solver settings are stored in the problem object and later used by
+[`solve()`](https://josesalgr.github.io/multiscape/reference/solve.md).
+Other solver wrappers such as
 [`set_solver_gurobi()`](https://josesalgr.github.io/multiscape/reference/set_solver_gurobi.md),
 [`set_solver_cplex()`](https://josesalgr.github.io/multiscape/reference/set_solver_cplex.md),
-[`set_solver_cbc()`](https://josesalgr.github.io/multiscape/reference/set_solver_cbc.md),
 or
-[`set_solver_symphony()`](https://josesalgr.github.io/multiscape/reference/set_solver_symphony.md).
+[`set_solver_symphony()`](https://josesalgr.github.io/multiscape/reference/set_solver_symphony.md)
+can also be used.
 
 ### Solve the problem
 
@@ -392,83 +404,61 @@ or
 res <- solve(p_mo)
 ```
 
-Depending on the selected method,
+Depending on the selected workflow,
 [`solve()`](https://josesalgr.github.io/multiscape/reference/solve.md)
-returns either:
-
-- a `Solution` object for a single-objective solve, or
-- a `SolutionSet` object for a multi-objective workflow.
+returns either a `Solution` object for a single-objective problem or a
+`SolutionSet` object for a multi-objective workflow.
 
 ### Inspect results
-
-For solved problems, `multiscape` provides helper functions to extract
-user-facing summaries:
 
 ``` r
 solution_actions <- get_actions(res)
 head(solution_actions)
-#>       pu       action cost status selected run_id
-#> 1      1 conservation    2      0        1      1
-#> 11110  1  restoration    6      0        0      1
-#> 2      2 conservation    2      0        1      1
-#> 11111  2  restoration    6      0        0      1
-#> 3      3 conservation    2      0        1      1
-#> 11112  3  restoration    6      0        0      1
 ```
 
-When the result is a multi-objective solution set, you can also inspect
-trade-offs across runs:
+For multi-objective results, trade-offs across runs can be explored
+with:
 
 ``` r
 plot_tradeoff(res)
 ```
 
-![](reference/figures/README-unnamed-chunk-12-1.png)
-
-and, when geometry is available, spatial outputs can be visualised
-directly:
+and, when geometry is available, spatial outputs can be visualised with:
 
 ``` r
 plot_spatial(res, what = "actions")
 ```
 
-![](reference/figures/README-unnamed-chunk-13-1.png)
-
 ## Why this example matters
 
-This example illustrates the main modelling logic of `multiscape`.
+This example illustrates the main modelling logic of `multiscape`. The
+package is not limited to selecting planning units under a single
+objective. Instead, it can represent richer spatial planning problems in
+which costs, targets, ecological effects, and spatial structure
+interact, and in which users may want to compare multiple efficient
+solutions rather than a single optimum.
 
-The problem is not only about selecting planning units. Instead, it is
-about deciding **which action** should be feasible and selected in each
-planning unit, while accounting for:
-
-- implementation cost,
-- action-specific ecological effects,
-- target achievement,
-- and spatial cohesion.
-
-This makes it possible to study realistic trade-offs such as:
-
-- lower cost versus higher ecological benefit,
-- greater benefit versus more compact spatial patterns,
-- or more cohesive solutions versus more flexible action allocation.
+In particular, the package makes it possible to study trade-offs such as
+lower cost versus higher ecological benefit, higher benefit versus
+stronger spatial cohesion, or more compact solutions versus more
+flexible intervention patterns.
 
 ## Learn more
 
-To explore the package further, see:
+To explore the package further, see the function reference on the
+package website and the documentation of key functions such as
+[`create_problem()`](https://josesalgr.github.io/multiscape/reference/create_problem.md),
+[`add_actions()`](https://josesalgr.github.io/multiscape/reference/add_actions.md),
+[`add_effects()`](https://josesalgr.github.io/multiscape/reference/add_effects.md),
+[`add_constraint_targets_relative()`](https://josesalgr.github.io/multiscape/reference/add_constraint_targets_relative.md),
+and
+[`solve()`](https://josesalgr.github.io/multiscape/reference/solve.md).
 
-- the function reference at the package website,
-- the documentation of
-  [`create_problem()`](https://josesalgr.github.io/multiscape/reference/create_problem.md),
-  [`add_actions()`](https://josesalgr.github.io/multiscape/reference/add_actions.md),
-  [`add_effects()`](https://josesalgr.github.io/multiscape/reference/add_effects.md),
-  and
-  [`solve()`](https://josesalgr.github.io/multiscape/reference/solve.md),
-- and the multi-objective methods
-  [`set_method_weighted_sum()`](https://josesalgr.github.io/multiscape/reference/set_method_weighted_sum.md),
-  [`set_method_epsilon_constraint()`](https://josesalgr.github.io/multiscape/reference/set_method_epsilon_constraint.md),
-  and
-  [`set_method_augmecon()`](https://josesalgr.github.io/multiscape/reference/set_method_augmecon.md).
+For multi-objective workflows, the most relevant functions are
+[`set_method_weighted_sum()`](https://josesalgr.github.io/multiscape/reference/set_method_weighted_sum.md),
+[`set_method_epsilon_constraint()`](https://josesalgr.github.io/multiscape/reference/set_method_epsilon_constraint.md),
+and
+[`set_method_augmecon()`](https://josesalgr.github.io/multiscape/reference/set_method_augmecon.md).
 
 If you find a bug or want to suggest an improvement, please open an
 issue at:

@@ -68,26 +68,15 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="section level1">
 <div class="page-header">
-<img src="logo.png" class="logo" alt=""><h1 id="multi-objective-spatial-planning-in-r-">Multi-Objective spatial planning in R <a class="anchor" aria-label="anchor" href="#multi-objective-spatial-planning-in-r-"></a>
+<img src="logo.png" class="logo" alt=""><h1 id="multiscape-multi-objective-spatial-planning-in-r-">multiscape: Multi-objective spatial planning in R <a class="anchor" aria-label="anchor" href="#multiscape-multi-objective-spatial-planning-in-r-"></a>
 </h1>
 </div>
 <!-- badges: start -->
 
-<p><code>multiscape</code> provides an exact optimisation framework for <strong>multi-objective spatial planning</strong> in problems where decisions are expressed as <strong>management actions</strong> applied across planning units.</p>
-<p>The package allows users to:</p>
-<ul>
-<li>build planning problems from <strong>tabular</strong> or <strong>spatial</strong> inputs,</li>
-<li>define <strong>feasible management actions</strong> and their <strong>action-specific effects</strong> on features,</li>
-<li>add <strong>constraints</strong>, and <strong>spatial relations</strong>,</li>
-<li>register <strong>atomic objectives</strong> such as cost, benefit, profit, and fragmentation,</li>
-<li>and explore trade-offs using exact <strong>multi-objective optimisation</strong> methods such as weighted-sum, epsilon-constraint, and AUGMECON.</li>
-</ul>
-<p><code>multiscape</code> is designed for reproducible research workflows in conservation planning, restoration planning, and other spatial decision-support problems where actions, costs, ecological effects, and spatial structure interact.</p>
 <div class="section level2">
-<h2 id="experimental-status">Experimental status<a class="anchor" aria-label="anchor" href="#experimental-status"></a>
+<h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
 </h2>
-<p><code>multiscape</code> is currently an experimental research package under active development.<br>
-The API may still evolve as the package moves toward a first stable CRAN release.</p>
+<p><code>multiscape</code> is an exact optimisation framework for <strong>multi-objective spatial planning</strong> in R. It is designed for planning problems in which spatial data, ecological or socioeconomic features, constraints, and multiple competing objectives must be considered simultaneously within a single decision-support workflow. The package is built around <strong>mixed-integer linear programming (MILP)</strong> formulations, allowing users to represent spatial planning problems explicitly as optimisation models and solve them with exact methods. This makes <code>multiscape</code> especially suitable for applications where transparent model structure, reproducibility, and rigorous trade-off analysis are important. <code>multiscape</code> supports both general spatial planning formulations and action-based formulations in which decisions are expressed as <strong>management actions</strong> applied across planning units. With it, users can build planning problems from tabular or spatial inputs, define feasible actions and their effects, add targets and other constraints, register multiple objectives such as cost, benefit, profit, or fragmentation, and explore exact trade-offs using multi-objective methods such as weighted-sum, epsilon-constraint, and AUGMECON.</p>
 </div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
@@ -101,21 +90,41 @@ The API may still evolve as the package moves toward a first stable CRAN release
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"josesalgr/multiscape"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="core-workflow">Core workflow<a class="anchor" aria-label="anchor" href="#core-workflow"></a>
+<h2 id="why-multiscape">Why <code>multiscape</code>?<a class="anchor" aria-label="anchor" href="#why-multiscape"></a>
 </h2>
-<p>A typical <code>multiscape</code> workflow has five steps:</p>
-<ol style="list-style-type: decimal">
-<li>Build a <code>Problem</code> object from planning units, features, and baseline feature amounts.</li>
-<li>Add feasible actions and define how those actions affect features.</li>
-<li>Add constraints, and spatial relations if needed.</li>
-<li>Register one or more atomic objectives.</li>
-<li>Solve the problem in single-objective or multi-objective mode.</li>
-</ol>
-<p>The example below illustrates this workflow using package data with polygon planning units stored as an <code>sf</code> object.</p>
+<p><code>multiscape</code> brings together several key components of spatial planning in a single optimisation framework:</p>
+<ul>
+<li>
+<strong>exact MILP-based modelling</strong> for rigorous spatial decision support,</li>
+<li>
+<strong>multi-objective optimisation</strong> to analyse trade-offs instead of a single optimum,</li>
+<li>
+<strong>spatially explicit formulations</strong> with targets, constraints, and spatial relations,</li>
+<li>
+<strong>flexible decision structures</strong>, including both planning-unit and action-based formulations,</li>
+<li>and a <strong>reproducible R workflow</strong> for building and solving optimisation problems.</li>
+</ul>
 </div>
 <div class="section level2">
-<h2 id="worked-example-spatial-planning-with-actions-and-trade-offs">Worked example: spatial planning with actions and trade-offs<a class="anchor" aria-label="anchor" href="#worked-example-spatial-planning-with-actions-and-trade-offs"></a>
+<h2 id="core-workflow">Core workflow<a class="anchor" aria-label="anchor" href="#core-workflow"></a>
 </h2>
+<p>A typical <code>multiscape</code> workflow has five steps.</p>
+<p>First, the user creates a <code>Problem</code> object from planning units, features, and baseline feature amounts. Second, the user adds feasible actions and, when relevant, defines how those actions affect the features of interest. Third, the user adds targets, constraints, and spatial relations. Fourth, the user registers one or more atomic objectives. Finally, the user solves the problem in single-objective or multi-objective mode.</p>
+<p>In other words, <code>multiscape</code> separates problem definition from optimization. The <code>Problem</code> object stores the planning specification, and the solving stage later translates that specification into one or more exact optimization runs.</p>
+</div>
+<div class="section level2">
+<h2 id="multi-objective-methods">Multi-objective methods<a class="anchor" aria-label="anchor" href="#multi-objective-methods"></a>
+</h2>
+<p><code>multiscape</code> currently supports several exact multi-objective workflows.</p>
+<p>The <strong>weighted-sum</strong> method combines multiple registered objectives into a single scalar objective through user-defined weights. It is simple and useful for preference-driven exploration of trade-offs.</p>
+<p>The <strong>epsilon-constraint</strong> method optimizes one objective directly while transforming the remaining objectives into explicit performance constraints. This is especially useful when one objective should be prioritised while the others are controlled through thresholds.</p>
+<p>The <strong>AUGMECON</strong> method extends epsilon-constraint with an augmented formulation designed to reduce weakly efficient solutions and improve Pareto-front generation.</p>
+<p>Together, these methods allow users to move beyond a single â€œbestâ€ solution and instead analyse sets of efficient trade-off solutions.</p>
+</div>
+<div class="section level2">
+<h2 id="worked-example">Worked example<a class="anchor" aria-label="anchor" href="#worked-example"></a>
+</h2>
+<p>The example below illustrates a typical <code>multiscape</code> workflow using package data with polygon planning units stored as an <code>sf</code> object.</p>
 <div class="section level3">
 <h3 id="load-the-package-and-example-data">Load the package and example data<a class="anchor" aria-label="anchor" href="#load-the-package-and-example-data"></a>
 </h3>
@@ -130,8 +139,7 @@ The API may still evolve as the package moves toward a first stable CRAN release
 <span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"sim_pu_sf"</span>, package <span class="op">=</span> <span class="st">"multiscape"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"sim_features"</span>, package <span class="op">=</span> <span class="st">"multiscape"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"sim_dist_features"</span>, package <span class="op">=</span> <span class="st">"multiscape"</span><span class="op">)</span></span></code></pre></div>
-<p>The dataset <code>sim_pu_sf</code> contains planning-unit polygons and a <code>cost</code> column.<br>
-The tables <code>sim_features</code> and <code>sim_dist_features</code> define the feature catalogue and the baseline distribution of feature amounts across planning units.</p>
+<p>The object <code>sim_pu_sf</code> contains planning-unit polygons and a <code>cost</code> column. The tables <code>sim_features</code> and <code>sim_dist_features</code> define the feature catalogue and the baseline distribution of feature amounts across planning units.</p>
 </div>
 <div class="section level3">
 <h3 id="build-the-planning-problem">Build the planning problem<a class="anchor" aria-label="anchor" href="#build-the-planning-problem"></a>
@@ -163,6 +171,7 @@ The tables <code>sim_features</code> and <code>sim_dist_features</code> define t
 <span><span class="co">#&gt; └─targets and constraints</span></span>
 <span><span class="co">#&gt; │├─targets: none</span></span>
 <span><span class="co">#&gt; │├─area constraints: none</span></span>
+<span><span class="co">#&gt; │├─budget constraints: none</span></span>
 <span><span class="co">#&gt; │├─planning-unit locks: none</span></span>
 <span><span class="co">#&gt; │└─action locks: none</span></span>
 <span><span class="co">#&gt; └─model</span></span>
@@ -172,24 +181,11 @@ The tables <code>sim_features</code> and <code>sim_dist_features</code> define t
 <span><span class="co">#&gt; │├─solver: not set (auto)</span></span>
 <span><span class="co">#&gt; │└─checks: incomplete (no objective registered)</span></span>
 <span><span class="co">#&gt; # ℹ Use `x$data` to inspect stored tables and model snapshots.</span></span></code></pre></div>
-<p>At this stage, the problem contains:</p>
-<ul>
-<li>planning units,</li>
-<li>features,</li>
-<li>baseline feature amounts,</li>
-<li>and spatial geometry that can later be used for plotting and spatial relations.</li>
-</ul>
+<p>At this stage, the problem contains the planning units, the feature definitions, the baseline feature amounts, and the spatial geometry that can later be used for spatial relations and visualisation.</p>
 </div>
 <div class="section level3">
 <h3 id="add-management-actions">Add management actions<a class="anchor" aria-label="anchor" href="#add-management-actions"></a>
 </h3>
-<p>We now define a simple action catalogue with two actions:</p>
-<ul>
-<li>
-<code>conservation</code>, representing low-cost maintenance actions,</li>
-<li>
-<code>restoration</code>, representing more intensive interventions.</li>
-</ul>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">actions</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  id <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"conservation"</span>, <span class="st">"restoration"</span><span class="op">)</span>,</span>
@@ -221,6 +217,7 @@ The tables <code>sim_features</code> and <code>sim_dist_features</code> define t
 <span><span class="co">#&gt; └─targets and constraints</span></span>
 <span><span class="co">#&gt; │├─targets: none</span></span>
 <span><span class="co">#&gt; │├─area constraints: none</span></span>
+<span><span class="co">#&gt; │├─budget constraints: none</span></span>
 <span><span class="co">#&gt; │├─planning-unit locks: none</span></span>
 <span><span class="co">#&gt; │└─action locks: none</span></span>
 <span><span class="co">#&gt; └─model</span></span>
@@ -230,18 +227,11 @@ The tables <code>sim_features</code> and <code>sim_dist_features</code> define t
 <span><span class="co">#&gt; │├─solver: not set (auto)</span></span>
 <span><span class="co">#&gt; │└─checks: incomplete (no objective registered)</span></span>
 <span><span class="co">#&gt; # ℹ Use `x$data` to inspect stored tables and model snapshots.</span></span></code></pre></div>
-<p>This creates the action catalogue in <code>p$data$actions</code> and the feasible planning unit–action table in <code>p$data$dist_actions</code>.</p>
+<p>This adds an action catalogue and creates the feasible planning unitâ€“action table used later by the optimisation model.</p>
 </div>
 <div class="section level3">
 <h3 id="add-action-effects">Add action effects<a class="anchor" aria-label="anchor" href="#add-action-effects"></a>
 </h3>
-<p>Next, we define how actions affect features. In this example, we use a simple multiplier specification:</p>
-<ul>
-<li>
-<code>conservation</code> provides a small positive effect on all features,</li>
-<li>
-<code>restoration</code> provides a larger positive effect.</li>
-</ul>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">effects_tbl</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/expand.grid.html" class="external-link">expand.grid</a></span><span class="op">(</span></span>
 <span>  action <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"conservation"</span>, <span class="st">"restoration"</span><span class="op">)</span>,</span>
@@ -259,16 +249,15 @@ The tables <code>sim_features</code> and <code>sim_dist_features</code> define t
 <span>  effects <span class="op">=</span> <span class="va">effects_tbl</span>,</span>
 <span>  effect_type <span class="op">=</span> <span class="st">"delta"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>Internally, effects are stored in canonical form with non-negative <code>benefit</code> and <code>loss</code> columns for each <code>(pu, action, feature)</code> triple.</p>
+<p>In this example, conservation produces a small positive effect on all features, whereas restoration produces a larger positive effect.</p>
 </div>
 <div class="section level3">
 <h3 id="add-a-spatial-relation">Add a spatial relation<a class="anchor" aria-label="anchor" href="#add-a-spatial-relation"></a>
 </h3>
-<p>To represent spatial cohesion, we add a boundary-based spatial relation from the planning-unit polygons:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/add_spatial_distance.html">add_spatial_distance</a></span><span class="op">(</span></span>
 <span>  x <span class="op">=</span> <span class="va">p</span>,</span>
-<span>  name <span class="op">=</span> <span class="st">"boundary"</span>,</span>
+<span>  name <span class="op">=</span> <span class="st">"distance"</span>,</span>
 <span>  max_distance <span class="op">=</span> <span class="fl">1000</span></span>
 <span><span class="op">)</span></span>
 <span></span>
@@ -288,10 +277,11 @@ The tables <code>sim_features</code> and <code>sim_dist_features</code> define t
 <span><span class="co">#&gt; └─spatial</span></span>
 <span><span class="co">#&gt; │├─geometry: sf (11109 rows)</span></span>
 <span><span class="co">#&gt; │├─coordinates: 11109 rows (x: 2868900..3007900, y: 2110700..2280700)</span></span>
-<span><span class="co">#&gt; │└─relations: boundary (21693 edges, w: 1..1)</span></span>
+<span><span class="co">#&gt; │└─relations: distance (21693 edges, w: 1..1)</span></span>
 <span><span class="co">#&gt; └─targets and constraints</span></span>
 <span><span class="co">#&gt; │├─targets: none</span></span>
 <span><span class="co">#&gt; │├─area constraints: none</span></span>
+<span><span class="co">#&gt; │├─budget constraints: none</span></span>
 <span><span class="co">#&gt; │├─planning-unit locks: none</span></span>
 <span><span class="co">#&gt; │└─action locks: none</span></span>
 <span><span class="co">#&gt; └─model</span></span>
@@ -301,12 +291,11 @@ The tables <code>sim_features</code> and <code>sim_dist_features</code> define t
 <span><span class="co">#&gt; │├─solver: not set (auto)</span></span>
 <span><span class="co">#&gt; │└─checks: incomplete (no objective registered)</span></span>
 <span><span class="co">#&gt; # ℹ Use `x$data` to inspect stored tables and model snapshots.</span></span></code></pre></div>
-<p>This stores a spatial relation that can later be used by fragmentation objectives.</p>
+<p>This stores a spatial relation that can later be used by spatial objectives or diagnostics.</p>
 </div>
 <div class="section level3">
 <h3 id="add-a-target">Add a target<a class="anchor" aria-label="anchor" href="#add-a-target"></a>
 </h3>
-<p>We now add a relative target requiring each feature to reach at least 20% of its baseline total contribution:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/add_constraint_targets_relative.html">add_constraint_targets_relative</a></span><span class="op">(</span></span>
 <span>  x <span class="op">=</span> <span class="va">p</span>,</span>
@@ -329,11 +318,12 @@ The tables <code>sim_features</code> and <code>sim_dist_features</code> define t
 <span><span class="co">#&gt; └─spatial</span></span>
 <span><span class="co">#&gt; │├─geometry: sf (11109 rows)</span></span>
 <span><span class="co">#&gt; │├─coordinates: 11109 rows (x: 2868900..3007900, y: 2110700..2280700)</span></span>
-<span><span class="co">#&gt; │└─relations: boundary (21693 edges, w: 1..1)</span></span>
+<span><span class="co">#&gt; │└─relations: distance (21693 edges, w: 1..1)</span></span>
 <span><span class="co">#&gt; └─targets and constraints</span></span>
 <span><span class="co">#&gt; │├─targets: 155 rows</span></span>
 <span><span class="co">#&gt; │├─target preview: "ACCGENT" &gt;= 108.2, "ACCNISU" &gt;= 120.9, "ACRARUN" &gt;= 15.33</span></span>
 <span><span class="co">#&gt; │├─area constraints: none</span></span>
+<span><span class="co">#&gt; │├─budget constraints: none</span></span>
 <span><span class="co">#&gt; │├─planning-unit locks: none</span></span>
 <span><span class="co">#&gt; │└─action locks: none</span></span>
 <span><span class="co">#&gt; └─model</span></span>
@@ -343,24 +333,18 @@ The tables <code>sim_features</code> and <code>sim_dist_features</code> define t
 <span><span class="co">#&gt; │├─solver: not set (auto)</span></span>
 <span><span class="co">#&gt; │└─checks: incomplete (no objective registered)</span></span>
 <span><span class="co">#&gt; # ℹ Use `x$data` to inspect stored tables and model snapshots.</span></span></code></pre></div>
+<p>This requires each feature to reach at least a specified proportion of its baseline total.</p>
 </div>
 <div class="section level3">
 <h3 id="register-atomic-objectives">Register atomic objectives<a class="anchor" aria-label="anchor" href="#register-atomic-objectives"></a>
 </h3>
-<p>A key idea in <code>multiscape</code> is that objectives are registered as <strong>atomic objectives</strong> under user-defined aliases. These aliases can later be combined in multi-objective methods.</p>
-<p>Here we register three objectives:</p>
-<ul>
-<li>minimise total cost,</li>
-<li>maximise ecological benefit,</li>
-<li>minimise fragmentation.</li>
-</ul>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">p</span> <span class="op">&lt;-</span> <span class="va">p</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="reference/add_objective_min_cost.html">add_objective_min_cost</a></span><span class="op">(</span>alias <span class="op">=</span> <span class="st">"cost"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="reference/add_objective_max_benefit.html">add_objective_max_benefit</a></span><span class="op">(</span>alias <span class="op">=</span> <span class="st">"benefit"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="reference/add_objective_min_fragmentation.html">add_objective_min_fragmentation</a></span><span class="op">(</span></span>
 <span>    alias <span class="op">=</span> <span class="st">"frag"</span>,</span>
-<span>    relation_name <span class="op">=</span> <span class="st">"boundary"</span></span>
+<span>    relation_name <span class="op">=</span> <span class="st">"distance"</span></span>
 <span>  <span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="reference/print.html">print</a></span><span class="op">(</span><span class="va">p</span><span class="op">)</span></span>
@@ -379,11 +363,12 @@ The tables <code>sim_features</code> and <code>sim_dist_features</code> define t
 <span><span class="co">#&gt; └─spatial</span></span>
 <span><span class="co">#&gt; │├─geometry: sf (11109 rows)</span></span>
 <span><span class="co">#&gt; │├─coordinates: 11109 rows (x: 2868900..3007900, y: 2110700..2280700)</span></span>
-<span><span class="co">#&gt; │└─relations: boundary (21693 edges, w: 1..1)</span></span>
+<span><span class="co">#&gt; │└─relations: distance (21693 edges, w: 1..1)</span></span>
 <span><span class="co">#&gt; └─targets and constraints</span></span>
 <span><span class="co">#&gt; │├─targets: 155 rows</span></span>
 <span><span class="co">#&gt; │├─target preview: "ACCGENT" &gt;= 108.2, "ACCNISU" &gt;= 120.9, "ACRARUN" &gt;= 15.33</span></span>
 <span><span class="co">#&gt; │├─area constraints: none</span></span>
+<span><span class="co">#&gt; │├─budget constraints: none</span></span>
 <span><span class="co">#&gt; │├─planning-unit locks: none</span></span>
 <span><span class="co">#&gt; │└─action locks: none</span></span>
 <span><span class="co">#&gt; └─model</span></span>
@@ -394,11 +379,11 @@ The tables <code>sim_features</code> and <code>sim_dist_features</code> define t
 <span><span class="co">#&gt; │└─checks: incomplete (multiple objectives registered but no MO method</span></span>
 <span><span class="co">#&gt; selected)</span></span>
 <span><span class="co">#&gt; # ℹ Use `x$data` to inspect stored tables and model snapshots.</span></span></code></pre></div>
+<p>A key idea in <code>multiscape</code> is that objectives are first registered as <strong>atomic objectives</strong> under user-defined aliases. These aliases can later be combined through a multi-objective method.</p>
 </div>
 <div class="section level3">
 <h3 id="configure-a-multi-objective-method">Configure a multi-objective method<a class="anchor" aria-label="anchor" href="#configure-a-multi-objective-method"></a>
 </h3>
-<p>There are several ways to explore trade-offs in <code>multiscape</code>. A simple option is to use a weighted-sum formulation.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">p_mo</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/set_method_weighted_sum.html">set_method_weighted_sum</a></span><span class="op">(</span></span>
 <span>  x <span class="op">=</span> <span class="va">p</span>,</span>
@@ -406,12 +391,11 @@ The tables <code>sim_features</code> and <code>sim_dist_features</code> define t
 <span>  weights <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">1</span><span class="op">)</span>,</span>
 <span>  normalize_weights <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>This stores the multi-objective configuration in the problem object. It does not solve the problem yet.</p>
+<p>This stores the multi-objective configuration in the problem object but does not solve the problem yet.</p>
 </div>
 <div class="section level3">
 <h3 id="configure-the-solver">Configure the solver<a class="anchor" aria-label="anchor" href="#configure-the-solver"></a>
 </h3>
-<p>Before solving, we store solver settings in the problem object:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">p_mo</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/set_solver_cbc.html">set_solver_cbc</a></span><span class="op">(</span></span>
 <span>  x <span class="op">=</span> <span class="va">p_mo</span>,</span>
@@ -419,70 +403,40 @@ The tables <code>sim_features</code> and <code>sim_dist_features</code> define t
 <span>  gap_limit <span class="op">=</span> <span class="fl">0.01</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>You can also use convenience wrappers such as <code><a href="reference/set_solver_gurobi.html">set_solver_gurobi()</a></code>, <code><a href="reference/set_solver_cplex.html">set_solver_cplex()</a></code>, <code><a href="reference/set_solver_cbc.html">set_solver_cbc()</a></code>, or <code><a href="reference/set_solver_symphony.html">set_solver_symphony()</a></code>.</p>
+<p>Solver settings are stored in the problem object and later used by <code><a href="reference/solve.html">solve()</a></code>. Other solver wrappers such as <code><a href="reference/set_solver_gurobi.html">set_solver_gurobi()</a></code>, <code><a href="reference/set_solver_cplex.html">set_solver_cplex()</a></code>, or <code><a href="reference/set_solver_symphony.html">set_solver_symphony()</a></code> can also be used.</p>
 </div>
 <div class="section level3">
 <h3 id="solve-the-problem">Solve the problem<a class="anchor" aria-label="anchor" href="#solve-the-problem"></a>
 </h3>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/solve.html">solve</a></span><span class="op">(</span><span class="va">p_mo</span><span class="op">)</span></span></code></pre></div>
-<p>Depending on the selected method, <code><a href="reference/solve.html">solve()</a></code> returns either:</p>
-<ul>
-<li>a <code>Solution</code> object for a single-objective solve, or</li>
-<li>a <code>SolutionSet</code> object for a multi-objective workflow.</li>
-</ul>
+<p>Depending on the selected workflow, <code><a href="reference/solve.html">solve()</a></code> returns either a <code>Solution</code> object for a single-objective problem or a <code>SolutionSet</code> object for a multi-objective workflow.</p>
 </div>
 <div class="section level3">
 <h3 id="inspect-results">Inspect results<a class="anchor" aria-label="anchor" href="#inspect-results"></a>
 </h3>
-<p>For solved problems, <code>multiscape</code> provides helper functions to extract user-facing summaries:</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">solution_actions</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/get_actions.html">get_actions</a></span><span class="op">(</span><span class="va">res</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">solution_actions</span><span class="op">)</span></span>
-<span><span class="co">#&gt;       pu       action cost status selected run_id</span></span>
-<span><span class="co">#&gt; 1      1 conservation    2      0        1      1</span></span>
-<span><span class="co">#&gt; 11110  1  restoration    6      0        0      1</span></span>
-<span><span class="co">#&gt; 2      2 conservation    2      0        1      1</span></span>
-<span><span class="co">#&gt; 11111  2  restoration    6      0        0      1</span></span>
-<span><span class="co">#&gt; 3      3 conservation    2      0        1      1</span></span>
-<span><span class="co">#&gt; 11112  3  restoration    6      0        0      1</span></span></code></pre></div>
-<p>When the result is a multi-objective solution set, you can also inspect trade-offs across runs:</p>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">solution_actions</span><span class="op">)</span></span></code></pre></div>
+<p>For multi-objective results, trade-offs across runs can be explored with:</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/plot_tradeoff.html">plot_tradeoff</a></span><span class="op">(</span><span class="va">res</span><span class="op">)</span></span></code></pre></div>
-<p><img src="reference/figures/README-unnamed-chunk-12-1.png" width="100%"></p>
-<p>and, when geometry is available, spatial outputs can be visualised directly:</p>
+<p>and, when geometry is available, spatial outputs can be visualised with:</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/plot_spatial.html">plot_spatial</a></span><span class="op">(</span><span class="va">res</span>, what <span class="op">=</span> <span class="st">"actions"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="reference/figures/README-unnamed-chunk-13-1.png" width="100%"></p>
 </div>
 </div>
 <div class="section level2">
 <h2 id="why-this-example-matters">Why this example matters<a class="anchor" aria-label="anchor" href="#why-this-example-matters"></a>
 </h2>
-<p>This example illustrates the main modelling logic of <code>multiscape</code>.</p>
-<p>The problem is not only about selecting planning units. Instead, it is about deciding <strong>which action</strong> should be feasible and selected in each planning unit, while accounting for:</p>
-<ul>
-<li>implementation cost,</li>
-<li>action-specific ecological effects,</li>
-<li>target achievement,</li>
-<li>and spatial cohesion.</li>
-</ul>
-<p>This makes it possible to study realistic trade-offs such as:</p>
-<ul>
-<li>lower cost versus higher ecological benefit,</li>
-<li>greater benefit versus more compact spatial patterns,</li>
-<li>or more cohesive solutions versus more flexible action allocation.</li>
-</ul>
+<p>This example illustrates the main modelling logic of <code>multiscape</code>. The package is not limited to selecting planning units under a single objective. Instead, it can represent richer spatial planning problems in which costs, targets, ecological effects, and spatial structure interact, and in which users may want to compare multiple efficient solutions rather than a single optimum.</p>
+<p>In particular, the package makes it possible to study trade-offs such as lower cost versus higher ecological benefit, higher benefit versus stronger spatial cohesion, or more compact solutions versus more flexible intervention patterns.</p>
 </div>
 <div class="section level2">
 <h2 id="learn-more">Learn more<a class="anchor" aria-label="anchor" href="#learn-more"></a>
 </h2>
-<p>To explore the package further, see:</p>
-<ul>
-<li>the function reference at the package website,</li>
-<li>the documentation of <code><a href="reference/create_problem.html">create_problem()</a></code>, <code><a href="reference/add_actions.html">add_actions()</a></code>, <code><a href="reference/add_effects.html">add_effects()</a></code>, and <code><a href="reference/solve.html">solve()</a></code>,</li>
-<li>and the multi-objective methods <code><a href="reference/set_method_weighted_sum.html">set_method_weighted_sum()</a></code>, <code><a href="reference/set_method_epsilon_constraint.html">set_method_epsilon_constraint()</a></code>, and <code><a href="reference/set_method_augmecon.html">set_method_augmecon()</a></code>.</li>
-</ul>
+<p>To explore the package further, see the function reference on the package website and the documentation of key functions such as <code><a href="reference/create_problem.html">create_problem()</a></code>, <code><a href="reference/add_actions.html">add_actions()</a></code>, <code><a href="reference/add_effects.html">add_effects()</a></code>, <code><a href="reference/add_constraint_targets_relative.html">add_constraint_targets_relative()</a></code>, and <code><a href="reference/solve.html">solve()</a></code>.</p>
+<p>For multi-objective workflows, the most relevant functions are <code><a href="reference/set_method_weighted_sum.html">set_method_weighted_sum()</a></code>, <code><a href="reference/set_method_epsilon_constraint.html">set_method_epsilon_constraint()</a></code>, and <code><a href="reference/set_method_augmecon.html">set_method_augmecon()</a></code>.</p>
 <p>If you find a bug or want to suggest an improvement, please open an issue at:</p>
 <p><a href="https://github.com/josesalgr/multiscape/issues" class="external-link uri">https://github.com/josesalgr/multiscape/issues</a></p>
 </div>
