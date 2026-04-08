@@ -400,20 +400,64 @@ NULL
   cons <- self$data$constraints %||% list()
 
   # area constraints
-  area_n <- 0L
   if (is.list(cons) && !is.null(cons$area)) {
-    out$area_constraints <- 1L
-    out$area_sense <- as.character(cons$area$sense %||% NA_character_)[1]
+    area <- cons$area
+
+    if (is.data.frame(area) && nrow(area) > 0L) {
+      out$area_constraints <- as.integer(nrow(area))
+
+      if ("sense" %in% names(area)) {
+        s <- unique(as.character(area$sense))
+        s <- s[!is.na(s) & nzchar(s)]
+        out$area_sense <- if (length(s) > 0L) paste(s, collapse = ", ") else NA_character_
+      }
+
+      if ("actions" %in% names(area)) {
+        a <- as.character(area$actions)
+        a_lab <- ifelse(is.na(a) | !nzchar(a), "all", a)
+        out$area_actions <- a_lab
+      }
+
+      if (all(c("actions", "sense") %in% names(area))) {
+        a <- as.character(area$actions)
+        a_lab <- ifelse(is.na(a) | !nzchar(a), "all", a)
+        s <- as.character(area$sense)
+        out$area_labels <- paste0("[", a_lab, "] ", s)
+      }
+
+    } else if (is.list(area)) {
+      # backward compatibility with older single-constraint format
+      out$area_constraints <- 1L
+      out$area_sense <- as.character(area$sense %||% NA_character_)[1]
+
+      area_actions <- area$actions %||% NA_character_
+      area_actions <- as.character(area_actions)[1]
+      out$area_actions <- if (is.na(area_actions) || !nzchar(area_actions)) {
+        "all"
+      } else {
+        area_actions
+      }
+      out$area_labels <- paste0(
+        "[", out$area_actions, "] ",
+        as.character(area$sense %||% NA_character_)[1]
+      )
+    }
   }
 
   # planning-unit locks
   pu <- self$data$pu
   if (!is.null(pu) && inherits(pu, "data.frame")) {
     if ("locked_in" %in% names(pu)) {
-      out$pu_locked_in <- sum(isTRUE(pu$locked_in) | (!is.na(pu$locked_in) & pu$locked_in), na.rm = TRUE)
+      out$pu_locked_in <- sum(
+        isTRUE(pu$locked_in) | (!is.na(pu$locked_in) & pu$locked_in),
+        na.rm = TRUE
+      )
     }
     if ("locked_out" %in% names(pu)) {
-      out$pu_locked_out <- sum(isTRUE(pu$locked_out) | (!is.na(pu$locked_out) & pu$locked_out), na.rm = TRUE)
+      out$pu_locked_out <- sum(
+        isTRUE(pu$locked_out) | (!is.na(pu$locked_out) & pu$locked_out),
+        na.rm = TRUE
+      )
     }
   }
 
@@ -421,7 +465,7 @@ NULL
   da <- self$data$dist_actions
   if (!is.null(da) && inherits(da, "data.frame") && "status" %in% names(da)) {
     # ajusta estos códigos si tu convención final cambia
-    out$action_locked_in  <- sum(da$status %in% c(1, 2), na.rm = TRUE)
+    out$action_locked_in <- sum(da$status %in% c(1, 2), na.rm = TRUE)
     out$action_locked_out <- sum(da$status %in% c(3), na.rm = TRUE)
   }
 
@@ -787,22 +831,58 @@ Problem <- pproto(
       }
     }
 
-    if (cons_sum$area_constraints > 0) {
-      area_lab <- cons_sum$area_sense %||% "unknown"
+    if (cons_sum$area_constraints == 0L) {
 
-      if (!is.na(cons_sum$area_tolerance) && cons_sum$area_sense == "equal" && cons_sum$area_tolerance > 0) {
-        area_lab <- paste0(area_lab, " \u00B1 ", cons_sum$area_tolerance)
+      cli::cli_text(
+        " {ch$v}{ch$j}{ch$b}area constraints: {.muted none}",
+        .envir = environment()
+      )
+
+    } else if (cons_sum$area_constraints == 1L) {
+
+      area_lab <- cons_sum$area_labels %||% NA_character_
+      area_lab <- as.character(area_lab)[1]
+
+      if (is.na(area_lab) || !nzchar(area_lab)) {
+        area_lab <- cons_sum$area_sense %||% "unknown"
       }
 
       cli::cli_text(
-        " {ch$v}{ch$j}{ch$b}area constraint: {area_lab}",
+        " {ch$v}{ch$j}{ch$b}area constraints: 1 ({area_lab})",
         .envir = environment()
       )
+
     } else {
+
+      n_area <- as.integer(cons_sum$area_constraints)
       cli::cli_text(
-        " {ch$v}{ch$j}{ch$b}area constraint: {.muted none}",
+        " {ch$v}{ch$j}{ch$b}area constraints: {n_area} registered",
         .envir = environment()
       )
+
+      labs <- cons_sum$area_labels %||% character(0)
+      labs <- as.character(labs)
+      labs <- labs[!is.na(labs) & nzchar(labs)]
+
+      max_show <- 4L
+      if (length(labs) > 0L) {
+        show_labs <- labs[seq_len(min(length(labs), max_show))]
+
+        for (lab in show_labs) {
+          cli::cli_text(
+            " {ch$v}{ch$j}{ch$b}- {lab}",
+            .envir = environment()
+          )
+        }
+
+        if (length(labs) > max_show) {
+          extra <- length(labs) - max_show
+          cli::cli_text(
+            " {ch$v}{ch$j}{ch$b}{.muted ... +{extra} more area constraint(s)}",
+            .envir = environment()
+          )
+        }
+      }
     }
 
     pu_lock_total <- cons_sum$pu_locked_in + cons_sum$pu_locked_out

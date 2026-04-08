@@ -3,17 +3,22 @@
 #' @title Add area constraint
 #'
 #' @description
-#' Add a total selected area constraint to a planning problem.
+#' Add an area constraint to a planning problem.
 #'
-#' This function stores an area constraint in the \code{Problem} object so that
-#' it can be incorporated later by the model builder when the optimization model
-#' is assembled.
+#' This function stores one area-constraint specification in the
+#' \code{Problem} object so that it can later be incorporated when the
+#' optimization model is assembled. Multiple area constraints can be added by
+#' calling this function repeatedly, provided that each constraint refers to a
+#' different subset of actions.
 #'
 #' @details
 #' Let \eqn{\mathcal{P}} denote the set of planning units and let
 #' \eqn{a_i \ge 0} be the area associated with planning unit \eqn{i \in \mathcal{P}}.
-#' Let \eqn{w_i \in \{0,1\}} denote the binary variable indicating whether
-#' planning unit \eqn{i} is selected by at least one decision in the model.
+#'
+#' When \code{actions = NULL}, the constraint refers to the total selected area
+#' in the problem. In that case, let \eqn{w_i \in \{0,1\}} denote the binary
+#' variable indicating whether planning unit \eqn{i} is selected by at least one
+#' decision in the model.
 #'
 #' Depending on \code{sense}, this function stores one of the following
 #' constraints:
@@ -39,8 +44,13 @@
 #' }
 #' where \eqn{\tau} is the value supplied through \code{tolerance}.
 #'
+#' When \code{actions} is not \code{NULL}, the constraint is stored for the
+#' specified subset of actions only. The exact linear form is resolved later by
+#' the model builder using the stored action subset and the internal model
+#' representation.
+#'
 #' Areas are obtained from \code{x$data$pu}. If \code{area_col} is provided, that
-#' column is used. Otherwise, the model builder will later determine the default
+#' column is used. Otherwise, the model builder later determines the default
 #' area source according to the internal rules of the package. The value of
 #' \code{area_unit} indicates the unit in which \code{area} and
 #' \code{tolerance} are expressed and therefore how the stored threshold should
@@ -50,33 +60,41 @@
 #' \code{x$data$constraints$area}; it does not validate the feasibility of the
 #' threshold against the available planning units at this stage.
 #'
-#' At most one area constraint can be stored in a \code{Problem} object. If one
-#' already exists, this function raises an error.
+#' Multiple area constraints can be stored in a \code{Problem} object, but at
+#' most one can be stored for the same action subset. Attempting to add a second
+#' area constraint for an already-used subset of actions results in an error.
 #'
 #' @param x A \code{Problem} object.
 #'
-#' @param area Numeric scalar greater than or equal to zero. Target value for the
-#'   total selected area.
+#' @param area Numeric scalar greater than or equal to zero. Target value for
+#'   the constrained area.
 #'
 #' @param sense Character string indicating the type of area constraint. Must be
 #'   one of \code{"min"}, \code{"max"}, or \code{"equal"}.
 #'
 #' @param tolerance Numeric scalar greater than or equal to zero. Only used when
-#'   \code{sense = "equal"}. In that case, the equality is interpreted as a band
+#'   \code{sense = "equal"}. In that case, equality is interpreted as a band
 #'   around \code{area} with half-width \code{tolerance}. Ignored otherwise.
 #'
 #' @param area_col Optional character string giving the name of the area column
 #'   in \code{x$data$pu}. If \code{NULL}, the area source is resolved later by
 #'   the model builder.
 #'
-#' @param area_unit Character string indicating the unit of \code{area}.
-#'   Must be one of \code{"m2"}, \code{"ha"}, or \code{"km2"}.
+#' @param area_unit Character string indicating the unit of \code{area} and
+#'   \code{tolerance}. Must be one of \code{"m2"}, \code{"ha"}, or
+#'   \code{"km2"}.
 #'
-#' @param name Character string used as the label of the stored linear
-#'   constraint when it is later added to the optimization model.
+#' @param actions Optional subset of actions to which the constraint applies.
+#'   If \code{NULL}, the constraint applies to the total selected area in the
+#'   problem. This argument is resolved using the package's standard action
+#'   subset parser.
 #'
-#' @return An updated \code{Problem} object with a stored area constraint in
-#'   \code{x$data$constraints$area}.
+#' @param name Optional character string used as the label of the stored linear
+#'   constraint when it is later added to the optimization model. If
+#'   \code{NULL}, a default name is generated.
+#'
+#' @return An updated \code{Problem} object with the new area constraint stored
+#'   in \code{x$data$constraints$area}.
 #'
 #' @seealso
 #' \code{\link{create_problem}}
@@ -99,11 +117,17 @@
 #'   amount = c(1, 2, 1, 3, 2, 1)
 #' )
 #'
+#' actions <- data.frame(
+#'   id = c("conservation", "restoration")
+#' )
+#'
 #' p <- create_problem(
 #'   pu = pu,
 #'   features = features,
 #'   dist_features = dist_features
 #' )
+#'
+#' p <- add_actions(p, actions = actions, cost = c(conservation = 1, restoration = 2))
 #'
 #' p <- add_constraint_area(
 #'   x = p,
@@ -111,6 +135,15 @@
 #'   sense = "min",
 #'   area_col = "area_ha",
 #'   area_unit = "ha"
+#' )
+#'
+#' p <- add_constraint_area(
+#'   x = p,
+#'   area = 15,
+#'   sense = "max",
+#'   area_col = "area_ha",
+#'   area_unit = "ha",
+#'   actions = "restoration"
 #' )
 #'
 #' p$data$constraints$area
@@ -122,7 +155,8 @@ add_constraint_area <- function(x,
                                 tolerance = 0,
                                 area_col = NULL,
                                 area_unit = c("m2", "ha", "km2"),
-                                name = "area") {
+                                actions = NULL,
+                                name = NULL) {
 
   stopifnot(inherits(x, "Problem"))
 
@@ -134,7 +168,6 @@ add_constraint_area <- function(x,
   }
 
   sense <- match.arg(sense, c("min", "max", "equal"))
-
   area_unit <- match.arg(area_unit)
 
   assertthat::assert_that(
@@ -158,8 +191,10 @@ add_constraint_area <- function(x,
     )
   }
 
-  if (!is.character(name) || length(name) != 1 || is.na(name) || !nzchar(name)) {
-    stop("`name` must be a non-empty character string.", call. = FALSE)
+  if (!is.null(name)) {
+    if (!is.character(name) || length(name) != 1 || is.na(name) || !nzchar(name)) {
+      stop("`name` must be NULL or a non-empty character string.", call. = FALSE)
+    }
   }
 
   if (sense != "equal" && tolerance > 0) {
@@ -172,26 +207,41 @@ add_constraint_area <- function(x,
 
   x <- .pa_clone_data(x)
 
-  if (is.null(x$data$constraints) || !is.list(x$data$constraints)) {
-    x$data$constraints <- list()
+  actions_txt <- NA_character_
+
+  if (!is.null(actions)) {
+    act_subset <- .pa_resolve_action_subset(x, subset = actions)
+
+    if (!is.data.frame(act_subset) || nrow(act_subset) == 0) {
+      stop("`actions` did not resolve to any valid actions.", call. = FALSE)
+    }
+
+    actions_txt <- .pa_subset_to_string(act_subset$id)
   }
 
-  if (!is.null(x$data$constraints$area)) {
-    stop(
-      "An area constraint already exists. Remove or replace it explicitly before adding a new one.",
-      call. = FALSE
-    )
+  area_name <- if (is.null(name)) {
+    if (is.na(actions_txt)) {
+      paste0("area_", sense)
+    } else {
+      paste0("area_", sense, "_", gsub("\\|", "_", actions_txt))
+    }
+  } else {
+    as.character(name)[1]
   }
 
-  x$data$constraints$area <- list(
+  area_df <- data.frame(
     type = "area",
     sense = sense,
     value = as.numeric(area),
     tolerance = if (sense == "equal") as.numeric(tolerance) else 0,
     unit = area_unit,
-    area_col = area_col,
-    name = as.character(name)[1]
+    area_col = if (is.null(area_col)) NA_character_ else as.character(area_col)[1],
+    actions = actions_txt,
+    name = area_name,
+    stringsAsFactors = FALSE
   )
+
+  x <- .pa_store_area_constraints(x, area_df)
 
   if (!is.null(x$data$model_ptr)) {
     x$data$meta <- x$data$meta %||% list()

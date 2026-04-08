@@ -1128,8 +1128,8 @@ available_to_solve <- function(package = ""){
   cons <- x$data$constraints %||% list()
   if (length(cons) == 0L) return(x)
 
-  spec <- cons$area %||% NULL
-  if (is.null(spec)) return(x)
+  specs <- cons$area %||% NULL
+  if (is.null(specs)) return(x)
 
   if (is.null(x$data$model_ptr)) {
     stop("Model pointer is missing while applying area constraints.", call. = FALSE)
@@ -1147,83 +1147,187 @@ available_to_solve <- function(package = ""){
     stop("Model has n_pu=0; cannot apply area constraints.", call. = FALSE)
   }
 
-  w0 <- as.integer(ml$w_offset %||% 0L)
-  j0 <- w0 + (0:(n_pu - 1L))
-
-  a <- .pa_get_area_vec(
-    x,
-    area_col = spec$area_col %||% NULL,
-    area_unit = spec$unit %||% "m2"
-  )
-
-  if (length(a) != n_pu) {
+  if (!is.data.frame(specs)) {
     stop(
-      "Area vector length (", length(a), ") != n_pu (", n_pu,
-      ") while applying area constraint.",
+      "Stored area constraints must be a data.frame.",
       call. = FALSE
     )
   }
 
-  sense <- as.character(spec$sense %||% NA_character_)[1]
-  rhs <- as.numeric(spec$value %||% NA_real_)[1]
-  tol <- as.numeric(spec$tolerance %||% 0)[1]
-  nm <- as.character(spec$name %||% "area")[1]
+  required_cols <- c(
+    "type", "sense", "value", "tolerance",
+    "unit", "area_col", "actions", "name"
+  )
 
-  if (!sense %in% c("min", "max", "equal")) {
-    stop("Unknown area constraint sense: ", sense, call. = FALSE)
-  }
-  if (!is.finite(rhs) || is.na(rhs) || rhs < 0) {
-    stop("Invalid area constraint value.", call. = FALSE)
-  }
-  if (!is.finite(tol) || is.na(tol) || tol < 0) {
-    stop("Invalid area constraint tolerance.", call. = FALSE)
+  miss <- setdiff(required_cols, names(specs))
+  if (length(miss) > 0) {
+    stop(
+      "Stored area constraints are malformed. Missing columns: ",
+      paste(miss, collapse = ", "),
+      ".",
+      call. = FALSE
+    )
   }
 
-  if (identical(sense, "min")) {
-    x <- .pa_add_linear_constraint(
-      x,
-      var_index_0based = j0,
-      coeff = a,
-      sense = ">=",
-      rhs = rhs,
-      name = nm
+  w0 <- as.integer(ml$w_offset %||% 0L)
+  j0_w <- w0 + (0:(n_pu - 1L))
+
+  da <- x$data$dist_actions_model %||% NULL
+  if (is.null(da) || !is.data.frame(da) || nrow(da) == 0L) {
+    stop(
+      "Action-level area constraints require `x$data$dist_actions_model`.",
+      call. = FALSE
     )
-  } else if (identical(sense, "max")) {
-    x <- .pa_add_linear_constraint(
+  }
+
+  x0 <- as.integer(ml$x_offset %||% 0L)
+
+  for (k in seq_len(nrow(specs))) {
+    spec <- specs[k, , drop = FALSE]
+
+    sense <- as.character(spec$sense)[1]
+    rhs <- as.numeric(spec$value)[1]
+    tol <- as.numeric(spec$tolerance)[1]
+    nm <- as.character(spec$name)[1]
+    area_col <- as.character(spec$area_col)[1]
+    area_unit <- as.character(spec$unit)[1]
+    actions_txt <- as.character(spec$actions)[1]
+
+    if (!sense %in% c("min", "max", "equal")) {
+      stop("Unknown area constraint sense: ", sense, call. = FALSE)
+    }
+    if (!is.finite(rhs) || is.na(rhs) || rhs < 0) {
+      stop("Invalid area constraint value in stored area constraints.", call. = FALSE)
+    }
+    if (!is.finite(tol) || is.na(tol) || tol < 0) {
+      stop("Invalid area constraint tolerance in stored area constraints.", call. = FALSE)
+    }
+    if (is.na(nm) || !nzchar(nm)) {
+      stop("Stored area constraint has invalid `name`.", call. = FALSE)
+    }
+
+    a <- .pa_get_area_vec(
       x,
-      var_index_0based = j0,
-      coeff = a,
-      sense = "<=",
-      rhs = rhs,
-      name = nm
+      area_col = if (is.na(area_col)) NULL else area_col,
+      area_unit = area_unit %||% "m2"
     )
-  } else if (identical(sense, "equal")) {
-    if (tol == 0) {
+
+    if (length(a) != n_pu) {
+      stop(
+        "Area vector length (", length(a), ") != n_pu (", n_pu,
+        ") while applying area constraint `", nm, "`.",
+        call. = FALSE
+      )
+    }
+
+    if (is.na(actions_txt) || !nzchar(actions_txt)) {
+
+      var_index <- j0_w
+      coeff <- a
+
+    } else {
+
+      actions_chr <- strsplit(actions_txt, "\\|", fixed = FALSE)[[1]]
+
+      act_subset <- .pa_resolve_action_subset(x, subset = actions_chr)
+      if (!is.data.frame(act_subset) || nrow(act_subset) == 0L) {
+        stop(
+          "Stored area constraint `", nm,
+          "` refers to an invalid or empty action subset.",
+          call. = FALSE
+        )
+      }
+
+      keep <- da$action %in% act_subset$id
+
+      if (!any(keep)) {
+        stop(
+          "Stored area constraint `", nm,
+          "` does not match any rows in `dist_actions_model`.",
+          call. = FALSE
+        )
+      }
+
+      if (!("internal_row" %in% names(da))) {
+        stop(
+          "`dist_actions_model` must contain column `internal_row`.",
+          call. = FALSE
+        )
+      }
+
+      if (!("internal_pu" %in% names(da))) {
+        stop(
+          "`dist_actions_model` must contain column `internal_pu`.",
+          call. = FALSE
+        )
+      }
+
+      var_index <- x0 + (as.integer(da$internal_row[keep]) - 1L)
+      coeff <- a[as.integer(da$internal_pu[keep])]
+
+      if (length(var_index) != length(coeff) || length(coeff) == 0L) {
+        stop(
+          "Failed to assemble coefficients for area constraint `", nm, "`.",
+          call. = FALSE
+        )
+      }
+    }
+
+    if (identical(sense, "min")) {
+
       x <- .pa_add_linear_constraint(
         x,
-        var_index_0based = j0,
-        coeff = a,
-        sense = "==",
+        var_index_0based = var_index,
+        coeff = coeff,
+        sense = ">=",
         rhs = rhs,
         name = nm
       )
-    } else {
+
+    } else if (identical(sense, "max")) {
+
       x <- .pa_add_linear_constraint(
         x,
-        var_index_0based = j0,
-        coeff = a,
-        sense = ">=",
-        rhs = rhs - tol,
-        name = paste0(nm, "_lower")
-      )
-      x <- .pa_add_linear_constraint(
-        x,
-        var_index_0based = j0,
-        coeff = a,
+        var_index_0based = var_index,
+        coeff = coeff,
         sense = "<=",
-        rhs = rhs + tol,
-        name = paste0(nm, "_upper")
+        rhs = rhs,
+        name = nm
       )
+
+    } else if (identical(sense, "equal")) {
+
+      if (tol == 0) {
+
+        x <- .pa_add_linear_constraint(
+          x,
+          var_index_0based = var_index,
+          coeff = coeff,
+          sense = "==",
+          rhs = rhs,
+          name = nm
+        )
+
+      } else {
+
+        x <- .pa_add_linear_constraint(
+          x,
+          var_index_0based = var_index,
+          coeff = coeff,
+          sense = ">=",
+          rhs = rhs - tol,
+          name = paste0(nm, "_lower")
+        )
+
+        x <- .pa_add_linear_constraint(
+          x,
+          var_index_0based = var_index,
+          coeff = coeff,
+          sense = "<=",
+          rhs = rhs + tol,
+          name = paste0(nm, "_upper")
+        )
+      }
     }
   }
 
@@ -4168,4 +4272,163 @@ NULL
 
 .pa_compile_problem <- function(x, ...) {
   .pa_build_model(x)
+}
+
+
+.pa_store_area_constraints <- function(x, area_df) {
+
+  stopifnot(inherits(x, "Problem"))
+  stopifnot(is.data.frame(area_df))
+  stopifnot(nrow(area_df) >= 1)
+
+  required_cols <- c(
+    "type", "sense", "value", "tolerance",
+    "unit", "area_col", "actions", "name"
+  )
+
+  miss <- setdiff(required_cols, names(area_df))
+  if (length(miss) > 0) {
+    stop(
+      "Missing required columns in `area_df`: ",
+      paste(miss, collapse = ", "),
+      ".",
+      call. = FALSE
+    )
+  }
+
+  if (any(area_df$type != "area")) {
+    stop("All rows in `area_df` must have `type = 'area'`.", call. = FALSE)
+  }
+
+  if (any(is.na(area_df$sense)) ||
+      any(!area_df$sense %in% c("min", "max", "equal"))) {
+    stop(
+      "`area_df$sense` must contain only 'min', 'max', or 'equal'.",
+      call. = FALSE
+    )
+  }
+
+  if (any(!is.finite(area_df$value)) || any(area_df$value < 0)) {
+    stop(
+      "`area_df$value` must contain only finite values >= 0.",
+      call. = FALSE
+    )
+  }
+
+  if (any(!is.finite(area_df$tolerance)) || any(area_df$tolerance < 0)) {
+    stop(
+      "`area_df$tolerance` must contain only finite values >= 0.",
+      call. = FALSE
+    )
+  }
+
+  if (any(is.na(area_df$unit)) ||
+      any(!area_df$unit %in% c("m2", "ha", "km2"))) {
+    stop(
+      "`area_df$unit` must contain only 'm2', 'ha', or 'km2'.",
+      call. = FALSE
+    )
+  }
+
+  if (any(is.na(area_df$name)) || any(!nzchar(area_df$name))) {
+    stop(
+      "`area_df$name` must contain only non-empty character strings.",
+      call. = FALSE
+    )
+  }
+
+  area_df$actions <- as.character(area_df$actions)
+  area_df$area_col <- as.character(area_df$area_col)
+  area_df$name <- as.character(area_df$name)
+  area_df$type <- as.character(area_df$type)
+  area_df$sense <- as.character(area_df$sense)
+  area_df$unit <- as.character(area_df$unit)
+
+  new_actions_key <- ifelse(is.na(area_df$actions), "__ALL__", area_df$actions)
+  new_key <- paste(new_actions_key, area_df$sense, sep = "||")
+
+  if (anyDuplicated(new_key)) {
+    dup <- unique(new_key[duplicated(new_key)])[1]
+    parts <- strsplit(dup, "\\|\\|")[[1]]
+    act_key <- parts[1]
+    sense_key <- parts[2]
+
+    subset_label <- if (identical(act_key, "__ALL__")) {
+      "all actions"
+    } else {
+      paste0("actions = {", act_key, "}")
+    }
+
+    stop(
+      "Duplicated area constraints detected within `area_df` for ",
+      subset_label,
+      " and sense = '", sense_key, "'.",
+      call. = FALSE
+    )
+  }
+
+  cons <- x$data$constraints %||% list()
+  old <- cons$area
+
+  if (is.null(old)) {
+    cons$area <- area_df[, required_cols, drop = FALSE]
+    rownames(cons$area) <- NULL
+    x$data$constraints <- cons
+    return(x)
+  }
+
+  if (!is.data.frame(old)) {
+    stop(
+      "Stored area constraints must be a data.frame. Please rebuild the problem object.",
+      call. = FALSE
+    )
+  }
+
+  old_miss <- setdiff(required_cols, names(old))
+  if (length(old_miss) > 0) {
+    stop(
+      "Stored area constraints are malformed. Missing columns: ",
+      paste(old_miss, collapse = ", "),
+      ".",
+      call. = FALSE
+    )
+  }
+
+  old$actions <- as.character(old$actions)
+  old$sense <- as.character(old$sense)
+
+  old_actions_key <- ifelse(is.na(old$actions), "__ALL__", old$actions)
+  old_key <- paste(old_actions_key, old$sense, sep = "||")
+
+  overlap <- intersect(old_key, new_key)
+  if (length(overlap) > 0) {
+    dup <- overlap[1]
+    parts <- strsplit(dup, "\\|\\|")[[1]]
+    act_key <- parts[1]
+    sense_key <- parts[2]
+
+    subset_label <- if (identical(act_key, "__ALL__")) {
+      "all actions"
+    } else {
+      paste0("actions = {", act_key, "}")
+    }
+
+    stop(
+      "An area constraint already exists for the same subset of actions (",
+      subset_label,
+      ") and sense = '", sense_key, "'.",
+      call. = FALSE
+    )
+  }
+
+  out <- rbind(
+    old[, required_cols, drop = FALSE],
+    area_df[, required_cols, drop = FALSE]
+  )
+  rownames(out) <- NULL
+
+  cons$area <- out
+  x$data$constraints <- cons
+
+  x
 }
