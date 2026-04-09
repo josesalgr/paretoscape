@@ -13,7 +13,7 @@ test_that("set_method_weighted_sum errors when aliases and weights have differen
       include_self = TRUE
     ) |>
     multiscape::add_objective_min_cost(alias = "cost") |>
-    multiscape::add_objective_min_fragmentation(alias = "frag")
+    multiscape::add_objective_min_fragmentation_pu(alias = "frag")
 
   expect_error(
     multiscape::set_method_weighted_sum(
@@ -40,7 +40,7 @@ test_that("set_method_weighted_sum errors when aliases contain duplicates", {
       include_self = TRUE
     ) |>
     multiscape::add_objective_min_cost(alias = "cost") |>
-    multiscape::add_objective_min_fragmentation(alias = "frag")
+    multiscape::add_objective_min_fragmentation_pu(alias = "frag")
 
   expect_error(
     multiscape::set_method_weighted_sum(

@@ -109,7 +109,9 @@
 <h2 id="core-workflow">Core workflow<a class="anchor" aria-label="anchor" href="#core-workflow"></a>
 </h2>
 <p>A typical <code>multiscape</code> workflow has five steps.</p>
-<p>First, the user creates a <code>Problem</code> object from planning units, features, and baseline feature amounts. Second, the user adds feasible actions and, when relevant, defines how those actions affect the features of interest. Third, the user adds targets, constraints, and spatial relations. Fourth, the user registers one or more atomic objectives. Finally, the user solves the problem in single-objective or multi-objective mode.</p>
+<figure><img src="reference/figures/overview_multiscape.png" alt="Conceptual overview of the multiscape workflow, from problem definition and actions to constraints, objectives, optimization, and outputs."><figcaption aria-hidden="true">
+Conceptual overview of the multiscape workflow, from problem definition and actions to constraints, objectives, optimization, and outputs.
+</figcaption></figure><p>First, the user creates a <code>Problem</code> object from planning units, features, and baseline feature amounts. Second, the user adds feasible actions and, when relevant, defines how those actions affect the features of interest. Third, the user adds targets, constraints, and spatial relations. Fourth, the user registers one or more atomic objectives. Finally, the user solves the problem in single-objective or multi-objective mode.</p>
 <p>In other words, <code>multiscape</code> separates problem definition from optimization. The <code>Problem</code> object stores the planning specification, and the solving stage later translates that specification into one or more exact optimization runs.</p>
 </div>
 <div class="section level2">
@@ -148,10 +150,10 @@
 <code class="sourceCode R"><span><span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span></span>
 <span>  <span class="va">sim_features</span>,</span>
 <span>  main <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
-<span>    <span class="st">"Seasonal water yield"</span>,</span>
-<span>    <span class="st">"Sediment delivery ratio"</span>,</span>
+<span>    <span class="st">"Rodent and lagomorph control"</span>,</span>
 <span>    <span class="st">"Carbon stock"</span>,</span>
-<span>    <span class="st">"Rodent and lagomorph control"</span></span>
+<span>    <span class="st">"Seasonal water yield"</span>,</span>
+<span>    <span class="st">"Sediment delivery ratio"</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p><img src="reference/figures/README-unnamed-chunk-2-1.png" width="100%"></p>

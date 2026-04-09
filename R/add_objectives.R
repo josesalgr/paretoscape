@@ -619,7 +619,7 @@ add_objective_max_net_profit <- function(
 #'
 #' Let the chosen spatial relation define a set of weighted pairs with weights
 #' \eqn{\omega_{ij} \ge 0}. These relation weights are interpreted by the model
-#' builder after scaling by \eqn{\lambda = \code{weight_multiplier}}.
+#' builder after scaling by \eqn{\lambda =} \code{weight_multiplier}.
 #'
 #' The internal preparation step constructs one auxiliary variable
 #' \eqn{y_{ij} \in [0,1]} for each unique non-diagonal undirected edge
@@ -664,7 +664,7 @@ add_objective_max_net_profit <- function(
 #'
 #' This objective does not distinguish between different actions within the same
 #' planning unit. If action-specific spatial cohesion is required, use
-#' \code{\link{add_objective_min_action_fragmentation}} instead.
+#' \code{\link{add_objective_min_fragmentation_action}} instead.
 #'
 #' @param x A \code{Problem} object.
 #' @param relation_name Character string giving the name of the spatial relation
@@ -680,10 +680,10 @@ add_objective_max_net_profit <- function(
 #' @seealso
 #' \code{\link{add_spatial_boundary}},
 #' \code{\link{add_spatial_relations}},
-#' \code{\link{add_objective_min_action_fragmentation}}
+#' \code{\link{add_objective_min_fragmentation_action}}
 #'
 #' @export
-add_objective_min_fragmentation <- function(
+add_objective_min_fragmentation_pu <- function(
     x,
     relation_name = "boundary",
     weight_multiplier = 1,
@@ -728,7 +728,7 @@ add_objective_min_fragmentation <- function(
 #' Define an objective that minimizes fragmentation at the action level over a
 #' stored spatial relation.
 #'
-#' Unlike \code{\link{add_objective_min_fragmentation}}, which acts on the
+#' Unlike \code{\link{add_objective_min_fragmentation_pu}}, which acts on the
 #' selected planning-unit set through \eqn{w_i}, this objective acts on the
 #' spatial arrangement of individual action decisions through the action
 #' variables \eqn{x_{ia}}.
@@ -745,7 +745,7 @@ add_objective_min_fragmentation <- function(
 #'
 #' Let the chosen spatial relation define weighted pairs with
 #' weights \eqn{\omega_{ij} \ge 0}, and let
-#' \eqn{\lambda = \code{weight_multiplier}} be the global scaling factor applied
+#' \eqn{\lambda =} \code{weight_multiplier} be the global scaling factor applied
 #' to these weights.
 #'
 #' If \code{actions} is supplied, only the selected subset
@@ -806,9 +806,9 @@ add_objective_min_fragmentation <- function(
 #'
 #' This differs from planning-unit fragmentation:
 #' \itemize{
-#'   \item \code{add_objective_min_fragmentation()} encourages cohesion of the
+#'   \item \code{add_objective_min_fragmentation_pu()} encourages cohesion of the
 #'   union of selected planning units,
-#'   \item \code{add_objective_min_action_fragmentation()} encourages cohesion of
+#'   \item \code{add_objective_min_fragmentation_action()} encourages cohesion of
 #'   each selected action pattern separately.
 #' }
 #'
@@ -834,12 +834,12 @@ add_objective_min_fragmentation <- function(
 #' @return An updated \code{Problem} object.
 #'
 #' @seealso
-#' \code{\link{add_objective_min_fragmentation}},
+#' \code{\link{add_objective_min_fragmentation_pu}},
 #' \code{\link{add_spatial_boundary}},
 #' \code{\link{add_spatial_relations}}
 #'
 #' @export
-add_objective_min_action_fragmentation <- function(
+add_objective_min_fragmentation_action <- function(
     x,
     relation_name = "boundary",
     weight_multiplier = 1,

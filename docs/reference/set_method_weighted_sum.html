@@ -133,7 +133,7 @@ already been registered under aliases. These aliases are typically created by
 calling objective setters with an <code>alias</code> argument, for example:</p><div class="sourceCode"><pre><code><span></span>
 <span><span class="va">x</span> <span class="op">&lt;-</span> <span class="va">x</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/add_objective_min_cost.html">add_objective_min_cost</a></span><span class="op">(</span>alias <span class="op">=</span> <span class="st">"cost"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/add_objective_min_fragmentation.html">add_objective_min_fragmentation</a></span><span class="op">(</span>alias <span class="op">=</span> <span class="st">"frag"</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="fu">add_objective_min_fragmentation</span><span class="op">(</span>alias <span class="op">=</span> <span class="st">"frag"</span><span class="op">)</span></span></code></pre></div>
 
 <p>Internally, each atomic objective is stored in
 <code>x$data$objectives[[alias]]</code> together with its metadata, such as:</p><ul><li><p><code>objective_id</code>,</p></li>
@@ -228,7 +228,7 @@ combination. In such cases, methods such as
 <span class="r-in"><span><span class="va">x</span> <span class="op">&lt;-</span> <span class="va">x</span> <span class="op">|&gt;</span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="add_constraint_targets_relative.html">add_constraint_targets_relative</a></span><span class="op">(</span><span class="fl">0.5</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="add_objective_min_cost.html">add_objective_min_cost</a></span><span class="op">(</span>alias <span class="op">=</span> <span class="st">"cost"</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
-<span class="r-in"><span>  <span class="fu"><a href="add_objective_min_fragmentation.html">add_objective_min_fragmentation</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="fu">add_objective_min_fragmentation</span><span class="op">(</span></span></span>
 <span class="r-in"><span>    alias <span class="op">=</span> <span class="st">"frag"</span>,</span></span>
 <span class="r-in"><span>    relation_name <span class="op">=</span> <span class="st">"boundary"</span>,</span></span>
 <span class="r-in"><span>    weight_multiplier <span class="op">=</span> <span class="fl">0.01</span></span></span>

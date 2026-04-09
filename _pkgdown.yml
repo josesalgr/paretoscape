@@ -78,8 +78,8 @@ reference:
       - add_objective_min_loss
       - add_objective_max_profit
       - add_objective_max_net_profit
-      - add_objective_min_fragmentation
-      - add_objective_min_action_fragmentation
+      - add_objective_min_fragmentation_pu
+      - add_objective_min_fragmentation_action
       - add_objective_min_intervention_impact
 
   - title: Multi-objective methods

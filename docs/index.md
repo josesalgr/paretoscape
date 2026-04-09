@@ -52,6 +52,13 @@ in a single optimisation framework:
 
 A typical `multiscape` workflow has five steps.
 
+![Conceptual overview of the multiscape workflow, from problem
+definition and actions to constraints, objectives, optimization, and
+outputs.](reference/figures/overview_multiscape.png)
+
+Conceptual overview of the multiscape workflow, from problem definition
+and actions to constraints, objectives, optimization, and outputs.
+
 First, the user creates a `Problem` object from planning units,
 features, and baseline feature amounts. Second, the user adds feasible
 actions and, when relevant, defines how those actions affect the
@@ -129,10 +136,10 @@ restoration actions.
 terra::plot(
   sim_features,
   main = c(
-    "Seasonal water yield",
-    "Sediment delivery ratio",
+    "Rodent and lagomorph control",
     "Carbon stock",
-    "Rodent and lagomorph control"
+    "Seasonal water yield",
+    "Sediment delivery ratio"
   )
 )
 ```

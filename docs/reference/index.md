@@ -74,9 +74,9 @@ multi-objective workflows.
   : Add objective: maximize profit
 - [`add_objective_max_net_profit()`](https://josesalgr.github.io/multiscape/reference/add_objective_max_net_profit.md)
   : Add objective: maximize net profit
-- [`add_objective_min_fragmentation()`](https://josesalgr.github.io/multiscape/reference/add_objective_min_fragmentation.md)
+- [`add_objective_min_fragmentation_pu()`](https://josesalgr.github.io/multiscape/reference/add_objective_min_fragmentation_pu.md)
   : Add objective: minimize fragmentation
-- [`add_objective_min_action_fragmentation()`](https://josesalgr.github.io/multiscape/reference/add_objective_min_action_fragmentation.md)
+- [`add_objective_min_fragmentation_action()`](https://josesalgr.github.io/multiscape/reference/add_objective_min_fragmentation_action.md)
   : Add objective: minimize action fragmentation
 - [`add_objective_min_intervention_impact()`](https://josesalgr.github.io/multiscape/reference/add_objective_min_intervention_impact.md)
   : Add objective: minimize intervention impact

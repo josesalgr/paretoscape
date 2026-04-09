@@ -52,6 +52,13 @@ in a single optimisation framework:
 
 A typical `multiscape` workflow has five steps.
 
+![Conceptual overview of the multiscape workflow, from problem
+definition and actions to constraints, objectives, optimization, and
+outputs.](reference/figures/overview_multiscape.png)
+
+Conceptual overview of the multiscape workflow, from problem definition
+and actions to constraints, objectives, optimization, and outputs.
+
 First, the user creates a `Problem` object from planning units,
 features, and baseline feature amounts. Second, the user adds feasible
 actions and, when relevant, defines how those actions affect the
@@ -129,10 +136,10 @@ restoration actions.
 terra::plot(
   sim_features,
   main = c(
-    "Seasonal water yield",
-    "Sediment delivery ratio",
+    "Rodent and lagomorph control",
     "Carbon stock",
-    "Rodent and lagomorph control"
+    "Seasonal water yield",
+    "Sediment delivery ratio"
   )
 )
 ```
@@ -548,9 +555,9 @@ multi-objective workflows.
   : Add objective: maximize profit
 - [`add_objective_max_net_profit()`](https://josesalgr.github.io/multiscape/reference/add_objective_max_net_profit.md)
   : Add objective: maximize net profit
-- [`add_objective_min_fragmentation()`](https://josesalgr.github.io/multiscape/reference/add_objective_min_fragmentation.md)
+- [`add_objective_min_fragmentation_pu()`](https://josesalgr.github.io/multiscape/reference/add_objective_min_fragmentation_pu.md)
   : Add objective: minimize fragmentation
-- [`add_objective_min_action_fragmentation()`](https://josesalgr.github.io/multiscape/reference/add_objective_min_action_fragmentation.md)
+- [`add_objective_min_fragmentation_action()`](https://josesalgr.github.io/multiscape/reference/add_objective_min_fragmentation_action.md)
   : Add objective: minimize action fragmentation
 - [`add_objective_min_intervention_impact()`](https://josesalgr.github.io/multiscape/reference/add_objective_min_intervention_impact.md)
   : Add objective: minimize intervention impact

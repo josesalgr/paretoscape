@@ -23,7 +23,7 @@ test_that("augmecon returns a SolutionSet with runs", {
     ) |>
     multiscape::add_objective_min_cost(alias = "cost") |>
     multiscape::add_objective_max_benefit(alias = "benefit") |>
-    multiscape::add_objective_min_fragmentation(alias = "frag") |>
+    multiscape::add_objective_min_fragmentation_pu(alias = "frag") |>
     multiscape::set_method_augmecon(
       primary = "cost",
       aliases = c("cost", "benefit", "frag"),
