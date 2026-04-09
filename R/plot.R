@@ -415,9 +415,9 @@ plot_spatial_actions <- function(
     layout = NULL,
     max_facets = 4L,
     ...,
-    base_alpha = 0.10,
-    selected_alpha = 0.90,
-    base_fill = "grey92",
+    base_alpha = 0.08,
+    selected_alpha = 0.95,
+    base_fill = "grey95",
     base_color = NA,
     selected_color = NA,
     draw_borders = FALSE,
@@ -487,6 +487,19 @@ plot_spatial_actions <- function(
   act_tbl <- do.call(rbind, act_list)
   acts <- unique(act_tbl$action)
 
+  base_theme <- ggplot2::theme_minimal(base_size = 11) +
+    ggplot2::theme(
+      panel.grid.minor = ggplot2::element_blank(),
+      panel.grid.major = ggplot2::element_line(colour = "grey90", linewidth = 0.2),
+      legend.title = ggplot2::element_blank(),
+      strip.text = ggplot2::element_text(face = "bold"),
+      strip.background = ggplot2::element_rect(fill = "grey96", colour = "grey85"),
+      plot.title = ggplot2::element_text(face = "bold")
+    )
+
+  # -------------------------------------------------------------------
+  # one run + action facets
+  # -------------------------------------------------------------------
   if (!isTRUE(multi_runs) && identical(layout, "facet")) {
     if (is.null(actions) && length(acts) > max_facets) {
       warning(
@@ -516,7 +529,9 @@ plot_spatial_actions <- function(
         alpha = selected_alpha
       ) +
       ggplot2::facet_wrap(~action) +
-      ggplot2::labs(title = "Selected actions", fill = "")
+      ggplot2::labs(title = "Selected actions", fill = "") +
+      ggplot2::coord_sf(datum = NA) +
+      base_theme
 
     if (!is.null(fill_values)) {
       p <- p + ggplot2::scale_fill_manual(values = fill_values, na.value = fill_na)
@@ -528,29 +543,38 @@ plot_spatial_actions <- function(
     return(invisible(p))
   }
 
+  # -------------------------------------------------------------------
+  # single layout (possibly multiple runs)
+  # -------------------------------------------------------------------
   lab_list <- split(act_tbl, act_tbl$run_id)
+  warned_multi_action <- FALSE
+
   lab_out <- lapply(names(lab_list), function(rr) {
     dd <- lab_list[[rr]]
+
     tmp <- stats::aggregate(
       action ~ pu,
       data = dd,
       FUN = function(z) {
         z <- unique(as.character(z))
-        if (length(z) > 1L) {
-          warning(
-            "More than one action detected in at least one PU. Labels were collapsed using '+'.",
-            call. = FALSE
-          )
-        }
+        if (length(z) > 1L) warned_multi_action <<- TRUE
         paste(sort(z), collapse = "+")
       }
     )
+
     names(tmp)[names(tmp) == "pu"] <- "id"
     tmp$id <- as.integer(tmp$id)
     tmp$action <- as.character(tmp$action)
     tmp$run_id <- as.integer(rr)
     tmp
   })
+
+  if (isTRUE(warned_multi_action)) {
+    warning(
+      "More than one action detected in at least one PU. Labels were collapsed using '+'.",
+      call. = FALSE
+    )
+  }
 
   lab_act <- do.call(rbind, lab_out)
   g <- merge(pu_sf_min, lab_act, by = "id", all.x = FALSE)
@@ -573,10 +597,21 @@ plot_spatial_actions <- function(
       color = selected_color,
       alpha = selected_alpha
     ) +
-    ggplot2::labs(title = "Selected actions", fill = "")
+    ggplot2::labs(title = "Selected actions", fill = "") +
+    ggplot2::coord_sf(datum = NA) +
+    base_theme
 
   if (isTRUE(multi_runs)) {
-    p <- p + ggplot2::facet_wrap(~run_id)
+    p <- p +
+      ggplot2::facet_wrap(
+        ~run_id,
+        labeller = ggplot2::labeller(run_id = function(x) paste("Run", x))
+      ) +
+      ggplot2::theme(
+        axis.text = ggplot2::element_blank(),
+        axis.title = ggplot2::element_blank(),
+        axis.ticks = ggplot2::element_blank()
+      )
   }
 
   if (!is.null(fill_values)) {
@@ -948,8 +983,8 @@ plot_tradeoff <- function(
     all_pairs = NULL,
     connect = FALSE,
     label_runs = FALSE,
-    point_size = 2.5,
-    line_alpha = 0.6,
+    point_size = 3,
+    line_alpha = 0.5,
     text_size = 3,
     ...
 ) {
@@ -975,8 +1010,8 @@ plot_tradeoff <- function(
   if (is.null(objectives)) {
     objectives <- available_obj
   } else {
-    objectives <- as.character(objectives)
-    objectives <- unique(objectives[!is.na(objectives) & nzchar(objectives)])
+    objectives <- unique(as.character(objectives))
+    objectives <- objectives[!is.na(objectives) & nzchar(objectives)]
     if (length(objectives) < 2L) {
       stop("`objectives` must contain at least two objective names.", call. = FALSE)
     }
@@ -1003,12 +1038,8 @@ plot_tradeoff <- function(
 
   if (!is.null(color_by)) {
     color_by <- as.character(color_by)[1]
-    if (is.na(color_by) || !nzchar(color_by)) {
-      stop("`color_by` must be a non-empty string or NULL.", call. = FALSE)
-    }
-
     valid_color_vars <- c(objectives, "run_id", "status", "runtime", "gap")
-    if (!color_by %in% valid_color_vars) {
+    if (is.na(color_by) || !nzchar(color_by) || !color_by %in% valid_color_vars) {
       stop(
         "`color_by` must be one of: ",
         paste(valid_color_vars, collapse = ", "),
@@ -1018,9 +1049,6 @@ plot_tradeoff <- function(
     }
   }
 
-  # -------------------------------------------------------------------
-  # helper to build pairwise plotting data
-  # -------------------------------------------------------------------
   pair_mat <- utils::combn(objectives, 2)
   pair_df <- vector("list", ncol(pair_mat))
 
@@ -1028,130 +1056,107 @@ plot_tradeoff <- function(
     ox <- pair_mat[1, i]
     oy <- pair_mat[2, i]
 
-    cx <- paste0("value_", ox)
-    cy <- paste0("value_", oy)
-
     dd <- data.frame(
       run_id = runs$run_id %||% seq_len(nrow(runs)),
+      run_label = paste("run", runs$run_id %||% seq_len(nrow(runs))),
       status = if ("status" %in% names(runs)) runs$status else NA_character_,
       runtime = if ("runtime" %in% names(runs)) runs$runtime else NA_real_,
       gap = if ("gap" %in% names(runs)) runs$gap else NA_real_,
       obj_x = ox,
       obj_y = oy,
-      x = as.numeric(runs[[cx]]),
-      y = as.numeric(runs[[cy]]),
+      x = as.numeric(runs[[paste0("value_", ox)]]),
+      y = as.numeric(runs[[paste0("value_", oy)]]),
       pair = paste0(ox, " vs ", oy),
       stringsAsFactors = FALSE
     )
 
     if (!is.null(color_by)) {
-      if (color_by %in% objectives) {
-        dd$color_value <- runs[[paste0("value_", color_by)]]
+      dd$color_value <- if (color_by %in% objectives) {
+        runs[[paste0("value_", color_by)]]
       } else {
-        dd$color_value <- runs[[color_by]]
+        runs[[color_by]]
       }
     }
 
+    dd <- dd[order(dd$run_id), , drop = FALSE]
     pair_df[[i]] <- dd
   }
 
   plot_df <- do.call(rbind, pair_df)
 
-  # -------------------------------------------------------------------
-  # single pair
-  # -------------------------------------------------------------------
-  if (ncol(pair_mat) == 1L) {
-    p <- ggplot2::ggplot(plot_df, ggplot2::aes(x = x, y = y))
+  base_theme <- ggplot2::theme_bw(base_size = 11) +
+    ggplot2::theme(
+      panel.grid.minor = ggplot2::element_blank(),
+      strip.background = ggplot2::element_rect(fill = "grey95", colour = "grey80"),
+      strip.text = ggplot2::element_text(face = "bold"),
+      legend.position = "right"
+    )
 
-    if (isTRUE(connect)) {
-      p <- p + ggplot2::geom_line(
-        ggplot2::aes(group = 1),
-        alpha = line_alpha
-      )
-    }
-
-    if (is.null(color_by)) {
-      p <- p + ggplot2::geom_point(size = point_size)
-    } else {
-      p <- p + ggplot2::geom_point(
-        ggplot2::aes(color = color_value),
-        size = point_size
-      )
-    }
-
-    if (isTRUE(label_runs)) {
-      if (requireNamespace("ggrepel", quietly = TRUE)) {
-        p <- p + ggrepel::geom_text_repel(
-          ggplot2::aes(label = run_id),
-          size = text_size
-        )
-      } else {
-        p <- p + ggplot2::geom_text(
-          ggplot2::aes(label = run_id),
-          size = text_size,
-          vjust = -0.5
-        )
-      }
-    }
-
-    p <- p +
-      ggplot2::labs(
-        x = unique(plot_df$obj_x),
-        y = unique(plot_df$obj_y),
-        color = if (!is.null(color_by)) color_by else NULL
-      ) +
-      ggplot2::theme_minimal()
-
-    print(p)
-    return(invisible(p))
-  }
-
-  # -------------------------------------------------------------------
-  # multiple pairs
-  # -------------------------------------------------------------------
   p <- ggplot2::ggplot(plot_df, ggplot2::aes(x = x, y = y))
 
   if (isTRUE(connect)) {
     p <- p + ggplot2::geom_line(
       ggplot2::aes(group = 1),
-      alpha = line_alpha
+      alpha = line_alpha,
+      linewidth = 0.5,
+      colour = "grey50"
     )
   }
 
   if (is.null(color_by)) {
-    p <- p + ggplot2::geom_point(size = point_size)
+    p <- p + ggplot2::geom_point(
+      size = point_size,
+      shape = 21,
+      fill = "#2C7FB8",
+      colour = "white",
+      stroke = 0.3
+    )
   } else {
     p <- p + ggplot2::geom_point(
-      ggplot2::aes(color = color_value),
-      size = point_size
+      ggplot2::aes(fill = color_value),
+      size = point_size,
+      shape = 21,
+      colour = "white",
+      stroke = 0.3
     )
   }
 
   if (isTRUE(label_runs)) {
     if (requireNamespace("ggrepel", quietly = TRUE)) {
       p <- p + ggrepel::geom_text_repel(
-        ggplot2::aes(label = run_id),
+        ggplot2::aes(label = run_label),
         size = text_size,
+        max.overlaps = Inf,
         show.legend = FALSE
       )
     } else {
       p <- p + ggplot2::geom_text(
-        ggplot2::aes(label = run_id),
+        ggplot2::aes(label = run_label),
         size = text_size,
-        vjust = -0.5,
+        vjust = -0.6,
         show.legend = FALSE
       )
     }
   }
 
-  p <- p +
-    ggplot2::facet_wrap(~pair, scales = "free") +
-    ggplot2::labs(
-      x = NULL,
-      y = NULL,
-      color = if (!is.null(color_by)) color_by else NULL
-    ) +
-    ggplot2::theme_minimal()
+  if (ncol(pair_mat) == 1L) {
+    p <- p +
+      ggplot2::labs(
+        x = unique(plot_df$obj_x),
+        y = unique(plot_df$obj_y),
+        fill = if (!is.null(color_by)) color_by else NULL
+      ) +
+      base_theme
+  } else {
+    p <- p +
+      ggplot2::facet_wrap(~pair, scales = "free") +
+      ggplot2::labs(
+        x = "Objective value",
+        y = "Objective value",
+        fill = if (!is.null(color_by)) color_by else NULL
+      ) +
+      base_theme
+  }
 
   print(p)
   invisible(p)

@@ -229,7 +229,7 @@ NULL
 #' # ------------------------------------------------------
 #'
 #' p2 <- create_problem(
-#'   pu = sim_pu_sf,
+#'   pu = sim_pu,
 #'   features = sim_features,
 #'   dist_features = sim_dist_features,
 #'   cost = "cost"

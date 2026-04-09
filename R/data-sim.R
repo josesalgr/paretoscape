@@ -6,6 +6,14 @@
 #' @usage data(sim_pu_sf)
 "sim_pu_sf"
 
+#' Simulated planning units
+#'
+#' Example planning units as an `sf` object for package examples and tests.
+#'
+#' @format An object of class `sf`.
+#' @usage data(sim_pu)
+"sim_pu"
+
 #' Simulated features
 #'
 #' Example feature table for package examples and tests.

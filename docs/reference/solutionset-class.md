@@ -239,7 +239,7 @@ should use:
 
   Return a short one-line representation of the solution set.
 
-- `getMethod()`:
+- [`getMethod()`](https://rdrr.io/r/methods/getMethod.html):
 
   Return the method specification stored in `self$method`.
 

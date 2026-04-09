@@ -11,8 +11,8 @@ plot_tradeoff(
   all_pairs = NULL,
   connect = FALSE,
   label_runs = FALSE,
-  point_size = 2.5,
-  line_alpha = 0.6,
+  point_size = 3,
+  line_alpha = 0.5,
   text_size = 3,
   ...
 )

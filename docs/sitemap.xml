@@ -42,6 +42,7 @@
 <url><loc>https://josesalgr.github.io/multiscape/reference/get_solution_vector.html</loc></url>
 <url><loc>https://josesalgr.github.io/multiscape/reference/get_targets.html</loc></url>
 <url><loc>https://josesalgr.github.io/multiscape/reference/index.html</loc></url>
+<url><loc>https://josesalgr.github.io/multiscape/reference/load_sim_features_raster.html</loc></url>
 <url><loc>https://josesalgr.github.io/multiscape/reference/pipe.html</loc></url>
 <url><loc>https://josesalgr.github.io/multiscape/reference/plot_spatial.html</loc></url>
 <url><loc>https://josesalgr.github.io/multiscape/reference/plot_spatial_actions.html</loc></url>
@@ -62,6 +63,7 @@
 <url><loc>https://josesalgr.github.io/multiscape/reference/show.html</loc></url>
 <url><loc>https://josesalgr.github.io/multiscape/reference/sim_dist_features.html</loc></url>
 <url><loc>https://josesalgr.github.io/multiscape/reference/sim_features.html</loc></url>
+<url><loc>https://josesalgr.github.io/multiscape/reference/sim_pu.html</loc></url>
 <url><loc>https://josesalgr.github.io/multiscape/reference/sim_pu_sf.html</loc></url>
 <url><loc>https://josesalgr.github.io/multiscape/reference/solution-class.html</loc></url>
 <url><loc>https://josesalgr.github.io/multiscape/reference/solutionset-class.html</loc></url>

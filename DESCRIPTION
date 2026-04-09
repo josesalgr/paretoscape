@@ -100,6 +100,7 @@ Collate:
     'internalMO.R'
     'get_solution.R'
     'globals.R'
+    'load_sim.R'
     'package.R'
     'plot.R'
     'print.R'
