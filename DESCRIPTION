@@ -62,7 +62,9 @@ Suggests:
     purrr,
     readr,
     tibble,
-    reshape2
+    reshape2,
+    rcbc,
+    gurobi
 LinkingTo:
   Rcpp, 
   RcppArmadillo (>= 0.10.1.0.0), 

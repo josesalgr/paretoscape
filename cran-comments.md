@@ -10,14 +10,15 @@ Main changes in this version include:
 
 ## CRAN check notes
 
-There are three NOTE(s):
+There are 3 NOTE(s):
 
 ### 1. checking package dependencies ... NOTE
 
 Packages suggested but not available for checking:
-`Rsymphony`, `Rcplex`, `gurobi`, `slam`
+`Rsymphony`, `Rcplex`, `slam`, `gurobi`
 
-These packages are listed in `Suggests` because they provide optional functionality. `multiscape` can be installed and used without them. Solver-specific functionality is only used conditionally when the corresponding package is available.
+These packages are listed in `Suggests` because they provide optional solver-specific functionality. The package is designed so that solver backends are used conditionally, depending on which solver package is available in the user environment.
+
 
 ### 2. checking installed package size ... NOTE
 
