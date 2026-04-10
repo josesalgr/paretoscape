@@ -3,15 +3,15 @@ Type: Package
 Version: 1.0.5
 Title: Multi-Objective Spatial Planning
 Description: Provides a modular framework for exact multi-objective spatial
-    planning using mixed-integer programming (MIP). The package supports the
+    planning using mixed-integer programming. The package supports the
     definition of planning problems through planning units, features,
     management actions, action effects, spatial relations, targets,
     constraints, and objective functions. It enables the optimisation of
     spatial planning portfolios under considerations such as boundary
     structure, connectivity, and fragmentation. Supported multi-objective
-    methods include weighted-sum aggregation, epsilon-constraint, and
-    AUGMECON. Problems can be solved with commercial (e.g., Gurobi, CPLEX)
-    and open-source (e.g., CBC, SYMPHONY) MIP solvers.
+    methods include weighted-sum aggregation, epsilon-constraint, and the
+    augmented epsilon-constraint method. Problems can be solved with several
+    commercial and open-source optimisation solvers.
 Authors@R: c(
     person('José', 'Salgado-Rojas',
         email='jose.salgroj@gmail.com', 
@@ -46,16 +46,12 @@ Imports:
     terra,
     ggrepel
 Suggests: 
-    knitr,
     roxygen2,
     prioritizr,
     Rsymphony (>= 0.1-31),
     Rcplex,
-    gurobi,
     slam,
-    rcbc,
     rlang,
-    rmarkdown,
     testthat (>= 3.0.0),
     raster,
     tmap,
@@ -78,7 +74,6 @@ Language: en-US
 RoxygenNote: 7.3.3
 URL: https://josesalgr.github.io/multiscape/
 BugReports: https://github.com/josesalgr/multiscape/issues
-VignetteBuilder: knitr
 Collate: 
     'RcppExports.R'
     'internal.R'
