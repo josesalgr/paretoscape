@@ -1,5 +1,5 @@
 ---
-title: "Contributing to paretoscape"
+title: "Contributing to multiscape"
 output:
   rmarkdown::github_document:
     html_preview: no
@@ -7,33 +7,36 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-devtools::load_all()
 ```
-`paretoscape` is being developed as a modular framework for spatial action planning and multi-objective optimization in R. Its development benefits from collaboration across programming, optimization, ecology, conservation planning, and spatial analysis. Because robust decision-support tools require sustained development and interdisciplinary input, contributions from different backgrounds are very welcome. 
-We welcome **contributions to code**, **documentation**, **testing**, **examples**, and **methodological suggestions**.
 
-[repo]: https://github.com/josesalgr/paretoscape
-[issues]: https://github.com/josesalgr/paretoscape/issues
-[new_issue]: https://github.com/josesalgr/paretoscape/issues/new
-[website]: https://josesalgr.github.io/paretoscape/
+`multiscape` is being developed as a modular framework for exact multi-objective spatial planning in R. Its development benefits from collaboration across programming, mathematical optimisation, ecology, conservation planning, and spatial analysis. Because robust decision-support tools require sustained development and interdisciplinary input, contributions from different backgrounds are very welcome.
+
+We welcome contributions to code, documentation, testing, examples, and methodological development.
+
+[repo]: https://github.com/josesalgr/multiscape
+[issues]: https://github.com/josesalgr/multiscape/issues
+[new_issue]: https://github.com/josesalgr/multiscape/issues/new
+[website]: https://josesalgr.github.io/multiscape/
 
 ## Improving documentation
 
-The package documentation and website are generated automatically from package documentation, articles, examples, and markdown sources. This means there is no need to edit HTML manually. If you are familiar with package documentation workflows in R, you are welcome to propose improvements by editing .R, .Rmd, or .md source files and opening a pull request. Documentation improvements may include:
+The package documentation and website are generated automatically from function documentation, examples, articles, and markdown source files. This means there is no need to edit HTML manually. If you are familiar with package documentation workflows in R, you are welcome to propose improvements by editing `.R`, `.Rmd`, or `.md` files and opening a pull request.
+
+Documentation improvements may include:
 
 - fixing typos or unclear wording,
 - improving function documentation,
-- adding examples,
-- clarifying methodological details,
-- improving vignettes or contribution guides.
+- adding or refining examples,
+- clarifying optimisation methods or modelling assumptions,
+- improving articles, tutorials, or contribution guides.
 
-If you are not sure how to implement a documentation change yourself, feel free to open an [issue](https://github.com/josesalgr/paretoscape/issues).
+If you are not sure how to implement a documentation change yourself, feel free to open an [issue][issues].
 
 ## Reporting bugs
 
-If you find a bug, please open an [issue](https://github.com/josesalgr/paretoscape/issues) in the GitHub repository.
+If you find a bug, please open an [issue][issues] in the GitHub repository.
 
-A good bug report should include:
+A useful bug report should include:
 
 - a clear description of the problem,
 - the function or workflow involved,
@@ -46,41 +49,36 @@ Minimal reproducible examples are especially helpful because they make it much e
 
 ## Asking questions
 
-If you are using `paretoscape` and get stuck, first check the function documentation, examples, 
-and available articles or package materials. If your question is still unresolved, 
-you can open an [issue](https://github.com/josesalgr/paretoscape/issues) on GitHub. While 
-user support cannot always be guaranteed, questions 
-often help improve the documentation, reveal edge cases, or identify bugs.
+If you are using `multiscape` and get stuck, first check the function documentation, examples, and available package materials. If your question is still unresolved, you can open an [issue][issues] on GitHub. While user support cannot always be guaranteed, questions often help improve the documentation, reveal edge cases, or identify bugs.
 
 ## Proposing ideas and enhancements
 
-If you have an idea for a new feature, method, or improvement in `paretoscape`, please first 
-check whether it has already been discussed in the issue tracker.
+If you have an idea for a new feature, modelling extension, optimisation method, or usability improvement in `multiscape`, please first check whether it has already been discussed in the issue tracker.
 
-If not, feel free to open an [issue](https://github.com/josesalgr/paretoscape/issues)
-describing your proposal. It is especially helpful if you explain:
+If not, feel free to open an [issue][issues] describing your proposal. It is especially helpful if you explain:
 
 - the motivation for the feature,
 - the intended use case,
 - how it would fit the current modular workflow,
-- and whether it affects the public API, optimization model, or output classes.
+- and whether it affects the public API, optimisation model, or result objects.
 
 Well-scoped proposals are usually easier to evaluate and discuss than very broad ones.
 
 ## Contributing code
 
-Before making contributions to the package R or C++ code, make sure someone from the `paretoscape` team agrees that the change you suggest is needed.
+Before making substantial changes to the R or C++ code, please make sure that someone from the `multiscape` team agrees that the proposed change is needed.
 
- - Fork the package and clone onto your computer. If you haven’t done this before, we recommend using `usethis::create_from_github("josesalgr/paretoscape", fork = TRUE)`.
+- Fork the repository and clone it to your computer. If you have not done this before, we recommend using `usethis::create_from_github("josesalgr/multiscape", fork = TRUE)`.
 
- - Install all development dependences with `devtools::install_dev_deps()`, and then make sure the package passes R CMD check by running `devtools::check()`. If R CMD check doesn’t pass cleanly, it’s a good idea to ask for help before continuing.
+- Install the development dependencies with `devtools::install_dev_deps()`.
 
-- Create a Git branch for your pull request (PR). We recommend using `usethis::pr_init("brief-description-of-change")`.
+- Make sure the package passes `R CMD check`, for example with `devtools::check()`. If the package does not pass checks cleanly, it is a good idea to ask for help before continuing.
 
-- Make your changes, commit to git, and then create a PR by running `usethis::pr_push()`, and following the prompts in your browser. The title of your PR should briefly describe the change. The body of your PR should contain Fixes #issue-number.
+- Create a Git branch for your pull request. We recommend using `usethis::pr_init("brief-description-of-change")`.
 
-- For user-facing changes, add a bullet to the top of  [NEWS.md](https://github.com/josesalgr/paretoscape/blob/main/NEWS.md) (i.e. just below the first header). Follow the style described in https://style.tidyverse.org/news.html.
+- Make your changes, commit them, and then create a pull request with `usethis::pr_push()`, following the prompts in your browser.
 
+- For user-facing changes, add a bullet point to the top of [NEWS.md](https://github.com/josesalgr/multiscape/blob/main/NEWS.md), just below the first header. Please follow the style described in the tidyverse news guidelines.
 
 ## Pull requests
 
@@ -92,19 +90,39 @@ When opening a pull request, please make sure that:
 - user-facing changes include documentation updates,
 - and the pull request body references the related issue when applicable.
 
-If the change affects package behaviour from a user perspective, please also add 
-a short bullet point to [NEWS.md](https://github.com/josesalgr/paretoscape/blob/main/NEWS.md) under the most recent development section.
-
+If the change affects package behaviour from a user perspective, please also add a short bullet point to [NEWS.md](https://github.com/josesalgr/multiscape/blob/main/NEWS.md) under the most recent development section.
 
 ## Style and scope
 
-Please try to keep contributions consistent with the current design of `paretoscape`, especially its modular structure:
+Please try to keep contributions consistent with the current design of `multiscape`, especially its modular structure:
 
-- `create_problem()` builds the problem object,
-- `add_*()` functions enrich the problem,
-- `set_*()` functions configure methods or solver settings,
-- `solve()` executes the optimization workflow,
-- `get_*()` and plotting functions expose results.
+- `create_problem()` creates the core problem object,
+- `add_*()` functions add actions, effects, objectives, constraints, or spatial relations,
+- `set_method_*()` functions configure the multi-objective solution strategy,
+- `set_solver()` configures the optimisation solver,
+- `compile_model()` builds the optimisation model,
+- `solve()` executes the optimisation workflow,
+- `get_*()` and plotting functions expose and summarise results.
 
-Changes that preserve and strengthen this modular structure are usually preferred 
-over monolithic shortcuts or tightly coupled additions.
+Changes that preserve and strengthen this modular structure are usually preferred over monolithic shortcuts or tightly coupled additions.
+
+## Testing contributions
+
+Whenever possible, new functionality should include tests. Bug fixes should ideally include a regression test that fails before the fix and passes afterwards. If a contribution affects optimisation behaviour, it is often useful to test both object construction and solution output where feasible.
+
+If your contribution depends on optional solver backends, please make sure the code degrades gracefully when those backends are not available.
+
+## Code style
+
+Please try to keep the style of new code consistent with the existing package. In particular:
+
+- prefer clear and explicit function names,
+- preserve the modular workflow and object structure,
+- keep user-facing error messages informative,
+- and update documentation when changing exported behaviour.
+
+Small, focused pull requests are usually easier to review and merge than large ones mixing several unrelated changes.
+
+## Code of conduct
+
+Please be respectful and constructive in issues, discussions, and pull requests. Contributions are welcome from researchers and practitioners with different backgrounds, and a collaborative tone helps keep the project useful and sustainable.
