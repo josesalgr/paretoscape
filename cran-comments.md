@@ -4,35 +4,47 @@
 
 ## Submission
 
-* New version released:
-  -   Now we add the non-academic cbc solver as option in `solve()` function.
-  -   Update `solve()` function reference.
-  -   Add the `CONTRIBUTING` file. 
-  -   New **solver benchmarking** vignette is added.
-  -   Now `blm` parameter in `problem()` is not rounded.
-  -   Now the parameter `NodefileStart` is incorporated internally in the **gurobi** solver. Set in 0.5.
-  -   Update vignettes.
+This is the first release of `multiscape`.
 
-  
+Main changes in this version include:
+
 ## CRAN check notes
 
-* checking package dependencies ... NOTE
-  Packages suggested but not available for checking: 'gurobi', 'Rcplex', 'rcbc'
+There are three NOTE(s):
 
-  **gurobi software is not yet available in CRAN, but it is perfectly documented on their website (https://www.gurobi.com/documentation/9.1/refman/r_api_overview.html). In addition, there are comprehensive instructions for its installation in the [`gurobi installation` vignette](https://prioritizr.net/articles/gurobi_installation.html) of the prioritizr package (referenced appropriately in prioriactions package). Instead, cplex software is available in CRAN via the Rcplex package. However, has certain steps to do it completely available in our package. It is because this is a commercial MIP solver (like gurobi), and we need to get an academic license before its installation. Later after installing cplex, we can follow [this guide](https://github.com/cran/Rcplex/blob/master/inst/INSTALL) to install Rcplex package. All of this is fully documented in our [solve function reference](https://prioriactions.github.io/prioriactions/reference/solve.html). Similarly, the case applies to CBC. While there exists a package called rcbc that provides access to CBC functionality, ensuring its complete integration within our package involves following specific procedural guidelines. This can find a comprehensive breakdown of these steps in the documentation of the rcbc package available [here](https://dirkschumacher.github.io/rcbc/), also referenced in our [`solve()` function reference](https://prioriactions.github.io/prioriactions/reference/solve.html).**
+### 1. checking package dependencies ... NOTE
 
-❯ checking installed package size ... NOTE
-    installed size is 16.0Mb
-    sub-directories of 1Mb or more:
-      doc    3.6Mb
-      libs  11.1Mb
+Packages suggested but not available for checking:
+`Rsymphony`, `Rcplex`, `gurobi`, `slam`
+
+These packages are listed in `Suggests` because they provide optional functionality. `multiscape` can be installed and used without them. Solver-specific functionality is only used conditionally when the corresponding package is available.
+
+### 2. checking installed package size ... NOTE
+
+Installed size is 9.0Mb.
+
+This size is mainly due to:
+
+* `extdata` (2.3Mb), which contains example data used to illustrate the package workflow;
+* `help` (3.2Mb), due to package documentation;
+* `libs` (1.8Mb), due to compiled code required by the package.
+
+We believe this size is reasonable for the functionality provided.
+
+### 3. checking for future file timestamps ... NOTE
+
+`unable to verify current time`
+
+This appears to be related to the local checking environment on Windows and not to the package contents.
 
 ## Test environments
 
- - GitHub Actions (ubuntu-22.04): oldrel-1, release, devel
- - GitHub Actions (windows): release
- - Github Actions (macOS): release
+* local Windows 10 x64, R 4.4.1
+* GitHub Actions:
+  * ubuntu-latest (oldrel-1, release, devel)
+  * windows-latest (release)
+  * macos-latest (release)
 
 ## Downstream dependencies
 
-There are no existing packages that depend on this package.
+There are no reverse dependencies.
