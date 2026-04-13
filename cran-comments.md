@@ -17,7 +17,13 @@ There are 3 NOTE(s):
 Packages suggested but not available for checking:
 `Rsymphony`, `Rcplex`, `slam`, `gurobi`
 
-These packages are listed in `Suggests` because they provide optional solver-specific functionality. The package is designed so that solver backends are used conditionally, depending on which solver package is available in the user environment.
+These packages are listed in `Suggests` because they provide optional solver-specific 
+functionality. The package is designed so that solver backends are used conditionally, 
+depending on which solver package is available in the user environment.
+
+Following the CRAN feedback, we updated the `Description` field to explicitly state how non-mainstream suggested packages can be obtained:
+- `'gurobi'` is distributed with the Gurobi Optimizer installation <https://docs.gurobi.com/projects/optimizer/en/13.0/reference/r/setup.html>;
+- `'rcbc'` is available from GitHub at <https://github.com/dirkschumacher/rcbc>.
 
 
 ### 2. checking installed package size ... NOTE

@@ -11,7 +11,11 @@ Description: Provides a modular framework for exact multi-objective spatial
     structure, connectivity, and fragmentation. Supported multi-objective
     methods include weighted-sum aggregation, epsilon-constraint, and the
     augmented epsilon-constraint method. Problems can be solved with several
-    commercial and open-source optimisation solvers.
+    commercial and open-source optimisation solvers. Optional solver backends 
+    include the 'gurobi' R package, which is distributed with the Gurobi Optimizer 
+    installation <https://docs.gurobi.com/projects/optimizer/en/13.0/reference/r/setup.html>, 
+    and the 'rcbc' R package, available from GitHub at 
+    <https://github.com/dirkschumacher/rcbc>.
 Authors@R: c(
     person('José', 'Salgado-Rojas',
         email='jose.salgroj@gmail.com', 
