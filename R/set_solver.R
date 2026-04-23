@@ -152,26 +152,48 @@
 #' \code{\link{set_solver_symphony}}
 #'
 #' @examples
-#' \dontrun{
-#' x <- create_problem(
-#'   pu = pu,
-#'   features = features,
-#'   dist_features = dist_features
+#' pu_tbl <- data.frame(
+#'   id = 1:4,
+#'   cost = c(1, 2, 3, 4)
 #' )
 #'
-#' x <- set_solver(
+#' feat_tbl <- data.frame(
+#'   id = 1:2,
+#'   name = c("feature_1", "feature_2")
+#' )
+#'
+#' dist_feat_tbl <- data.frame(
+#'   pu = c(1, 1, 2, 3, 4),
+#'   feature = c(1, 2, 2, 1, 2),
+#'   amount = c(5, 2, 3, 4, 1)
+#' )
+#'
+#' x <- create_problem(
+#'   pu = pu_tbl,
+#'   features = feat_tbl,
+#'   dist_features = dist_feat_tbl,
+#'   cost = "cost"
+#' )
+#'
+#' x1 <- set_solver(
 #'   x,
-#'   solver = "gurobi",
+#'   solver = "cbc",
 #'   gap_limit = 0.01,
 #'   time_limit = 300,
-#'   cores = 4,
-#'   verbose = TRUE,
-#'   MIPFocus = 1
+#'   cores = 2,
+#'   verbose = TRUE
 #' )
 #'
-#' # Later:
-#' # sol <- solve(x)
-#' }
+#' x1$data$solve_args
+#'
+#' # Update only selected settings
+#' x2 <- set_solver(
+#'   x1,
+#'   gap_limit = 0.05,
+#'   solver_params = list(randomSeed = 123)
+#' )
+#'
+#' x2$data$solve_args
 #'
 #' @export
 set_solver <- function(x,
@@ -265,15 +287,38 @@ set_solver <- function(x,
 #' \code{\link{solve}}
 #'
 #' @examples
-#' \dontrun{
+#' pu_tbl <- data.frame(
+#'   id = 1:4,
+#'   cost = c(1, 2, 3, 4)
+#' )
+#'
+#' feat_tbl <- data.frame(
+#'   id = 1:2,
+#'   name = c("feature_1", "feature_2")
+#' )
+#'
+#' dist_feat_tbl <- data.frame(
+#'   pu = c(1, 1, 2, 3, 4),
+#'   feature = c(1, 2, 2, 1, 2),
+#'   amount = c(5, 2, 3, 4, 1)
+#' )
+#'
+#' x <- create_problem(
+#'   pu = pu_tbl,
+#'   features = feat_tbl,
+#'   dist_features = dist_feat_tbl,
+#'   cost = "cost"
+#' )
+#'
 #' x <- set_solver_gurobi(
 #'   x,
 #'   gap_limit = 0.01,
 #'   time_limit = 600,
-#'   cores = 4,
+#'   cores = 2,
 #'   MIPFocus = 1
 #' )
-#' }
+#'
+#' x$data$solve_args
 #'
 #' @export
 set_solver_gurobi <- function(x, ..., solver_params = list(), gap_limit = NULL, time_limit = NULL,
@@ -313,14 +358,37 @@ set_solver_gurobi <- function(x, ..., solver_params = list(), gap_limit = NULL, 
 #' \code{\link{solve}}
 #'
 #' @examples
-#' \dontrun{
-#' x <- set_solver_cplex(
-#'   x,
-#'   gap_limit = 0.001,
-#'   time_limit = 1200,
-#'   cores = 8
+#' pu_tbl <- data.frame(
+#'   id = 1:4,
+#'   cost = c(1, 2, 3, 4)
 #' )
-#' }
+#'
+#' feat_tbl <- data.frame(
+#'   id = 1:2,
+#'   name = c("feature_1", "feature_2")
+#' )
+#'
+#' dist_feat_tbl <- data.frame(
+#'   pu = c(1, 1, 2, 3, 4),
+#'   feature = c(1, 2, 2, 1, 2),
+#'   amount = c(5, 2, 3, 4, 1)
+#' )
+#'
+#' x <- create_problem(
+#'   pu = pu_tbl,
+#'   features = feat_tbl,
+#'   dist_features = dist_feat_tbl,
+#'   cost = "cost"
+#' )
+#'
+#' x <- set_solver_cbc(
+#'   x,
+#'   gap_limit = 0.01,
+#'   time_limit = 300,
+#'   cores = 2
+#' )
+#'
+#' x$data$solve_args
 #'
 #' @export
 set_solver_cbc <- function(x, ..., solver_params = list(), gap_limit = NULL, time_limit = NULL,
@@ -357,14 +425,37 @@ set_solver_cbc <- function(x, ..., solver_params = list(), gap_limit = NULL, tim
 #' \code{\link{solve}}
 #'
 #' @examples
-#' \dontrun{
+#' pu_tbl <- data.frame(
+#'   id = 1:4,
+#'   cost = c(1, 2, 3, 4)
+#' )
+#'
+#' feat_tbl <- data.frame(
+#'   id = 1:2,
+#'   name = c("feature_1", "feature_2")
+#' )
+#'
+#' dist_feat_tbl <- data.frame(
+#'   pu = c(1, 1, 2, 3, 4),
+#'   feature = c(1, 2, 2, 1, 2),
+#'   amount = c(5, 2, 3, 4, 1)
+#' )
+#'
+#' x <- create_problem(
+#'   pu = pu_tbl,
+#'   features = feat_tbl,
+#'   dist_features = dist_feat_tbl,
+#'   cost = "cost"
+#' )
+#'
 #' x <- set_solver_cplex(
 #'   x,
 #'   gap_limit = 0.001,
 #'   time_limit = 1200,
-#'   cores = 8
+#'   cores = 2
 #' )
-#' }
+#'
+#' x$data$solve_args
 #'
 #' @export
 set_solver_cplex <- function(x, ..., solver_params = list(), gap_limit = NULL, time_limit = NULL,
@@ -404,13 +495,36 @@ set_solver_cplex <- function(x, ..., solver_params = list(), gap_limit = NULL, t
 #' \code{\link{solve}}
 #'
 #' @examples
-#' \dontrun{
+#' pu_tbl <- data.frame(
+#'   id = 1:4,
+#'   cost = c(1, 2, 3, 4)
+#' )
+#'
+#' feat_tbl <- data.frame(
+#'   id = 1:2,
+#'   name = c("feature_1", "feature_2")
+#' )
+#'
+#' dist_feat_tbl <- data.frame(
+#'   pu = c(1, 1, 2, 3, 4),
+#'   feature = c(1, 2, 2, 1, 2),
+#'   amount = c(5, 2, 3, 4, 1)
+#' )
+#'
+#' x <- create_problem(
+#'   pu = pu_tbl,
+#'   features = feat_tbl,
+#'   dist_features = dist_feat_tbl,
+#'   cost = "cost"
+#' )
+#'
 #' x <- set_solver_symphony(
 #'   x,
 #'   gap_limit = 0.05,
 #'   time_limit = 300
 #' )
-#' }
+#'
+#' x$data$solve_args
 #'
 #' @export
 set_solver_symphony <- function(x, ..., solver_params = list(), gap_limit = NULL, time_limit = NULL,

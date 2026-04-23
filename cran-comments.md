@@ -2,47 +2,36 @@
 
 0 errors | 0 warnings | 3 notes
 
-## Submission 
+## Submission
 
-This is the first release of `multiscape`.
+This is a resubmission of `multiscape`.
 
-Main changes in this version include:
+In this version we addressed the issues raised in the previous CRAN review:
+- added references for the methodological background in the `Description` field;
+- revised examples to avoid unnecessary `\dontrun{}` usage;
+- simplified and corrected examples so they run more robustly during checks;
+- clarified the availability of optional solver backends in the `Description`.
 
 ## CRAN check notes
-
-There are 3 NOTE(s):
 
 ### 1. checking package dependencies ... NOTE
 
 Packages suggested but not available for checking:
 `Rsymphony`, `Rcplex`, `slam`, `gurobi`
 
-These packages are listed in `Suggests` because they provide optional solver-specific 
-functionality. The package is designed so that solver backends are used conditionally, 
-depending on which solver package is available in the user environment.
+These packages are listed in `Suggests` because they provide optional solver-specific functionality and are used conditionally.
 
-Following the CRAN feedback, we updated the `Description` field to explicitly state how non-mainstream suggested packages can be obtained:
-- `'gurobi'` is distributed with the Gurobi Optimizer installation <https://docs.gurobi.com/projects/optimizer/en/13.0/reference/r/setup.html>;
+The `Description` field explicitly states how non-mainstream suggested packages can be obtained:
+- `'gurobi'` is distributed with the Gurobi Optimizer installation;
 - `'rcbc'` is available from GitHub at <https://github.com/dirkschumacher/rcbc>.
-
 
 ### 2. checking installed package size ... NOTE
 
-Installed size is 9.0Mb.
-
-This size is mainly due to:
-
-* `extdata` (2.3Mb), which contains example data used to illustrate the package workflow;
-* `help` (3.2Mb), due to package documentation;
-* `libs` (1.8Mb), due to compiled code required by the package.
-
-We believe this size is reasonable for the functionality provided.
+Installed size is 9.0Mb, mainly due to example data, documentation, and compiled code.
 
 ### 3. checking for future file timestamps ... NOTE
 
-`unable to verify current time`
-
-This appears to be related to the local checking environment on Windows and not to the package contents.
+This NOTE was observed in a local Windows check and appears to be environment-specific.
 
 ## Test environments
 

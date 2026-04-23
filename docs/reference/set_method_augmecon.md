@@ -251,29 +251,145 @@ programming problems. *Applied Mathematics and Computation*, 213(2),
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
-# Automatic epsilon grids from payoff ranges
-p <- p |>
-  set_method_augmecon(
-    primary = "benefit",
-    aliases = c("benefit", "cost"),
-    n_points = 10,
-    include_extremes = TRUE,
-    lexicographic = TRUE,
-    augmentation = 1e-3
-  )
+# Small toy problem
+pu_tbl <- data.frame(
+  id = 1:4,
+  cost = c(1, 2, 3, 4)
+)
+
+feat_tbl <- data.frame(
+  id = 1:2,
+  name = c("feature_1", "feature_2")
+)
+
+dist_feat_tbl <- data.frame(
+  pu = c(1, 1, 2, 3, 4),
+  feature = c(1, 2, 2, 1, 2),
+  amount = c(5, 2, 3, 4, 1)
+)
+
+actions_df <- data.frame(
+  id = c("conservation", "restoration"),
+  name = c("conservation", "restoration")
+)
+
+effects_df <- data.frame(
+  pu = c(1, 2, 3, 4, 1, 2, 3, 4),
+  action = c("conservation", "conservation", "conservation", "conservation",
+             "restoration", "restoration", "restoration", "restoration"),
+  feature = c(1, 1, 1, 1, 2, 2, 2, 2),
+  benefit = c(2, 1, 0, 1, 3, 0, 1, 2),
+  loss = c(0, 0, 1, 0, 0, 1, 0, 0)
+)
+
+x <- create_problem(
+  pu = pu_tbl,
+  features = feat_tbl,
+  dist_features = dist_feat_tbl,
+  cost = "cost"
+) |>
+  add_actions(actions_df, cost = c(conservation = 1, restoration = 2)) |>
+  add_effects(effects_df) |>
+  add_objective_max_benefit(alias = "benefit") |>
+  add_objective_min_cost(alias = "cost") |>
+  add_objective_min_loss(alias = "loss")
+
+# Automatic epsilon grids generated later during solve()
+x1 <- set_method_augmecon(
+  x,
+  primary = "benefit",
+  aliases = c("benefit", "cost"),
+  n_points = 5,
+  include_extremes = TRUE,
+  lexicographic = TRUE,
+  augmentation = 1e-3
+)
+
+x1$data$method
+#> $name
+#> [1] "augmecon"
+#> 
+#> $primary
+#> [1] "benefit"
+#> 
+#> $aliases
+#> [1] "benefit" "cost"   
+#> 
+#> $secondary
+#> [1] "cost"
+#> 
+#> $grid
+#> NULL
+#> 
+#> $n_points
+#> [1] 5
+#> 
+#> $include_extremes
+#> [1] TRUE
+#> 
+#> $lexicographic
+#> [1] TRUE
+#> 
+#> $lexicographic_tol
+#> [1] 1e-09
+#> 
+#> $augmentation
+#> [1] 0.001
+#> 
+#> $slack_upper_bound
+#> [1] 1e+06
+#> 
 
 # Manual epsilon grids for two secondary objectives
-p <- p |>
-  set_method_augmecon(
-    primary = "benefit",
-    aliases = c("benefit", "cost", "frag"),
-    grid = list(
-      cost = c(100, 150, 200, 250),
-      frag = c(2, 4, 6, 8)
-    ),
-    augmentation = 1e-3,
-    slack_upper_bound = 1e6
-  )
-} # }
+x2 <- set_method_augmecon(
+  x,
+  primary = "benefit",
+  aliases = c("benefit", "cost", "loss"),
+  grid = list(
+    cost = c(4, 6, 8),
+    loss = c(0, 1)
+  ),
+  augmentation = 1e-3,
+  slack_upper_bound = 1e6
+)
+
+x2$data$method
+#> $name
+#> [1] "augmecon"
+#> 
+#> $primary
+#> [1] "benefit"
+#> 
+#> $aliases
+#> [1] "benefit" "cost"    "loss"   
+#> 
+#> $secondary
+#> [1] "cost" "loss"
+#> 
+#> $grid
+#> $grid$cost
+#> [1] 4 6 8
+#> 
+#> $grid$loss
+#> [1] 0 1
+#> 
+#> 
+#> $n_points
+#> NULL
+#> 
+#> $include_extremes
+#> [1] TRUE
+#> 
+#> $lexicographic
+#> [1] TRUE
+#> 
+#> $lexicographic_tol
+#> [1] 1e-09
+#> 
+#> $augmentation
+#> [1] 0.001
+#> 
+#> $slack_upper_bound
+#> [1] 1e+06
+#> 
 ```

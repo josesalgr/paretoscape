@@ -119,33 +119,64 @@ on the same feature with different contributing action subsets.
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
+pu_tbl <- data.frame(
+  id = 1:4,
+  cost = c(1, 2, 3, 4)
+)
+
+feat_tbl <- data.frame(
+  id = 1:2,
+  name = c("feature_1", "feature_2")
+)
+
+dist_feat_tbl <- data.frame(
+  pu = c(1, 1, 2, 3, 4),
+  feature = c(1, 2, 2, 1, 2),
+  amount = c(5, 2, 3, 4, 1)
+)
+
+p <- create_problem(
+  pu = pu_tbl,
+  features = feat_tbl,
+  dist_features = dist_feat_tbl,
+  cost = "cost"
+) |>
+  add_actions(data.frame(id = "conservation", name = "conservation"), cost = 0)
+
 # Same absolute target for all features
-p <- add_constraint_targets_absolute(p, 10)
+p1 <- add_constraint_targets_absolute(p, 3)
+p1$data$targets
+#>   feature    type sense target_unit target_raw basis_total target_value actions
+#> 1       1 actions    ge    absolute          3          NA            3    <NA>
+#> 2       2 actions    ge    absolute          3          NA            3    <NA>
+#>   label                 created_at feature_name
+#> 1  <NA> 2026-04-23 21:00:03.923804    feature_1
+#> 2  <NA> 2026-04-23 21:00:03.923804    feature_2
 
-# Different targets by feature id
-p <- add_constraint_targets_absolute(
+# Different targets by feature
+p2 <- add_constraint_targets_absolute(
   p,
-  c("1" = 5, "2" = 8, "3" = 12)
+  c("1" = 4, "2" = 2)
 )
+p2$data$targets
+#>   feature    type sense target_unit target_raw basis_total target_value actions
+#> 1       1 actions    ge    absolute          4          NA            4    <NA>
+#> 2       2 actions    ge    absolute          2          NA            2    <NA>
+#>   label                 created_at feature_name
+#> 1  <NA> 2026-04-23 21:00:03.927434    feature_1
+#> 2  <NA> 2026-04-23 21:00:03.927434    feature_2
 
-# Same target for a selected subset of features
-p <- add_constraint_targets_absolute(
+# Restrict which actions count toward target achievement
+p3 <- add_constraint_targets_absolute(
   p,
-  5,
-  features = c("sp1", "sp2")
+  2,
+  actions = "conservation"
 )
-
-# Only actions in the "recovery" set count toward target achievement
-p <- add_constraint_targets_absolute(
-  p,
-  5,
-  actions = "recovery"
-)
-
-# Combine target rules with different action subsets
-p <- p |>
-  add_constraint_targets_relative(0.1, actions = "conservation") |>
-  add_constraint_targets_absolute(100, actions = "restoration")
-} # }
+p3$data$targets
+#>   feature    type sense target_unit target_raw basis_total target_value
+#> 1       1 actions    ge    absolute          2          NA            2
+#> 2       2 actions    ge    absolute          2          NA            2
+#>        actions label                 created_at feature_name
+#> 1 conservation  <NA> 2026-04-23 21:00:03.932801    feature_1
+#> 2 conservation  <NA> 2026-04-23 21:00:03.932801    feature_2
 ```

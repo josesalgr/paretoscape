@@ -140,6 +140,36 @@ NULL
 #'
 #' @return Invisibly returns a \code{ggplot} object.
 #'
+#' @examples
+#' if (requireNamespace("sf", quietly = TRUE) &&
+#'     requireNamespace("ggplot2", quietly = TRUE)) {
+#'   data("sim_pu_sf", package = "multiscape")
+#'
+#'   problem <- structure(
+#'     list(
+#'       data = list(
+#'         pu_sf = sim_pu_sf
+#'       )
+#'     ),
+#'     class = "Problem"
+#'   )
+#'
+#'   sol <- structure(
+#'     list(
+#'       problem = problem,
+#'       summary = list(
+#'         pu = data.frame(
+#'           id = sim_pu_sf$id,
+#'           selected = as.integer(seq_len(nrow(sim_pu_sf)) %% 2 == 1)
+#'         )
+#'       )
+#'     ),
+#'     class = "Solution"
+#'   )
+#'
+#'   plot_spatial(sol, what = "pu")
+#' }
+#'
 #' @seealso
 #' \code{\link{plot_spatial_pu}},
 #' \code{\link{plot_spatial_actions}},
@@ -262,6 +292,36 @@ plot_spatial <- function(
 #'   underneath the selected units.
 #'
 #' @return Invisibly returns a \code{ggplot} object.
+#'
+#' @examples
+#' if (requireNamespace("sf", quietly = TRUE) &&
+#'     requireNamespace("ggplot2", quietly = TRUE)) {
+#'   data("sim_pu_sf", package = "multiscape")
+#'
+#'   problem <- structure(
+#'     list(
+#'       data = list(
+#'         pu_sf = sim_pu_sf
+#'       )
+#'     ),
+#'     class = "Problem"
+#'   )
+#'
+#'   sol <- structure(
+#'     list(
+#'       problem = problem,
+#'       summary = list(
+#'         pu = data.frame(
+#'           id = sim_pu_sf$id,
+#'           selected = as.integer(seq_len(nrow(sim_pu_sf)) %% 2 == 1)
+#'         )
+#'       )
+#'     ),
+#'     class = "Solution"
+#'   )
+#'
+#'   plot_spatial_pu(sol)
+#' }
 #'
 #' @seealso
 #' \code{\link{get_pu}},
@@ -400,6 +460,44 @@ plot_spatial_pu <- function(
 #'   available, use viridis discrete scales.
 #'
 #' @return Invisibly returns a \code{ggplot} object.
+#'
+#' @examples
+#' if (requireNamespace("sf", quietly = TRUE) &&
+#'     requireNamespace("ggplot2", quietly = TRUE)) {
+#'   data("sim_pu_sf", package = "multiscape")
+#'
+#'   actions_df <- data.frame(
+#'     id = c("conservation", "restoration"),
+#'     name = c("conservation", "restoration")
+#'   )
+#'
+#'   problem <- structure(
+#'     list(
+#'       data = list(
+#'         pu_sf = sim_pu_sf,
+#'         actions = actions_df
+#'       )
+#'     ),
+#'     class = "Problem"
+#'   )
+#'
+#'   ids <- sim_pu_sf$id[seq_len(min(6, nrow(sim_pu_sf)))]
+#'   sol <- structure(
+#'     list(
+#'       problem = problem,
+#'       summary = list(
+#'         actions = data.frame(
+#'           pu = c(ids[1:3], ids[4:6]),
+#'           action = c(rep("conservation", 3), rep("restoration", 3)),
+#'           selected = 1L
+#'         )
+#'       )
+#'     ),
+#'     class = "Solution"
+#'   )
+#'
+#'   plot_spatial_actions(sol, layout = "facet")
+#' }
 #'
 #' @seealso
 #' \code{\link{get_actions}},
@@ -698,6 +796,67 @@ plot_spatial_actions <- function(
 #'
 #' @return Invisibly returns a \code{ggplot} object.
 #'
+#' @examples
+#' if (requireNamespace("sf", quietly = TRUE) &&
+#'     requireNamespace("ggplot2", quietly = TRUE)) {
+#'   data("sim_pu_sf", package = "multiscape")
+#'
+#'   n <- min(6, nrow(sim_pu_sf))
+#'   ids <- sim_pu_sf$id[seq_len(n)]
+#'
+#'   features_df <- data.frame(
+#'     id = c(1, 2),
+#'     name = c("feature_1", "feature_2")
+#'   )
+#'
+#'   dist_features_df <- data.frame(
+#'     pu = rep(ids, times = 2),
+#'     feature = rep(c(1, 2), each = n),
+#'     amount = c(seq_len(n), rev(seq_len(n)))
+#'   )
+#'
+#'   dist_effects_df <- data.frame(
+#'     pu = ids,
+#'     action = "conservation",
+#'     feature = rep(c(1, 2), length.out = n),
+#'     benefit = rep(1, n)
+#'   )
+#'
+#'   actions_df <- data.frame(
+#'     id = "conservation",
+#'     name = "conservation"
+#'   )
+#'
+#'   problem <- structure(
+#'     list(
+#'       data = list(
+#'         pu_sf = sim_pu_sf,
+#'         features = features_df,
+#'         dist_features = dist_features_df,
+#'         dist_effects = dist_effects_df,
+#'         actions = actions_df
+#'       )
+#'     ),
+#'     class = "Problem"
+#'   )
+#'
+#'   sol <- structure(
+#'     list(
+#'       problem = problem,
+#'       summary = list(
+#'         actions = data.frame(
+#'           pu = ids,
+#'           action = "conservation",
+#'           selected = 1L
+#'         )
+#'       )
+#'     ),
+#'     class = "Solution"
+#'   )
+#'
+#'   plot_spatial_features(sol, features = "feature_1", value = "final")
+#' }
+#'
 #' @seealso
 #' \code{\link{get_features}},
 #' \code{\link{plot_spatial}},
@@ -970,6 +1129,35 @@ plot_spatial_features <- function(
 #' @param ... Reserved for future extensions.
 #'
 #' @return Invisibly returns a \code{ggplot} object.
+#'
+#' @examples
+#' if (requireNamespace("ggplot2", quietly = TRUE)) {
+#'   solset <- structure(
+#'     list(
+#'       solution = list(
+#'         runs = data.frame(
+#'           run_id = 1:5,
+#'           status = rep("optimal", 5),
+#'           runtime = c(1.2, 1.1, 1.4, 1.3, 1.5),
+#'           gap = c(0, 0, 0, 0, 0),
+#'           value_cost = c(10, 12, 14, 16, 18),
+#'           value_benefit = c(5, 7, 8, 9, 10),
+#'           value_loss = c(4, 3, 3, 2, 2)
+#'         )
+#'       )
+#'     ),
+#'     class = "SolutionSet"
+#'   )
+#'
+#'   # Plot all pairwise trade-offs
+#'   plot_tradeoff(solset)
+#'
+#'   # Plot two selected objectives
+#'   plot_tradeoff(solset, objectives = c("cost", "benefit"))
+#'
+#'   # Colour points by one objective and label runs
+#'   plot_tradeoff(solset, color_by = "loss", label_runs = TRUE)
+#' }
 #'
 #' @seealso
 #' \code{\link{solve}},

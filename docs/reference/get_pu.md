@@ -69,10 +69,56 @@ results. For the raw model variable vector, use
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
-sol <- solve(problem)
+# \donttest{
+if (requireNamespace("rcbc", quietly = TRUE)) {
+  pu_tbl <- data.frame(
+    id = 1:4,
+    cost = c(1, 2, 3, 4)
+  )
 
-pu_tbl <- get_pu(sol)
-pu_sel <- get_pu(sol, only_selected = TRUE)
-} # }
+  feat_tbl <- data.frame(
+    id = 1:2,
+    name = c("feature_1", "feature_2")
+  )
+
+  dist_feat_tbl <- data.frame(
+    pu = c(1, 1, 2, 3, 4),
+    feature = c(1, 2, 2, 1, 2),
+    amount = c(5, 2, 3, 4, 1)
+  )
+
+  actions_df <- data.frame(
+    id = "conservation",
+    name = "conservation"
+  )
+
+  effects_df <- data.frame(
+    pu = c(1, 2, 3, 4),
+    action = "conservation",
+    feature = c(1, 1, 2, 2),
+    benefit = c(2, 1, 1, 2),
+    loss = c(0, 0, 0, 0)
+  )
+
+  p <- create_problem(
+    pu = pu_tbl,
+    features = feat_tbl,
+    dist_features = dist_feat_tbl,
+    cost = "cost"
+  ) |>
+    add_actions(actions_df, cost = 0) |>
+    add_effects(effects_df) |>
+    add_constraint_targets_relative(0.2) |>
+    add_objective_min_cost() |>
+    set_solver_cbc(time_limit = 10)
+
+  sol <- solve(p)
+
+  get_pu(sol)
+  get_pu(sol, only_selected = TRUE)
+}
+#>   id cost locked_in locked_out internal_id selected
+#> 1  1    1     FALSE      FALSE           1        1
+#> 4  4    4     FALSE      FALSE           4        1
+# }
 ```

@@ -92,3 +92,116 @@ If `include_action_cost = FALSE`, the action-cost term is omitted.
 
 [`add_objective_max_profit`](https://josesalgr.github.io/multiscape/reference/add_objective_max_profit.md),
 [`add_objective_min_cost`](https://josesalgr.github.io/multiscape/reference/add_objective_min_cost.md)
+
+## Examples
+
+``` r
+pu_tbl <- data.frame(
+  id = 1:4,
+  cost = c(1, 2, 3, 4)
+)
+feat_tbl <- data.frame(
+  id = 1:2,
+  name = c("feature_1", "feature_2")
+)
+dist_feat_tbl <- data.frame(
+  pu = c(1, 1, 2, 3, 4),
+  feature = c(1, 2, 2, 1, 2),
+  amount = c(5, 2, 3, 4, 1)
+)
+actions_df <- data.frame(
+  id = c("conservation", "restoration"),
+  name = c("conservation", "restoration")
+)
+profit_df <- data.frame(
+  pu = c(1, 2, 3, 4, 1, 2, 3, 4),
+  action = c("conservation", "conservation", "conservation", "conservation",
+             "restoration", "restoration", "restoration", "restoration"),
+  profit = c(5, 4, 3, 2, 8, 7, 6, 5)
+)
+
+p <- create_problem(
+  pu = pu_tbl,
+  features = feat_tbl,
+  dist_features = dist_feat_tbl,
+  cost = "cost"
+) |>
+  add_actions(actions_df, cost = c(conservation = 1, restoration = 2)) |>
+  add_profit(profit_df)
+
+p1 <- add_objective_max_net_profit(p)
+p1$data$model_args
+#> $model_type
+#> [1] "maximizeNetProfit"
+#> 
+#> $objective_id
+#> [1] "max_net_profit"
+#> 
+#> $objective_args
+#> $objective_args$profit_col
+#> [1] "profit"
+#> 
+#> $objective_args$include_pu_cost
+#> [1] TRUE
+#> 
+#> $objective_args$include_action_cost
+#> [1] TRUE
+#> 
+#> $objective_args$actions
+#> NULL
+#> 
+#> 
+
+p2 <- add_objective_max_net_profit(
+  p,
+  include_pu_cost = FALSE,
+  include_action_cost = TRUE
+)
+p2$data$model_args
+#> $model_type
+#> [1] "maximizeNetProfit"
+#> 
+#> $objective_id
+#> [1] "max_net_profit"
+#> 
+#> $objective_args
+#> $objective_args$profit_col
+#> [1] "profit"
+#> 
+#> $objective_args$include_pu_cost
+#> [1] FALSE
+#> 
+#> $objective_args$include_action_cost
+#> [1] TRUE
+#> 
+#> $objective_args$actions
+#> NULL
+#> 
+#> 
+
+p3 <- add_objective_max_net_profit(
+  p,
+  actions = "restoration"
+)
+p3$data$model_args
+#> $model_type
+#> [1] "maximizeNetProfit"
+#> 
+#> $objective_id
+#> [1] "max_net_profit"
+#> 
+#> $objective_args
+#> $objective_args$profit_col
+#> [1] "profit"
+#> 
+#> $objective_args$include_pu_cost
+#> [1] TRUE
+#> 
+#> $objective_args$include_action_cost
+#> [1] TRUE
+#> 
+#> $objective_args$actions
+#> [1] "restoration"
+#> 
+#> 
+```

@@ -112,6 +112,68 @@ faceting is done by run.
 
 Planning-unit geometry must be available in \code{x$problem$data$pu_sf}.
 }
+\examples{
+if (requireNamespace("sf", quietly = TRUE) &&
+    requireNamespace("ggplot2", quietly = TRUE)) {
+  data("sim_pu_sf", package = "multiscape")
+
+  n <- min(6, nrow(sim_pu_sf))
+  ids <- sim_pu_sf$id[seq_len(n)]
+
+  features_df <- data.frame(
+    id = c(1, 2),
+    name = c("feature_1", "feature_2")
+  )
+
+  dist_features_df <- data.frame(
+    pu = rep(ids, times = 2),
+    feature = rep(c(1, 2), each = n),
+    amount = c(seq_len(n), rev(seq_len(n)))
+  )
+
+  dist_effects_df <- data.frame(
+    pu = ids,
+    action = "conservation",
+    feature = rep(c(1, 2), length.out = n),
+    benefit = rep(1, n)
+  )
+
+  actions_df <- data.frame(
+    id = "conservation",
+    name = "conservation"
+  )
+
+  problem <- structure(
+    list(
+      data = list(
+        pu_sf = sim_pu_sf,
+        features = features_df,
+        dist_features = dist_features_df,
+        dist_effects = dist_effects_df,
+        actions = actions_df
+      )
+    ),
+    class = "Problem"
+  )
+
+  sol <- structure(
+    list(
+      problem = problem,
+      summary = list(
+        actions = data.frame(
+          pu = ids,
+          action = "conservation",
+          selected = 1L
+        )
+      )
+    ),
+    class = "Solution"
+  )
+
+  plot_spatial_features(sol, features = "feature_1", value = "final")
+}
+
+}
 \seealso{
 \code{\link{get_features}},
 \code{\link{plot_spatial}},

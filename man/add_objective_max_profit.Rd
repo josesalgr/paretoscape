@@ -61,6 +61,50 @@ This objective considers profit only. It does not subtract planning-unit
 costs or action costs. For a net-profit formulation, use
 \code{\link{add_objective_max_net_profit}}.
 }
+\examples{
+pu_tbl <- data.frame(
+  id = 1:4,
+  cost = c(1, 2, 3, 4)
+)
+feat_tbl <- data.frame(
+  id = 1:2,
+  name = c("feature_1", "feature_2")
+)
+dist_feat_tbl <- data.frame(
+  pu = c(1, 1, 2, 3, 4),
+  feature = c(1, 2, 2, 1, 2),
+  amount = c(5, 2, 3, 4, 1)
+)
+actions_df <- data.frame(
+  id = c("conservation", "restoration"),
+  name = c("conservation", "restoration")
+)
+profit_df <- data.frame(
+  pu = c(1, 2, 3, 4, 1, 2, 3, 4),
+  action = c("conservation", "conservation", "conservation", "conservation",
+             "restoration", "restoration", "restoration", "restoration"),
+  profit = c(5, 4, 3, 2, 8, 7, 6, 5)
+)
+
+p <- create_problem(
+  pu = pu_tbl,
+  features = feat_tbl,
+  dist_features = dist_feat_tbl,
+  cost = "cost"
+) |>
+  add_actions(actions_df, cost = c(conservation = 1, restoration = 2)) |>
+  add_profit(profit_df)
+
+p1 <- add_objective_max_profit(p)
+p1$data$model_args
+
+p2 <- add_objective_max_profit(
+  p,
+  actions = "restoration"
+)
+p2$data$model_args
+
+}
 \seealso{
 \code{\link{add_objective_min_cost}},
 \code{\link{add_objective_max_net_profit}}

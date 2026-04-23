@@ -62,11 +62,32 @@ The resulting relation is stored as an undirected spatial relation.
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
+# \donttest{
+library(terra)
+
+data("sim_pu_sf", package = "multiscape")
+sim_features <- load_sim_features_raster()
+
+p <- create_problem(
+  pu = sim_pu_sf,
+  features = sim_features,
+  cost = "cost"
+)
+
 p <- add_spatial_rook(
   x = p,
+  geometry = sim_pu_sf,
   name = "rook",
   weight = 1
 )
-} # }
+
+head(p$data$spatial_relations$rook)
+#>       internal_pu1 internal_pu2 weight   pu1   pu2  source relation_name
+#> 54596        10000        10001      1 10000 10001 rook_sf          rook
+#> 54597        10000        10132      1 10000 10132 rook_sf          rook
+#> 54598        10000        10133      1 10000 10133 rook_sf          rook
+#> 54602        10001        10002      1 10001 10002 rook_sf          rook
+#> 54603        10001        10133      1 10001 10133 rook_sf          rook
+#> 54604        10001        10134      1 10001 10134 rook_sf          rook
+# }
 ```

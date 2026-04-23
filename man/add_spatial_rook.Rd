@@ -48,12 +48,26 @@ All edges receive the same user-supplied weight.
 The resulting relation is stored as an undirected spatial relation.
 }
 \examples{
-\dontrun{
+\donttest{
+library(terra)
+
+data("sim_pu_sf", package = "multiscape")
+sim_features <- load_sim_features_raster()
+
+p <- create_problem(
+  pu = sim_pu_sf,
+  features = sim_features,
+  cost = "cost"
+)
+
 p <- add_spatial_rook(
   x = p,
+  geometry = sim_pu_sf,
   name = "rook",
   weight = 1
 )
+
+head(p$data$spatial_relations$rook)
 }
 
 }

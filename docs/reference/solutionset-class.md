@@ -26,6 +26,7 @@ No return value. This page documents the `SolutionSet` class.
 The `SolutionSet` class represents the result of a multi-run solving
 workflow:
 
+
     Problem -> solve() -> SolutionSet
 
 Each run corresponds to one specific optimization subproblem, parameter

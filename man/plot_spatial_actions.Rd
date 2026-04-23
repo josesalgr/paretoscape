@@ -93,6 +93,45 @@ When plotting multiple runs, only \code{layout = "single"} is supported.
 
 Planning-unit geometry must be available in \code{x$problem$data$pu_sf}.
 }
+\examples{
+if (requireNamespace("sf", quietly = TRUE) &&
+    requireNamespace("ggplot2", quietly = TRUE)) {
+  data("sim_pu_sf", package = "multiscape")
+
+  actions_df <- data.frame(
+    id = c("conservation", "restoration"),
+    name = c("conservation", "restoration")
+  )
+
+  problem <- structure(
+    list(
+      data = list(
+        pu_sf = sim_pu_sf,
+        actions = actions_df
+      )
+    ),
+    class = "Problem"
+  )
+
+  ids <- sim_pu_sf$id[seq_len(min(6, nrow(sim_pu_sf)))]
+  sol <- structure(
+    list(
+      problem = problem,
+      summary = list(
+        actions = data.frame(
+          pu = c(ids[1:3], ids[4:6]),
+          action = c(rep("conservation", 3), rep("restoration", 3)),
+          selected = 1L
+        )
+      )
+    ),
+    class = "Solution"
+  )
+
+  plot_spatial_actions(sol, layout = "facet")
+}
+
+}
 \seealso{
 \code{\link{get_actions}},
 \code{\link{plot_spatial}},

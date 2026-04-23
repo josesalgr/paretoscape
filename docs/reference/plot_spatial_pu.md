@@ -91,3 +91,37 @@ Planning-unit geometry must be available in `x$problem$data$pu_sf`.
 [`plot_spatial`](https://josesalgr.github.io/multiscape/reference/plot_spatial.md),
 [`plot_spatial_actions`](https://josesalgr.github.io/multiscape/reference/plot_spatial_actions.md),
 [`plot_spatial_features`](https://josesalgr.github.io/multiscape/reference/plot_spatial_features.md)
+
+## Examples
+
+``` r
+if (requireNamespace("sf", quietly = TRUE) &&
+    requireNamespace("ggplot2", quietly = TRUE)) {
+  data("sim_pu_sf", package = "multiscape")
+
+  problem <- structure(
+    list(
+      data = list(
+        pu_sf = sim_pu_sf
+      )
+    ),
+    class = "Problem"
+  )
+
+  sol <- structure(
+    list(
+      problem = problem,
+      summary = list(
+        pu = data.frame(
+          id = sim_pu_sf$id,
+          selected = as.integer(seq_len(nrow(sim_pu_sf)) %% 2 == 1)
+        )
+      )
+    ),
+    class = "Solution"
+  )
+
+  plot_spatial_pu(sol)
+}
+
+```

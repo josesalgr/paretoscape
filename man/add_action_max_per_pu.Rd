@@ -52,30 +52,6 @@ If \code{x$data$model_ptr} is already present (a model has been built previously
 the function marks the model as dirty by setting \code{x$data$meta$model_dirty <- TRUE},
 signalling that the model should be rebuilt before solving.
 }
-\examples{
-\dontrun{
-# Limit to at most 1 action per PU (default)
-p <- add_action_max_per_pu(p, max = 1)
-
-# Limit to at most 2 actions per PU
-p <- add_action_max_per_pu(p, max = 2, overwrite = TRUE)
-
-# Apply the limit only to a subset of PUs
-p <- add_action_max_per_pu(p, max = 1, pu = c(1, 2, 3), overwrite = TRUE)
-
-# Limit the number of actions among a subset of actions (e.g., only harvest-like actions)
-p <- add_action_max_per_pu(p, max = 1, actions = c("harvest", "sustainable"), overwrite = TRUE)
-
-# Combine PU and action subsets
-p <- add_action_max_per_pu(
-  p, max = 1,
-  pu = c(10, 11, 12),
-  actions = c("harvest", "sustainable"),
-  overwrite = TRUE
-)
-}
-
-}
 \seealso{
 \code{\link{add_actions}}
 }

@@ -82,14 +82,39 @@ If the \pkg{RANN} package is available, it is used for efficient nearest
 neighbour search. Otherwise, a full distance matrix is computed.
 }
 \examples{
-\dontrun{
+pu_tbl <- data.frame(
+  id = 1:4,
+  cost = c(1, 2, 3, 4),
+  x = c(0, 1, 0, 1),
+  y = c(0, 0, 1, 1)
+)
+
+feat_tbl <- data.frame(
+  id = 1:2,
+  name = c("feature_1", "feature_2")
+)
+
+dist_feat_tbl <- data.frame(
+  pu = c(1, 1, 2, 3, 4),
+  feature = c(1, 2, 2, 1, 2),
+  amount = c(5, 2, 3, 4, 1)
+)
+
+p <- create_problem(
+  pu = pu_tbl,
+  features = feat_tbl,
+  dist_features = dist_feat_tbl,
+  cost = "cost"
+)
+
 p <- add_spatial_knn(
   x = p,
-  k = 8,
-  name = "knn8",
-  weight_mode = "inverse"
+  k = 2,
+  name = "knn2",
+  weight_mode = "constant"
 )
-}
+
+p$data$spatial_relations$knn2
 
 }
 \seealso{

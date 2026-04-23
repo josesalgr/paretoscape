@@ -74,14 +74,39 @@ problems, \code{\link{add_spatial_knn}} is often more scalable.
 The resulting relation is registered as undirected.
 }
 \examples{
-\dontrun{
+pu_tbl <- data.frame(
+  id = 1:4,
+  cost = c(1, 2, 3, 4),
+  x = c(0, 1, 0, 1),
+  y = c(0, 0, 1, 1)
+)
+
+feat_tbl <- data.frame(
+  id = 1:2,
+  name = c("feature_1", "feature_2")
+)
+
+dist_feat_tbl <- data.frame(
+  pu = c(1, 1, 2, 3, 4),
+  feature = c(1, 2, 2, 1, 2),
+  amount = c(5, 2, 3, 4, 1)
+)
+
+p <- create_problem(
+  pu = pu_tbl,
+  features = feat_tbl,
+  dist_features = dist_feat_tbl,
+  cost = "cost"
+)
+
 p <- add_spatial_distance(
   x = p,
-  max_distance = 1000,
-  name = "within_1km",
+  max_distance = 1.01,
+  name = "within_1",
   weight_mode = "constant"
 )
-}
+
+p$data$spatial_relations$within_1
 
 }
 \seealso{

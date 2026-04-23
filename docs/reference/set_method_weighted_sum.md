@@ -84,6 +84,7 @@ have already been registered under aliases. These aliases are typically
 created by calling objective setters with an `alias` argument, for
 example:
 
+
     x <- x |>
       add_objective_min_cost(alias = "cost") |>
       add_objective_min_fragmentation(alias = "frag")
@@ -181,76 +182,119 @@ The actual scalarization is performed later by
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
-# ------------------------------------------------------------
-# Example 1: cost vs fragmentation
-# ------------------------------------------------------------
-pu <- data.frame(id = 1:4, cost = c(1, 2, 2, 3))
-features <- data.frame(id = 1, name = "sp1")
-dist_features <- data.frame(
-  pu = c(1, 2, 3, 4),
-  feature = 1,
-  amount = c(1, 1, 1, 1)
+# Small toy problem
+pu_tbl <- data.frame(
+  id = 1:4,
+  cost = c(1, 2, 3, 4)
+)
+
+feat_tbl <- data.frame(
+  id = 1:2,
+  name = c("feature_1", "feature_2")
+)
+
+dist_feat_tbl <- data.frame(
+  pu = c(1, 1, 2, 3, 4),
+  feature = c(1, 2, 2, 1, 2),
+  amount = c(5, 2, 3, 4, 1)
+)
+
+actions_df <- data.frame(
+  id = c("conservation", "restoration"),
+  name = c("conservation", "restoration")
+)
+
+effects_df <- data.frame(
+  pu = c(1, 2, 3, 4, 1, 2, 3, 4),
+  action = c("conservation", "conservation", "conservation", "conservation",
+             "restoration", "restoration", "restoration", "restoration"),
+  feature = c(1, 1, 1, 1, 2, 2, 2, 2),
+  benefit = c(2, 1, 0, 1, 3, 0, 1, 2),
+  loss = c(0, 0, 1, 0, 0, 1, 0, 0)
 )
 
 x <- create_problem(
-  pu = pu,
-  features = features,
-  dist_features = dist_features
-)
-
-bnd <- data.frame(
-  id1 = c(1, 2, 3, 1, 2, 3, 4),
-  id2 = c(1, 2, 3, 2, 3, 4, 4),
-  boundary = c(2, 2, 2, 1, 1, 1, 2)
-)
-
-x <- add_spatial_boundary(x, boundary = bnd, name = "boundary")
-
-x <- x |>
-  add_constraint_targets_relative(0.5) |>
+  pu = pu_tbl,
+  features = feat_tbl,
+  dist_features = dist_feat_tbl,
+  cost = "cost"
+) |>
+  add_actions(actions_df, cost = c(conservation = 1, restoration = 2)) |>
+  add_effects(effects_df) |>
   add_objective_min_cost(alias = "cost") |>
-  add_objective_min_fragmentation(
-    alias = "frag",
-    relation_name = "boundary",
-    weight_multiplier = 0.01
-  )
+  add_objective_max_benefit(alias = "benefit")
 
 x <- set_method_weighted_sum(
   x,
-  aliases = c("cost", "frag"),
-  weights = c(1, 1),
+  aliases = c("cost", "benefit"),
+  weights = c(0.4, 0.6),
+  normalize_weights = FALSE
+)
+
+x$data$method
+#> $name
+#> [1] "weighted"
+#> 
+#> $aliases
+#> [1] "cost"    "benefit"
+#> 
+#> $weights
+#> [1] 0.4 0.6
+#> 
+#> $normalize_weights
+#> [1] FALSE
+#> 
+#> $objective_scaling
+#> [1] FALSE
+#> 
+
+# Normalize weights before storing
+x2 <- set_method_weighted_sum(
+  x,
+  aliases = c("cost", "benefit"),
+  weights = c(2, 3),
   normalize_weights = TRUE
 )
 
-# sol <- solve(x)
+x2$data$method
+#> $name
+#> [1] "weighted"
+#> 
+#> $aliases
+#> [1] "cost"    "benefit"
+#> 
+#> $weights
+#> [1] 0.4 0.6
+#> 
+#> $normalize_weights
+#> [1] TRUE
+#> 
+#> $objective_scaling
+#> [1] FALSE
+#> 
 
-# ------------------------------------------------------------
-# Example 2: scan weights to explore trade-offs
-# ------------------------------------------------------------
-weight_grid <- seq(0, 1, by = 0.25)
-xs <- vector("list", length(weight_grid))
-
-for (i in seq_along(weight_grid)) {
-  w <- weight_grid[i]
-  xs[[i]] <- set_method_weighted_sum(
-    x,
-    aliases = c("cost", "frag"),
-    weights = c(1 - w, w),
-    normalize_weights = TRUE
-  )
-  # sols[[i]] <- solve(xs[[i]])
-}
-
-# ------------------------------------------------------------
-# Example 3: request objective scaling
-# ------------------------------------------------------------
-x <- set_method_weighted_sum(
+# Request objective scaling
+x3 <- set_method_weighted_sum(
   x,
-  aliases = c("cost", "frag"),
+  aliases = c("cost", "benefit"),
   weights = c(0.7, 0.3),
-  normalize_weights = FALSE,
   objective_scaling = TRUE
 )
-} # }
+
+x3$data$method
+#> $name
+#> [1] "weighted"
+#> 
+#> $aliases
+#> [1] "cost"    "benefit"
+#> 
+#> $weights
+#> [1] 0.7 0.3
+#> 
+#> $normalize_weights
+#> [1] FALSE
+#> 
+#> $objective_scaling
+#> [1] TRUE
+#> 
 ```

@@ -95,6 +95,37 @@ This wrapper is useful as a compact entry point, while the specialised
 plotting functions provide a cleaner and more explicit user interface for
 each spatial output type.
 }
+\examples{
+if (requireNamespace("sf", quietly = TRUE) &&
+    requireNamespace("ggplot2", quietly = TRUE)) {
+  data("sim_pu_sf", package = "multiscape")
+
+  problem <- structure(
+    list(
+      data = list(
+        pu_sf = sim_pu_sf
+      )
+    ),
+    class = "Problem"
+  )
+
+  sol <- structure(
+    list(
+      problem = problem,
+      summary = list(
+        pu = data.frame(
+          id = sim_pu_sf$id,
+          selected = as.integer(seq_len(nrow(sim_pu_sf)) \%\% 2 == 1)
+        )
+      )
+    ),
+    class = "Solution"
+  )
+
+  plot_spatial(sol, what = "pu")
+}
+
+}
 \seealso{
 \code{\link{plot_spatial_pu}},
 \code{\link{plot_spatial_actions}},

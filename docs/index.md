@@ -26,6 +26,7 @@ weighted-sum, epsilon-constraint, and AUGMECON.
 The current development version can be installed from GitHub:
 
 ``` r
+
 if (!requireNamespace("remotes", quietly = TRUE)) {
   install.packages("remotes")
 }
@@ -104,6 +105,7 @@ minimum area requirement.
 ### Load the package and example data
 
 ``` r
+
 library(multiscape)
 library(dplyr)
 library(terra)
@@ -133,6 +135,7 @@ distribution of the features that are later affected by conservation and
 restoration actions.
 
 ``` r
+
 terra::plot(
   sim_features,
   main = c(
@@ -152,6 +155,7 @@ We first create the base `Problem` object from the planning units and
 the feature layers.
 
 ``` r
+
 p <- create_problem(
   pu = sim_pu_sf,
   features = sim_features,
@@ -209,6 +213,7 @@ We now specify the catalogue of actions that the model is allowed to
 assign.
 
 ``` r
+
 actions_df <- data.frame(
   id = c("conservation", "restoration"),
   name = c("conservation", "restoration")
@@ -230,6 +235,7 @@ eligible for **conservation**, whereas the complementary subset is only
 eligible for **restoration**.
 
 ``` r
+
 feasible_forest <- sim_pu_sf |>
   sf::st_drop_geometry() |>
   select(id, locked_in) |>
@@ -259,6 +265,7 @@ admissible.
 We next specify how actions affect the features.
 
 ``` r
+
 effects_mult <- data.frame(
   action = rep(c("conservation", "restoration"), each = 4),
   feature = rep(
@@ -291,6 +298,7 @@ model can compare interventions not only by their ecological
 consequences, but also by their local implementation burden.
 
 ``` r
+
 action_cost_df <- sim_pu_sf |>
   sf::st_drop_geometry() |>
   transmute(
@@ -314,6 +322,7 @@ Once actions, eligibility, effects, and costs have been defined, we can
 complete the optimisation model.
 
 ``` r
+
 target_area <- n_pu * area_pu * 0.20
 
 p <- p |>
@@ -356,6 +365,7 @@ alternatives rather than a single solution.
 ### Configure the epsilon-constraint method and solver
 
 ``` r
+
 p <- p |>
   set_method_epsilon_constraint(
     primary = "Total impact",
@@ -407,6 +417,7 @@ specification to a fully defined optimisation model ready to be solved.
 ### Solve and inspect the results
 
 ``` r
+
 res <- solve(p, process = TRUE)
 plot_tradeoff(res, label_runs = TRUE)
 ```
@@ -426,6 +437,7 @@ manual palette to improve visual comparison across solutions. For
 example:
 
 ``` r
+
 plot_spatial_actions(
   res,
   fill_values = c(

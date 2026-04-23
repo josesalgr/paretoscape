@@ -1,4 +1,9 @@
 
+# multiscape 1.0.6
+
+- Fix CRAN submission issues
+- Revise examples and DESCRIPTION for CRAN resubmission
+
 # multiscape 1.0.5
 
 - Release candidate for CRAN.

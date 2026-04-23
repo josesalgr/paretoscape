@@ -61,6 +61,7 @@ objects.
 
 The typical multiscape workflow is:
 
+
     x <- create_problem(...)
     x <- add_...(x, ...)
     x <- set_...(x, ...)
@@ -288,7 +289,7 @@ if (requireNamespace("rcbc", quietly = TRUE)) {
 #> │└─solutions: 1
 #> └─run summary
 #> │├─statuses: optimal: 1
-#> │├─runtime: 0
+#> │├─runtime: 0.02
 #> │├─gap: 0
 #> │├─design cols: none
 #> │└─value cols: value_cost, value_benefit

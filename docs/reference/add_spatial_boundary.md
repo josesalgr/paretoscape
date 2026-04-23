@@ -141,20 +141,60 @@ typically as an undirected relation with optional diagonal entries.
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
-# From a boundary table
+pu_tbl <- data.frame(
+  id = 1:4,
+  cost = c(1, 2, 3, 4)
+)
+
+feat_tbl <- data.frame(
+  id = 1:2,
+  name = c("feature_1", "feature_2")
+)
+
+dist_feat_tbl <- data.frame(
+  pu = c(1, 1, 2, 3, 4),
+  feature = c(1, 2, 2, 1, 2),
+  amount = c(5, 2, 3, 4, 1)
+)
+
+bound_df <- data.frame(
+  id1 = c(1, 1, 2, 1, 2, 3, 4),
+  id2 = c(1, 2, 2, 3, 4, 4, 4),
+  boundary = c(4, 1, 4, 1, 1, 1, 4)
+)
+
+p <- create_problem(
+  pu = pu_tbl,
+  features = feat_tbl,
+  dist_features = dist_feat_tbl,
+  cost = "cost"
+)
+
 p <- add_spatial_boundary(
   x = p,
   boundary = bound_df,
-  name = "boundary"
-)
-
-# From sf polygons
-p <- add_spatial_boundary(
-  x = p,
-  geometry = pu_sf,
+  name = "boundary",
   include_self = TRUE,
   edge_factor = 1
 )
-} # }
+
+p$data$spatial_relations$boundary
+#>   internal_pu1 internal_pu2 weight pu1 pu2                        source
+#> 1            1            2      1   1   2         boundary_table_shared
+#> 2            1            3      1   1   3         boundary_table_shared
+#> 3            2            4      1   2   4         boundary_table_shared
+#> 4            3            4      1   3   4         boundary_table_shared
+#> 5            1            1      2   1   1 boundary_table_diag_effective
+#> 6            2            2      2   2   2 boundary_table_diag_effective
+#> 7            3            3     -2   3   3 boundary_table_diag_effective
+#> 8            4            4      2   4   4 boundary_table_diag_effective
+#>   relation_name
+#> 1      boundary
+#> 2      boundary
+#> 3      boundary
+#> 4      boundary
+#> 5      boundary
+#> 6      boundary
+#> 7      boundary
+#> 8      boundary
 ```

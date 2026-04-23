@@ -66,11 +66,34 @@ The resulting relation is stored as an undirected spatial relation.
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
+# \donttest{
+library(terra)
+#> Warning: package 'terra' was built under R version 4.4.3
+#> terra 1.8.80
+
+data("sim_pu_sf", package = "multiscape")
+sim_features <- load_sim_features_raster()
+
+p <- create_problem(
+  pu = sim_pu_sf,
+  features = sim_features,
+  cost = "cost"
+)
+
 p <- add_spatial_queen(
   x = p,
+  geometry = sim_pu_sf,
   name = "queen",
   weight = 1
 )
-} # }
+
+head(p$data$spatial_relations$queen)
+#>       internal_pu1 internal_pu2 weight   pu1   pu2   source relation_name
+#> 27430        10000        10001      1 10000 10001 queen_sf         queen
+#> 27431        10000        10132      1 10000 10132 queen_sf         queen
+#> 27432        10000        10133      1 10000 10133 queen_sf         queen
+#> 27433        10001        10002      1 10001 10002 queen_sf         queen
+#> 27434        10001        10133      1 10001 10133 queen_sf         queen
+#> 27435        10001        10134      1 10001 10134 queen_sf         queen
+# }
 ```

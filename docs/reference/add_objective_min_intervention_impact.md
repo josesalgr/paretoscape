@@ -90,3 +90,99 @@ actions.
 
 [`add_objective_max_benefit`](https://josesalgr.github.io/multiscape/reference/add_objective_max_benefit.md),
 [`add_objective_min_loss`](https://josesalgr.github.io/multiscape/reference/add_objective_min_loss.md)
+
+## Examples
+
+``` r
+pu_tbl <- data.frame(
+  id = 1:4,
+  cost = c(1, 2, 3, 4)
+)
+feat_tbl <- data.frame(
+  id = 1:2,
+  name = c("feature_1", "feature_2")
+)
+dist_feat_tbl <- data.frame(
+  pu = c(1, 1, 2, 3, 4),
+  feature = c(1, 2, 2, 1, 2),
+  amount = c(5, 2, 3, 4, 1)
+)
+actions_df <- data.frame(
+  id = c("conservation", "restoration"),
+  name = c("conservation", "restoration")
+)
+
+p <- create_problem(
+  pu = pu_tbl,
+  features = feat_tbl,
+  dist_features = dist_feat_tbl,
+  cost = "cost"
+) |>
+  add_actions(actions_df, cost = c(conservation = 1, restoration = 2))
+
+p1 <- add_objective_min_intervention_impact(p)
+p1$data$model_args
+#> $model_type
+#> [1] "minimizeInterventionImpact"
+#> 
+#> $objective_id
+#> [1] "min_intervention_impact"
+#> 
+#> $objective_args
+#> $objective_args$impact_col
+#> [1] "amount"
+#> 
+#> $objective_args$features
+#> [1] 1 2
+#> 
+#> $objective_args$actions
+#> [1] "conservation" "restoration" 
+#> 
+#> 
+
+p2 <- add_objective_min_intervention_impact(
+  p,
+  features = 1
+)
+p2$data$model_args
+#> $model_type
+#> [1] "minimizeInterventionImpact"
+#> 
+#> $objective_id
+#> [1] "min_intervention_impact"
+#> 
+#> $objective_args
+#> $objective_args$impact_col
+#> [1] "amount"
+#> 
+#> $objective_args$features
+#> [1] 1
+#> 
+#> $objective_args$actions
+#> [1] "conservation" "restoration" 
+#> 
+#> 
+
+p3 <- add_objective_min_intervention_impact(
+  p,
+  actions = "restoration"
+)
+p3$data$model_args
+#> $model_type
+#> [1] "minimizeInterventionImpact"
+#> 
+#> $objective_id
+#> [1] "min_intervention_impact"
+#> 
+#> $objective_args
+#> $objective_args$impact_col
+#> [1] "amount"
+#> 
+#> $objective_args$features
+#> [1] 1 2
+#> 
+#> $objective_args$actions
+#> [1] "restoration"
+#> 
+#> 
+```

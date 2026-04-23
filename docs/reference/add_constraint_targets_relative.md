@@ -134,27 +134,63 @@ on the same feature with different contributing action subsets.
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
-# Require 30% of the current baseline total for all features
-p <- add_constraint_targets_relative(p, 0.3)
-
-# Require 20% of baseline totals for selected features only
-p <- add_constraint_targets_relative(
-  p,
-  0.2,
-  features = c("sp1", "sp2")
+pu_tbl <- data.frame(
+  id = 1:4,
+  cost = c(1, 2, 3, 4)
 )
 
-# Require 20% of baseline totals, counting only recovery actions
-p <- add_constraint_targets_relative(
-  p,
-  0.2,
-  actions = "recovery"
+feat_tbl <- data.frame(
+  id = 1:2,
+  name = c("feature_1", "feature_2")
 )
 
-# Combine multiple target rules
-p <- p |>
-  add_constraint_targets_relative(0.1, actions = "conservation") |>
-  add_constraint_targets_absolute(100, actions = "restoration")
-} # }
+dist_feat_tbl <- data.frame(
+  pu = c(1, 1, 2, 3, 4),
+  feature = c(1, 2, 2, 1, 2),
+  amount = c(5, 2, 3, 4, 1)
+)
+
+p <- create_problem(
+  pu = pu_tbl,
+  features = feat_tbl,
+  dist_features = dist_feat_tbl,
+  cost = "cost"
+) |>
+  add_actions(data.frame(id = "conservation", name = "conservation"), cost = 0)
+
+# Require 30% of the baseline total for all features
+p1 <- add_constraint_targets_relative(p, 0.3)
+p1$data$targets
+#>   feature    type sense       target_unit target_raw basis_total target_value
+#> 1       1 actions    ge relative_baseline        0.3           9          2.7
+#> 2       2 actions    ge relative_baseline        0.3           6          1.8
+#>   actions label                 created_at feature_name
+#> 1    <NA>  <NA> 2026-04-23 21:00:04.306099    feature_1
+#> 2    <NA>  <NA> 2026-04-23 21:00:04.306099    feature_2
+
+# Require 20% for one selected feature
+p2 <- add_constraint_targets_relative(
+  p,
+  0.2,
+  features = 1
+)
+p2$data$targets
+#>   feature    type sense       target_unit target_raw basis_total target_value
+#> 1       1 actions    ge relative_baseline        0.2           9          1.8
+#>   actions label               created_at feature_name
+#> 1    <NA>  <NA> 2026-04-23 21:00:04.3096    feature_1
+
+# Restrict which actions count toward target achievement
+p3 <- add_constraint_targets_relative(
+  p,
+  0.2,
+  actions = "conservation"
+)
+p3$data$targets
+#>   feature    type sense       target_unit target_raw basis_total target_value
+#> 1       1 actions    ge relative_baseline        0.2           9          1.8
+#> 2       2 actions    ge relative_baseline        0.2           6          1.2
+#>        actions label                 created_at feature_name
+#> 1 conservation  <NA> 2026-04-23 21:00:04.312923    feature_1
+#> 2 conservation  <NA> 2026-04-23 21:00:04.312923    feature_2
 ```

@@ -427,22 +427,44 @@ add_spatial_relations <- function(x,
 #'   \code{x$data$spatial_relations[[name]]}.
 #'
 #' @examples
-#' \dontrun{
-#' # From a boundary table
+#' pu_tbl <- data.frame(
+#'   id = 1:4,
+#'   cost = c(1, 2, 3, 4)
+#' )
+#'
+#' feat_tbl <- data.frame(
+#'   id = 1:2,
+#'   name = c("feature_1", "feature_2")
+#' )
+#'
+#' dist_feat_tbl <- data.frame(
+#'   pu = c(1, 1, 2, 3, 4),
+#'   feature = c(1, 2, 2, 1, 2),
+#'   amount = c(5, 2, 3, 4, 1)
+#' )
+#'
+#' bound_df <- data.frame(
+#'   id1 = c(1, 1, 2, 1, 2, 3, 4),
+#'   id2 = c(1, 2, 2, 3, 4, 4, 4),
+#'   boundary = c(4, 1, 4, 1, 1, 1, 4)
+#' )
+#'
+#' p <- create_problem(
+#'   pu = pu_tbl,
+#'   features = feat_tbl,
+#'   dist_features = dist_feat_tbl,
+#'   cost = "cost"
+#' )
+#'
 #' p <- add_spatial_boundary(
 #'   x = p,
 #'   boundary = bound_df,
-#'   name = "boundary"
-#' )
-#'
-#' # From sf polygons
-#' p <- add_spatial_boundary(
-#'   x = p,
-#'   geometry = pu_sf,
+#'   name = "boundary",
 #'   include_self = TRUE,
 #'   edge_factor = 1
 #' )
-#' }
+#'
+#' p$data$spatial_relations$boundary
 #'
 #' @seealso
 #' \code{\link{add_spatial_relations}},
@@ -772,12 +794,26 @@ add_spatial_boundary <- function(x,
 #' @return An updated \code{Problem} object.
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
+#' library(terra)
+#'
+#' data("sim_pu_sf", package = "multiscape")
+#' sim_features <- load_sim_features_raster()
+#'
+#' p <- create_problem(
+#'   pu = sim_pu_sf,
+#'   features = sim_features,
+#'   cost = "cost"
+#' )
+#'
 #' p <- add_spatial_rook(
 #'   x = p,
+#'   geometry = sim_pu_sf,
 #'   name = "rook",
 #'   weight = 1
 #' )
+#'
+#' head(p$data$spatial_relations$rook)
 #' }
 #'
 #' @seealso
@@ -866,12 +902,26 @@ add_spatial_rook <- function(x,
 #' @return An updated \code{Problem} object.
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
+#' library(terra)
+#'
+#' data("sim_pu_sf", package = "multiscape")
+#' sim_features <- load_sim_features_raster()
+#'
+#' p <- create_problem(
+#'   pu = sim_pu_sf,
+#'   features = sim_features,
+#'   cost = "cost"
+#' )
+#'
 #' p <- add_spatial_queen(
 #'   x = p,
+#'   geometry = sim_pu_sf,
 #'   name = "queen",
 #'   weight = 1
 #' )
+#'
+#' head(p$data$spatial_relations$queen)
 #' }
 #'
 #' @seealso
@@ -983,14 +1033,39 @@ add_spatial_queen <- function(x,
 #' @return An updated \code{Problem} object.
 #'
 #' @examples
-#' \dontrun{
+#' pu_tbl <- data.frame(
+#'   id = 1:4,
+#'   cost = c(1, 2, 3, 4),
+#'   x = c(0, 1, 0, 1),
+#'   y = c(0, 0, 1, 1)
+#' )
+#'
+#' feat_tbl <- data.frame(
+#'   id = 1:2,
+#'   name = c("feature_1", "feature_2")
+#' )
+#'
+#' dist_feat_tbl <- data.frame(
+#'   pu = c(1, 1, 2, 3, 4),
+#'   feature = c(1, 2, 2, 1, 2),
+#'   amount = c(5, 2, 3, 4, 1)
+#' )
+#'
+#' p <- create_problem(
+#'   pu = pu_tbl,
+#'   features = feat_tbl,
+#'   dist_features = dist_feat_tbl,
+#'   cost = "cost"
+#' )
+#'
 #' p <- add_spatial_knn(
 #'   x = p,
-#'   k = 8,
-#'   name = "knn8",
-#'   weight_mode = "inverse"
+#'   k = 2,
+#'   name = "knn2",
+#'   weight_mode = "constant"
 #' )
-#' }
+#'
+#' p$data$spatial_relations$knn2
 #'
 #' @seealso
 #' \code{\link{add_spatial_distance}},
@@ -1110,14 +1185,39 @@ add_spatial_knn <- function(x,
 #' @return An updated \code{Problem} object.
 #'
 #' @examples
-#' \dontrun{
+#' pu_tbl <- data.frame(
+#'   id = 1:4,
+#'   cost = c(1, 2, 3, 4),
+#'   x = c(0, 1, 0, 1),
+#'   y = c(0, 0, 1, 1)
+#' )
+#'
+#' feat_tbl <- data.frame(
+#'   id = 1:2,
+#'   name = c("feature_1", "feature_2")
+#' )
+#'
+#' dist_feat_tbl <- data.frame(
+#'   pu = c(1, 1, 2, 3, 4),
+#'   feature = c(1, 2, 2, 1, 2),
+#'   amount = c(5, 2, 3, 4, 1)
+#' )
+#'
+#' p <- create_problem(
+#'   pu = pu_tbl,
+#'   features = feat_tbl,
+#'   dist_features = dist_feat_tbl,
+#'   cost = "cost"
+#' )
+#'
 #' p <- add_spatial_distance(
 #'   x = p,
-#'   max_distance = 1000,
-#'   name = "within_1km",
+#'   max_distance = 1.01,
+#'   name = "within_1",
 #'   weight_mode = "constant"
 #' )
-#' }
+#'
+#' p$data$spatial_relations$within_1
 #'
 #' @seealso
 #' \code{\link{add_spatial_knn}},

@@ -92,13 +92,56 @@ An updated `Problem` object with Gurobi solver settings stored in
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
+pu_tbl <- data.frame(
+  id = 1:4,
+  cost = c(1, 2, 3, 4)
+)
+
+feat_tbl <- data.frame(
+  id = 1:2,
+  name = c("feature_1", "feature_2")
+)
+
+dist_feat_tbl <- data.frame(
+  pu = c(1, 1, 2, 3, 4),
+  feature = c(1, 2, 2, 1, 2),
+  amount = c(5, 2, 3, 4, 1)
+)
+
+x <- create_problem(
+  pu = pu_tbl,
+  features = feat_tbl,
+  dist_features = dist_feat_tbl,
+  cost = "cost"
+)
+
 x <- set_solver_gurobi(
   x,
   gap_limit = 0.01,
   time_limit = 600,
-  cores = 4,
+  cores = 2,
   MIPFocus = 1
 )
-} # }
+
+x$data$solve_args
+#> $solver
+#> [1] "gurobi"
+#> 
+#> $gap_limit
+#> [1] 0.01
+#> 
+#> $time_limit
+#> [1] 600
+#> 
+#> $cores
+#> [1] 2
+#> 
+#> $verbose
+#> [1] FALSE
+#> 
+#> $solver_params
+#> $solver_params$MIPFocus
+#> [1] 1
+#> 
+#> 
 ```

@@ -63,6 +63,37 @@ If several runs are requested, the output is faceted by \code{run_id}.
 
 Planning-unit geometry must be available in \code{x$problem$data$pu_sf}.
 }
+\examples{
+if (requireNamespace("sf", quietly = TRUE) &&
+    requireNamespace("ggplot2", quietly = TRUE)) {
+  data("sim_pu_sf", package = "multiscape")
+
+  problem <- structure(
+    list(
+      data = list(
+        pu_sf = sim_pu_sf
+      )
+    ),
+    class = "Problem"
+  )
+
+  sol <- structure(
+    list(
+      problem = problem,
+      summary = list(
+        pu = data.frame(
+          id = sim_pu_sf$id,
+          selected = as.integer(seq_len(nrow(sim_pu_sf)) \%\% 2 == 1)
+        )
+      )
+    ),
+    class = "Solution"
+  )
+
+  plot_spatial_pu(sol)
+}
+
+}
 \seealso{
 \code{\link{get_pu}},
 \code{\link{plot_spatial}},

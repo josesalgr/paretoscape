@@ -95,21 +95,96 @@ always global whenever `include_pu_cost = TRUE`.
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
-# Minimize both planning-unit and action costs
-p <- add_objective_min_cost(p)
+pu_tbl <- data.frame(
+  id = 1:4,
+  cost = c(1, 2, 3, 4)
+)
+feat_tbl <- data.frame(
+  id = 1:2,
+  name = c("feature_1", "feature_2")
+)
+dist_feat_tbl <- data.frame(
+  pu = c(1, 1, 2, 3, 4),
+  feature = c(1, 2, 2, 1, 2),
+  amount = c(5, 2, 3, 4, 1)
+)
+actions_df <- data.frame(
+  id = c("conservation", "restoration"),
+  name = c("conservation", "restoration")
+)
 
-# Minimize only action costs
-p <- add_objective_min_cost(
+p <- create_problem(
+  pu = pu_tbl,
+  features = feat_tbl,
+  dist_features = dist_feat_tbl,
+  cost = "cost"
+) |>
+  add_actions(actions_df, cost = c(conservation = 1, restoration = 2))
+
+p1 <- add_objective_min_cost(p)
+p1$data$model_args
+#> $model_type
+#> [1] "minimizeCosts"
+#> 
+#> $objective_id
+#> [1] "min_cost"
+#> 
+#> $objective_args
+#> $objective_args$include_pu_cost
+#> [1] TRUE
+#> 
+#> $objective_args$include_action_cost
+#> [1] TRUE
+#> 
+#> $objective_args$actions
+#> NULL
+#> 
+#> 
+
+p2 <- add_objective_min_cost(
   p,
   include_pu_cost = FALSE,
   include_action_cost = TRUE
 )
+p2$data$model_args
+#> $model_type
+#> [1] "minimizeCosts"
+#> 
+#> $objective_id
+#> [1] "min_cost"
+#> 
+#> $objective_args
+#> $objective_args$include_pu_cost
+#> [1] FALSE
+#> 
+#> $objective_args$include_action_cost
+#> [1] TRUE
+#> 
+#> $objective_args$actions
+#> NULL
+#> 
+#> 
 
-# Minimize costs considering only a subset of actions
-p <- add_objective_min_cost(
+p3 <- add_objective_min_cost(
   p,
-  actions = c("restoration", "conservation")
+  actions = "restoration"
 )
-} # }
+p3$data$model_args
+#> $model_type
+#> [1] "minimizeCosts"
+#> 
+#> $objective_id
+#> [1] "min_cost"
+#> 
+#> $objective_args
+#> $objective_args$include_pu_cost
+#> [1] TRUE
+#> 
+#> $objective_args$include_action_cost
+#> [1] TRUE
+#> 
+#> $objective_args$actions
+#> [1] "restoration"
+#> 
+#> 
 ```

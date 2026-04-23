@@ -114,6 +114,36 @@ with care when run order has no substantive meaning.
 If \code{label_runs = TRUE}, each point is labelled by its \code{run_id}. If
 the \pkg{ggrepel} package is available, repelled labels are used.
 }
+\examples{
+if (requireNamespace("ggplot2", quietly = TRUE)) {
+  solset <- structure(
+    list(
+      solution = list(
+        runs = data.frame(
+          run_id = 1:5,
+          status = rep("optimal", 5),
+          runtime = c(1.2, 1.1, 1.4, 1.3, 1.5),
+          gap = c(0, 0, 0, 0, 0),
+          value_cost = c(10, 12, 14, 16, 18),
+          value_benefit = c(5, 7, 8, 9, 10),
+          value_loss = c(4, 3, 3, 2, 2)
+        )
+      )
+    ),
+    class = "SolutionSet"
+  )
+
+  # Plot all pairwise trade-offs
+  plot_tradeoff(solset)
+
+  # Plot two selected objectives
+  plot_tradeoff(solset, objectives = c("cost", "benefit"))
+
+  # Colour points by one objective and label runs
+  plot_tradeoff(solset, color_by = "loss", label_runs = TRUE)
+}
+
+}
 \seealso{
 \code{\link{solve}},
 \code{\link{get_solution_vector}}

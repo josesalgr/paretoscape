@@ -133,23 +133,47 @@ NULL
 #' @return An updated \code{Problem} object.
 #'
 #' @examples
-#' \dontrun{
-#' # Minimize both planning-unit and action costs
-#' p <- add_objective_min_cost(p)
+#' pu_tbl <- data.frame(
+#'   id = 1:4,
+#'   cost = c(1, 2, 3, 4)
+#' )
+#' feat_tbl <- data.frame(
+#'   id = 1:2,
+#'   name = c("feature_1", "feature_2")
+#' )
+#' dist_feat_tbl <- data.frame(
+#'   pu = c(1, 1, 2, 3, 4),
+#'   feature = c(1, 2, 2, 1, 2),
+#'   amount = c(5, 2, 3, 4, 1)
+#' )
+#' actions_df <- data.frame(
+#'   id = c("conservation", "restoration"),
+#'   name = c("conservation", "restoration")
+#' )
 #'
-#' # Minimize only action costs
-#' p <- add_objective_min_cost(
+#' p <- create_problem(
+#'   pu = pu_tbl,
+#'   features = feat_tbl,
+#'   dist_features = dist_feat_tbl,
+#'   cost = "cost"
+#' ) |>
+#'   add_actions(actions_df, cost = c(conservation = 1, restoration = 2))
+#'
+#' p1 <- add_objective_min_cost(p)
+#' p1$data$model_args
+#'
+#' p2 <- add_objective_min_cost(
 #'   p,
 #'   include_pu_cost = FALSE,
 #'   include_action_cost = TRUE
 #' )
+#' p2$data$model_args
 #'
-#' # Minimize costs considering only a subset of actions
-#' p <- add_objective_min_cost(
+#' p3 <- add_objective_min_cost(
 #'   p,
-#'   actions = c("restoration", "conservation")
+#'   actions = "restoration"
 #' )
-#' }
+#' p3$data$model_args
 #'
 #' @seealso
 #' \code{\link{add_objective_max_profit}},
@@ -245,25 +269,55 @@ add_objective_min_cost <- function(
 #' @return An updated \code{Problem} object.
 #'
 #' @examples
-#' \dontrun{
-#' p <- add_objective_max_benefit(p)
-#'
-#' p <- add_objective_max_benefit(
-#'   p,
-#'   actions = c("restoration", "conservation")
+#' pu_tbl <- data.frame(
+#'   id = 1:4,
+#'   cost = c(1, 2, 3, 4)
+#' )
+#' feat_tbl <- data.frame(
+#'   id = 1:2,
+#'   name = c("feature_1", "feature_2")
+#' )
+#' dist_feat_tbl <- data.frame(
+#'   pu = c(1, 1, 2, 3, 4),
+#'   feature = c(1, 2, 2, 1, 2),
+#'   amount = c(5, 2, 3, 4, 1)
+#' )
+#' actions_df <- data.frame(
+#'   id = c("conservation", "restoration"),
+#'   name = c("conservation", "restoration")
+#' )
+#' effects_df <- data.frame(
+#'   pu = c(1, 2, 3, 4, 1, 2, 3, 4),
+#'   action = c("conservation", "conservation", "conservation", "conservation",
+#'              "restoration", "restoration", "restoration", "restoration"),
+#'   feature = c(1, 1, 1, 1, 2, 2, 2, 2),
+#'   benefit = c(2, 1, 0, 1, 3, 0, 1, 2),
+#'   loss = c(0, 0, 1, 0, 0, 1, 0, 0)
 #' )
 #'
-#' p <- add_objective_max_benefit(
-#'   p,
-#'   features = c("sp1", "sp3")
-#' )
+#' p <- create_problem(
+#'   pu = pu_tbl,
+#'   features = feat_tbl,
+#'   dist_features = dist_feat_tbl,
+#'   cost = "cost"
+#' ) |>
+#'   add_actions(actions_df, cost = c(conservation = 1, restoration = 2)) |>
+#'   add_effects(effects_df)
 #'
-#' p <- add_objective_max_benefit(
+#' p1 <- add_objective_max_benefit(p)
+#' p1$data$model_args
+#'
+#' p2 <- add_objective_max_benefit(
 #'   p,
-#'   actions = "restoration",
-#'   features = c("sp1", "sp2")
+#'   actions = "restoration"
 #' )
-#' }
+#' p2$data$model_args
+#'
+#' p3 <- add_objective_max_benefit(
+#'   p,
+#'   features = 1
+#' )
+#' p3$data$model_args
 #'
 #' @seealso
 #' \code{\link{add_objective_min_loss}},
@@ -360,25 +414,55 @@ add_objective_max_benefit <- function(
 #' @return An updated \code{Problem} object.
 #'
 #' @examples
-#' \dontrun{
-#' p <- add_objective_min_loss(p)
-#'
-#' p <- add_objective_min_loss(
-#'   p,
-#'   actions = c("restoration", "harvest")
+#' pu_tbl <- data.frame(
+#'   id = 1:4,
+#'   cost = c(1, 2, 3, 4)
+#' )
+#' feat_tbl <- data.frame(
+#'   id = 1:2,
+#'   name = c("feature_1", "feature_2")
+#' )
+#' dist_feat_tbl <- data.frame(
+#'   pu = c(1, 1, 2, 3, 4),
+#'   feature = c(1, 2, 2, 1, 2),
+#'   amount = c(5, 2, 3, 4, 1)
+#' )
+#' actions_df <- data.frame(
+#'   id = c("conservation", "restoration"),
+#'   name = c("conservation", "restoration")
+#' )
+#' effects_df <- data.frame(
+#'   pu = c(1, 2, 3, 4, 1, 2, 3, 4),
+#'   action = c("conservation", "conservation", "conservation", "conservation",
+#'              "restoration", "restoration", "restoration", "restoration"),
+#'   feature = c(1, 1, 1, 1, 2, 2, 2, 2),
+#'   benefit = c(2, 1, 0, 1, 3, 0, 1, 2),
+#'   loss = c(0, 0, 1, 0, 0, 1, 0, 0)
 #' )
 #'
-#' p <- add_objective_min_loss(
-#'   p,
-#'   features = c("sp1", "sp3")
-#' )
+#' p <- create_problem(
+#'   pu = pu_tbl,
+#'   features = feat_tbl,
+#'   dist_features = dist_feat_tbl,
+#'   cost = "cost"
+#' ) |>
+#'   add_actions(actions_df, cost = c(conservation = 1, restoration = 2)) |>
+#'   add_effects(effects_df)
 #'
-#' p <- add_objective_min_loss(
+#' p1 <- add_objective_min_loss(p)
+#' p1$data$model_args
+#'
+#' p2 <- add_objective_min_loss(
 #'   p,
-#'   actions = "harvest",
-#'   features = c("sp1", "sp2")
+#'   actions = "restoration"
 #' )
-#' }
+#' p2$data$model_args
+#'
+#' p3 <- add_objective_min_loss(
+#'   p,
+#'   features = 1
+#' )
+#' p3$data$model_args
 #'
 #' @seealso
 #' \code{\link{add_objective_max_benefit}},
@@ -465,6 +549,49 @@ add_objective_min_loss <- function(
 #'   multi-objective workflows.
 #'
 #' @return An updated \code{Problem} object.
+#'
+#' @examples
+#' pu_tbl <- data.frame(
+#'   id = 1:4,
+#'   cost = c(1, 2, 3, 4)
+#' )
+#' feat_tbl <- data.frame(
+#'   id = 1:2,
+#'   name = c("feature_1", "feature_2")
+#' )
+#' dist_feat_tbl <- data.frame(
+#'   pu = c(1, 1, 2, 3, 4),
+#'   feature = c(1, 2, 2, 1, 2),
+#'   amount = c(5, 2, 3, 4, 1)
+#' )
+#' actions_df <- data.frame(
+#'   id = c("conservation", "restoration"),
+#'   name = c("conservation", "restoration")
+#' )
+#' profit_df <- data.frame(
+#'   pu = c(1, 2, 3, 4, 1, 2, 3, 4),
+#'   action = c("conservation", "conservation", "conservation", "conservation",
+#'              "restoration", "restoration", "restoration", "restoration"),
+#'   profit = c(5, 4, 3, 2, 8, 7, 6, 5)
+#' )
+#'
+#' p <- create_problem(
+#'   pu = pu_tbl,
+#'   features = feat_tbl,
+#'   dist_features = dist_feat_tbl,
+#'   cost = "cost"
+#' ) |>
+#'   add_actions(actions_df, cost = c(conservation = 1, restoration = 2)) |>
+#'   add_profit(profit_df)
+#'
+#' p1 <- add_objective_max_profit(p)
+#' p1$data$model_args
+#'
+#' p2 <- add_objective_max_profit(
+#'   p,
+#'   actions = "restoration"
+#' )
+#' p2$data$model_args
 #'
 #' @seealso
 #' \code{\link{add_objective_min_cost}},
@@ -560,6 +687,56 @@ add_objective_max_profit <- function(
 #'   multi-objective workflows.
 #'
 #' @return An updated \code{Problem} object.
+#'
+#' @examples
+#' pu_tbl <- data.frame(
+#'   id = 1:4,
+#'   cost = c(1, 2, 3, 4)
+#' )
+#' feat_tbl <- data.frame(
+#'   id = 1:2,
+#'   name = c("feature_1", "feature_2")
+#' )
+#' dist_feat_tbl <- data.frame(
+#'   pu = c(1, 1, 2, 3, 4),
+#'   feature = c(1, 2, 2, 1, 2),
+#'   amount = c(5, 2, 3, 4, 1)
+#' )
+#' actions_df <- data.frame(
+#'   id = c("conservation", "restoration"),
+#'   name = c("conservation", "restoration")
+#' )
+#' profit_df <- data.frame(
+#'   pu = c(1, 2, 3, 4, 1, 2, 3, 4),
+#'   action = c("conservation", "conservation", "conservation", "conservation",
+#'              "restoration", "restoration", "restoration", "restoration"),
+#'   profit = c(5, 4, 3, 2, 8, 7, 6, 5)
+#' )
+#'
+#' p <- create_problem(
+#'   pu = pu_tbl,
+#'   features = feat_tbl,
+#'   dist_features = dist_feat_tbl,
+#'   cost = "cost"
+#' ) |>
+#'   add_actions(actions_df, cost = c(conservation = 1, restoration = 2)) |>
+#'   add_profit(profit_df)
+#'
+#' p1 <- add_objective_max_net_profit(p)
+#' p1$data$model_args
+#'
+#' p2 <- add_objective_max_net_profit(
+#'   p,
+#'   include_pu_cost = FALSE,
+#'   include_action_cost = TRUE
+#' )
+#' p2$data$model_args
+#'
+#' p3 <- add_objective_max_net_profit(
+#'   p,
+#'   actions = "restoration"
+#' )
+#' p3$data$model_args
 #'
 #' @seealso
 #' \code{\link{add_objective_max_profit}},
@@ -676,6 +853,57 @@ add_objective_max_net_profit <- function(
 #'   multi-objective workflows.
 #'
 #' @return An updated \code{Problem} object.
+#'
+#' @examples
+#' pu_tbl <- data.frame(
+#'   id = 1:4,
+#'   cost = c(1, 2, 3, 4)
+#' )
+#'
+#' feat_tbl <- data.frame(
+#'   id = 1:2,
+#'   name = c("feature_1", "feature_2")
+#' )
+#'
+#' dist_feat_tbl <- data.frame(
+#'   pu = c(1, 1, 2, 3, 4),
+#'   feature = c(1, 2, 2, 1, 2),
+#'   amount = c(5, 2, 3, 4, 1)
+#' )
+#'
+#' actions_df <- data.frame(
+#'   id = c("conservation", "restoration"),
+#'   name = c("conservation", "restoration")
+#' )
+#'
+#' bound_df <- data.frame(
+#'   id1 = c(1, 1, 2, 1, 2, 3, 4),
+#'   id2 = c(1, 2, 2, 3, 4, 4, 4),
+#'   boundary = c(4, 1, 4, 1, 1, 1, 4)
+#' )
+#'
+#' p <- create_problem(
+#'   pu = pu_tbl,
+#'   features = feat_tbl,
+#'   dist_features = dist_feat_tbl,
+#'   cost = "cost"
+#' ) |>
+#'   add_actions(actions_df, cost = c(conservation = 1, restoration = 2))
+#'
+#' p <- add_spatial_boundary(
+#'   x = p,
+#'   boundary = bound_df,
+#'   name = "boundary",
+#'   include_self = TRUE,
+#'   edge_factor = 1
+#' )
+#'
+#' p <- add_objective_min_fragmentation_pu(
+#'   p,
+#'   relation_name = "boundary"
+#' )
+#'
+#' p$data$model_args
 #'
 #' @seealso
 #' \code{\link{add_spatial_boundary}},
@@ -833,6 +1061,59 @@ add_objective_min_fragmentation_pu <- function(
 #'
 #' @return An updated \code{Problem} object.
 #'
+#' @examples
+#' pu_tbl <- data.frame(
+#'   id = 1:4,
+#'   cost = c(1, 2, 3, 4)
+#' )
+#'
+#' feat_tbl <- data.frame(
+#'   id = 1:2,
+#'   name = c("feature_1", "feature_2")
+#' )
+#'
+#' dist_feat_tbl <- data.frame(
+#'   pu = c(1, 1, 2, 3, 4),
+#'   feature = c(1, 2, 2, 1, 2),
+#'   amount = c(5, 2, 3, 4, 1)
+#' )
+#'
+#' actions_df <- data.frame(
+#'   id = c("conservation", "restoration"),
+#'   name = c("conservation", "restoration")
+#' )
+#'
+#' bound_df <- data.frame(
+#'   id1 = c(1, 1, 2, 1, 2, 3, 4),
+#'   id2 = c(1, 2, 2, 3, 4, 4, 4),
+#'   boundary = c(4, 1, 4, 1, 1, 1, 4)
+#' )
+#'
+#' p <- create_problem(
+#'   pu = pu_tbl,
+#'   features = feat_tbl,
+#'   dist_features = dist_feat_tbl,
+#'   cost = "cost"
+#' ) |>
+#'   add_actions(actions_df, cost = c(conservation = 1, restoration = 2))
+#'
+#' p <- add_spatial_boundary(
+#'   x = p,
+#'   boundary = bound_df,
+#'   name = "boundary",
+#'   include_self = TRUE,
+#'   edge_factor = 1
+#' )
+#'
+#' p <- add_objective_min_fragmentation_action(
+#'   p,
+#'   relation_name = "boundary",
+#'   actions = "restoration",
+#'   weight_multiplier = 1
+#' )
+#'
+#' p$data$model_args
+#'
 #' @seealso
 #' \code{\link{add_objective_min_fragmentation_pu}},
 #' \code{\link{add_spatial_boundary}},
@@ -927,6 +1208,48 @@ add_objective_min_fragmentation_action <- function(
 #'   multi-objective workflows.
 #'
 #' @return An updated \code{Problem} object.
+#'
+#' @examples
+#' pu_tbl <- data.frame(
+#'   id = 1:4,
+#'   cost = c(1, 2, 3, 4)
+#' )
+#' feat_tbl <- data.frame(
+#'   id = 1:2,
+#'   name = c("feature_1", "feature_2")
+#' )
+#' dist_feat_tbl <- data.frame(
+#'   pu = c(1, 1, 2, 3, 4),
+#'   feature = c(1, 2, 2, 1, 2),
+#'   amount = c(5, 2, 3, 4, 1)
+#' )
+#' actions_df <- data.frame(
+#'   id = c("conservation", "restoration"),
+#'   name = c("conservation", "restoration")
+#' )
+#'
+#' p <- create_problem(
+#'   pu = pu_tbl,
+#'   features = feat_tbl,
+#'   dist_features = dist_feat_tbl,
+#'   cost = "cost"
+#' ) |>
+#'   add_actions(actions_df, cost = c(conservation = 1, restoration = 2))
+#'
+#' p1 <- add_objective_min_intervention_impact(p)
+#' p1$data$model_args
+#'
+#' p2 <- add_objective_min_intervention_impact(
+#'   p,
+#'   features = 1
+#' )
+#' p2$data$model_args
+#'
+#' p3 <- add_objective_min_intervention_impact(
+#'   p,
+#'   actions = "restoration"
+#' )
+#' p3$data$model_args
 #'
 #' @seealso
 #' \code{\link{add_objective_max_benefit}},

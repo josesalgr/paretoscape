@@ -25,7 +25,7 @@ positive length and ignore point-only contacts."><meta property="og:image" conte
 
     <a class="navbar-brand me-2" href="../index.html">multiscape</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -174,22 +174,62 @@ typically as an undirected relation with optional diagonal entries.</p>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
-<span class="r-in"><span><span class="co"># From a boundary table</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">pu_tbl</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  id <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">4</span>,</span></span>
+<span class="r-in"><span>  cost <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">3</span>, <span class="fl">4</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">feat_tbl</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  id <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">2</span>,</span></span>
+<span class="r-in"><span>  name <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"feature_1"</span>, <span class="st">"feature_2"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">dist_feat_tbl</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  pu <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">3</span>, <span class="fl">4</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  feature <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">2</span>, <span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  amount <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">5</span>, <span class="fl">2</span>, <span class="fl">3</span>, <span class="fl">4</span>, <span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">bound_df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  id1 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">3</span>, <span class="fl">4</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  id2 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">2</span>, <span class="fl">3</span>, <span class="fl">4</span>, <span class="fl">4</span>, <span class="fl">4</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  boundary <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">4</span>, <span class="fl">1</span>, <span class="fl">4</span>, <span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">4</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="create_problem.html">create_problem</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  pu <span class="op">=</span> <span class="va">pu_tbl</span>,</span></span>
+<span class="r-in"><span>  features <span class="op">=</span> <span class="va">feat_tbl</span>,</span></span>
+<span class="r-in"><span>  dist_features <span class="op">=</span> <span class="va">dist_feat_tbl</span>,</span></span>
+<span class="r-in"><span>  cost <span class="op">=</span> <span class="st">"cost"</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu">add_spatial_boundary</span><span class="op">(</span></span></span>
 <span class="r-in"><span>  x <span class="op">=</span> <span class="va">p</span>,</span></span>
 <span class="r-in"><span>  boundary <span class="op">=</span> <span class="va">bound_df</span>,</span></span>
-<span class="r-in"><span>  name <span class="op">=</span> <span class="st">"boundary"</span></span></span>
-<span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># From sf polygons</span></span></span>
-<span class="r-in"><span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu">add_spatial_boundary</span><span class="op">(</span></span></span>
-<span class="r-in"><span>  x <span class="op">=</span> <span class="va">p</span>,</span></span>
-<span class="r-in"><span>  geometry <span class="op">=</span> <span class="va">pu_sf</span>,</span></span>
+<span class="r-in"><span>  name <span class="op">=</span> <span class="st">"boundary"</span>,</span></span>
 <span class="r-in"><span>  include_self <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
 <span class="r-in"><span>  edge_factor <span class="op">=</span> <span class="fl">1</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">p</span><span class="op">$</span><span class="va">data</span><span class="op">$</span><span class="va">spatial_relations</span><span class="op">$</span><span class="va">boundary</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   internal_pu1 internal_pu2 weight pu1 pu2                        source</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1            1            2      1   1   2         boundary_table_shared</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2            1            3      1   1   3         boundary_table_shared</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3            2            4      1   2   4         boundary_table_shared</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4            3            4      1   3   4         boundary_table_shared</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5            1            1      2   1   1 boundary_table_diag_effective</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6            2            2      2   2   2 boundary_table_diag_effective</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7            3            3     -2   3   3 boundary_table_diag_effective</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8            4            4      2   4   4 boundary_table_diag_effective</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   relation_name</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1      boundary</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2      boundary</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3      boundary</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4      boundary</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5      boundary</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6      boundary</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7      boundary</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8      boundary</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

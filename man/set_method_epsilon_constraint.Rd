@@ -230,47 +230,98 @@ unavailable because the number of epsilon combinations grows rapidly and
 requires explicit user control.
 }
 \examples{
-\dontrun{
-# Manual mode: one constrained objective, one run
-p <- p |>
-  set_method_epsilon_constraint(
-    primary = "cost",
-    mode = "manual",
-    eps = c(frag = 1000)
-  )
+# Small toy problem
+pu_tbl <- data.frame(
+  id = 1:4,
+  cost = c(1, 2, 3, 4)
+)
 
-# Manual mode: one constrained objective, multiple epsilon values
-p <- p |>
-  set_method_epsilon_constraint(
-    primary = "cost",
-    mode = "manual",
-    eps = list(frag = c(1000, 2000, 3000))
-  )
+feat_tbl <- data.frame(
+  id = 1:2,
+  name = c("feature_1", "feature_2")
+)
 
-# Manual mode: more than two objectives
-p <- p |>
-  set_method_epsilon_constraint(
-    primary = "benefit",
-    aliases = c("benefit", "cost", "frag"),
-    mode = "manual",
-    eps = list(
-      cost = c(100, 200, 300),
-      frag = c(10, 20)
-    )
-  )
+dist_feat_tbl <- data.frame(
+  pu = c(1, 1, 2, 3, 4),
+  feature = c(1, 2, 2, 1, 2),
+  amount = c(5, 2, 3, 4, 1)
+)
 
-# Automatic mode: currently only two objectives
-p <- p |>
-  set_method_epsilon_constraint(
-    primary = "cost",
-    aliases = c("cost", "frag"),
-    mode = "auto",
-    n_points = 5,
-    include_extremes = TRUE,
-    lexicographic = TRUE,
-    lexicographic_tol = 1e-8
+actions_df <- data.frame(
+  id = c("conservation", "restoration"),
+  name = c("conservation", "restoration")
+)
+
+effects_df <- data.frame(
+  pu = c(1, 2, 3, 4, 1, 2, 3, 4),
+  action = c("conservation", "conservation", "conservation", "conservation",
+             "restoration", "restoration", "restoration", "restoration"),
+  feature = c(1, 1, 1, 1, 2, 2, 2, 2),
+  benefit = c(2, 1, 0, 1, 3, 0, 1, 2),
+  loss = c(0, 0, 1, 0, 0, 1, 0, 0)
+)
+
+x <- create_problem(
+  pu = pu_tbl,
+  features = feat_tbl,
+  dist_features = dist_feat_tbl,
+  cost = "cost"
+) |>
+  add_actions(actions_df, cost = c(conservation = 1, restoration = 2)) |>
+  add_effects(effects_df) |>
+  add_objective_min_cost(alias = "cost") |>
+  add_objective_max_benefit(alias = "benefit") |>
+  add_objective_min_loss(alias = "loss")
+
+# Manual mode with one constrained objective
+x1 <- set_method_epsilon_constraint(
+  x,
+  primary = "benefit",
+  aliases = c("benefit", "cost"),
+  mode = "manual",
+  eps = c(cost = 5)
+)
+
+x1$data$method
+
+# Manual mode with multiple epsilon values
+x2 <- set_method_epsilon_constraint(
+  x,
+  primary = "benefit",
+  aliases = c("benefit", "cost"),
+  mode = "manual",
+  eps = list(cost = c(4, 6, 8))
+)
+
+x2$data$method$runs
+
+# Manual mode with more than two objectives
+x3 <- set_method_epsilon_constraint(
+  x,
+  primary = "benefit",
+  aliases = c("benefit", "cost", "loss"),
+  mode = "manual",
+  eps = list(
+    cost = c(4, 6),
+    loss = c(0, 1)
   )
-}
+)
+
+x3$data$method$runs
+
+# Automatic mode currently supports exactly two objectives
+x4 <- set_method_epsilon_constraint(
+  x,
+  primary = "benefit",
+  aliases = c("benefit", "cost"),
+  mode = "auto",
+  n_points = 5,
+  include_extremes = TRUE,
+  lexicographic = TRUE,
+  lexicographic_tol = 1e-8
+)
+
+x4$data$method
 
 }
 \seealso{
