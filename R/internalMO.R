@@ -2253,6 +2253,57 @@ add_objective <- function(x, objective) {
 }
 
 
+.pamo_is_infeasible_error <- function(e) {
+  msg <- conditionMessage(e)
+
+  grepl(
+    "status:\\s*infeasible|status:\\s*infeasible_or_unbounded|\\binfeasible\\b|\\binfeasible_or_unbounded\\b",
+    msg,
+    ignore.case = TRUE
+  )
+}
+
+
+.pamo_failed_run <- function(status = "failed", message = NULL) {
+  list(
+    solution = NULL,
+    status = status,
+    runtime = NA_real_,
+    gap = NA_real_,
+    objval = NA_real_,
+    message = as.character(message %||% NA_character_)
+  )
+}
+
+
+.pamo_solve_one_or_keep_failed <- function(x, spec, stop_on_infeasible = FALSE) {
+  tryCatch(
+    .pamo_solve_one(x = x, spec = spec),
+    error = function(e) {
+      msg <- conditionMessage(e)
+
+      if (.pamo_is_infeasible_error(e)) {
+        if (isTRUE(stop_on_infeasible)) {
+          stop(e)
+        }
+
+        status <- if (grepl("infeasible_or_unbounded", msg, ignore.case = TRUE)) {
+          "infeasible_or_unbounded"
+        } else {
+          "infeasible"
+        }
+
+        return(.pamo_failed_run(
+          status = status,
+          message = msg
+        ))
+      }
+
+      stop(e)
+    }
+  )
+}
+
 
 
 #' @keywords internal
@@ -3557,6 +3608,9 @@ add_objective <- function(x, objective) {
   status  <- character(n_runs)
   runtime <- numeric(n_runs)
   gap     <- numeric(n_runs)
+  messages <- character(n_runs)
+
+  stop_on_infeasible <- isTRUE(method$stop_on_infeasible %||% FALSE)
 
   progress_id <- NULL
   if (progress && n_runs > 1L) {
@@ -3576,7 +3630,7 @@ add_objective <- function(x, objective) {
     eps_r <- as.list(design_df[r, eps_cols, drop = FALSE])
     names(eps_r) <- secondary
 
-    one <- .pamo_solve_one(
+    one <- .pamo_solve_one_or_keep_failed(
       x = x,
       spec = list(
         type = "augmecon",
@@ -3587,24 +3641,27 @@ add_objective <- function(x, objective) {
         secondary_ranges = secondary_ranges,
         gap_limit = gap_limit,
         time_limit = time_limit
-      )
+      ),
+      stop_on_infeasible = stop_on_infeasible
     )
 
     solutions[[r]] <- one$solution
     status[r]  <- as.character(one$status %||% NA_character_)
     runtime[r] <- as.numeric(one$runtime %||% NA_real_)
     gap[r]     <- as.numeric(one$gap %||% NA_real_)
-
-    alias_values <- stats::setNames(
-      vapply(
-        aliases,
-        function(a) .pamo_eval_alias_on_solution(x, one$solution, a),
-        numeric(1)
-      ),
-      aliases
-    )
+    messages[r] <- as.character(one$message %||% NA_character_)
 
     if (!is.null(solutions[[r]]) && inherits(solutions[[r]], "Solution")) {
+
+      alias_values <- stats::setNames(
+        vapply(
+          aliases,
+          function(a) .pamo_eval_alias_on_solution(x, one$solution, a),
+          numeric(1)
+        ),
+        aliases
+      )
+
       solutions[[r]]$solution$alias_values <- alias_values
       solutions[[r]]$meta$run_id <- design_df$run_id[r]
       solutions[[r]]$method$type <- "augmecon"
@@ -3614,9 +3671,13 @@ add_objective <- function(x, objective) {
         secondary
       )
       solutions[[r]]$method$augmentation <- augmentation
-    }
 
-    value_mat[r, ] <- unname(as.numeric(alias_values))
+      value_mat[r, ] <- unname(as.numeric(alias_values))
+
+    } else {
+
+      value_mat[r, ] <- NA_real_
+    }
 
     if (!is.null(progress_id)) {
       cli::cli_progress_update(id = progress_id, set = r)
@@ -3632,6 +3693,7 @@ add_objective <- function(x, objective) {
     status = status,
     runtime = runtime,
     gap = gap,
+    message = messages,
     stringsAsFactors = FALSE
   )
 
@@ -3690,6 +3752,21 @@ add_objective <- function(x, objective) {
 
   ranges_df <- do.call(rbind, ranges_list)
   rownames(ranges_df) <- NULL
+
+  n_infeasible <- sum(
+    runs$status %in% c("infeasible", "infeasible_or_unbounded"),
+    na.rm = TRUE
+  )
+
+  if (n_infeasible > 0L) {
+    warning(
+      n_infeasible, " of ", nrow(runs),
+      " AUGMECON runs were infeasible and were kept in the SolutionSet with missing objective values. ",
+      "Feasible runs were retained.",
+      call. = FALSE,
+      immediate. = TRUE
+    )
+  }
 
   pproto(
     NULL, SolutionSet,

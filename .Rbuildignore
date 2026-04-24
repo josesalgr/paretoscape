@@ -16,3 +16,4 @@ CRAN-RELEASE
 ^CONTRIBUTING\.Rmd$
 ^\.positai$
 ^\.claude$
+^codecov\.yml$

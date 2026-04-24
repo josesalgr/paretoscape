@@ -4895,3 +4895,89 @@ NULL
 
   x
 }
+
+
+
+.pa_active_objective_alias <- function(x) {
+  objs <- x$data$objectives
+
+  if (is.null(objs) || !is.list(objs) || length(objs) == 0) {
+    return(NULL)
+  }
+
+  args <- x$data$model_args %||% list()
+  mtype <- args$model_type %||% NULL
+  oid   <- args$objective_id %||% NULL
+
+  for (nm in names(objs)) {
+    ob <- objs[[nm]]
+
+    same_mtype <- !is.null(mtype) &&
+      identical(as.character(ob$model_type)[1], as.character(mtype)[1])
+
+    same_oid <- !is.null(oid) &&
+      identical(as.character(ob$objective_id)[1], as.character(oid)[1])
+
+    if (isTRUE(same_mtype) || isTRUE(same_oid)) {
+      return(ob$alias %||% nm)
+    }
+  }
+
+  NULL
+}
+
+
+.pa_feature_names_from_internal_ids <- function(x, ids) {
+  ids <- as.integer(ids)
+
+  f <- x$data$features
+
+  if (is.null(f) || !inherits(f, "data.frame") || nrow(f) == 0) {
+    return(as.character(ids))
+  }
+
+  label_col <- if ("name" %in% names(f)) {
+    "name"
+  } else if ("id" %in% names(f)) {
+    "id"
+  } else {
+    NULL
+  }
+
+  if (is.null(label_col) || !("internal_id" %in% names(f))) {
+    return(as.character(ids))
+  }
+
+  out <- as.character(f[[label_col]][match(ids, f$internal_id)])
+  out[is.na(out)] <- as.character(ids[is.na(out)])
+
+  out
+}
+
+
+.pa_action_names_from_internal_ids <- function(x, ids) {
+  ids <- as.integer(ids)
+
+  a <- x$data$actions
+
+  if (is.null(a) || !inherits(a, "data.frame") || nrow(a) == 0) {
+    return(as.character(ids))
+  }
+
+  label_col <- if ("name" %in% names(a)) {
+    "name"
+  } else if ("id" %in% names(a)) {
+    "id"
+  } else {
+    NULL
+  }
+
+  if (is.null(label_col) || !("internal_id" %in% names(a))) {
+    return(as.character(ids))
+  }
+
+  out <- as.character(a[[label_col]][match(ids, a$internal_id)])
+  out[is.na(out)] <- as.character(ids[is.na(out)])
+
+  out
+}

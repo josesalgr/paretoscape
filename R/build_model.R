@@ -518,16 +518,100 @@
   }
 
   if (identical(mtype, "maximizeBenefits")) {
+
     if (!.has_rows(x$data$dist_effects_model)) {
       .pa_abort(
         "Objective 'maximizeBenefits' requires effects/benefits, but dist_effects is empty.\n",
         "Run add_benefits() / add_effects() after add_actions()."
       )
     }
+
     bcol <- as.character(oargs$benefit_col %||% "benefit")[1]
+
     if (!(bcol %in% names(x$data$dist_effects_model))) {
       .pa_abort(
         "Objective 'maximizeBenefits' requires column '", bcol, "' in dist_effects."
+      )
+    }
+
+    de <- x$data$dist_effects_model
+
+    # Apply the same action/feature filters that are later used by
+    # .pa_build_model_set_objective_cpp().
+    acts <- oargs$actions %||% NULL
+    if (!is.null(acts)) {
+      de <- de[de$internal_action %in% as.integer(acts), , drop = FALSE]
+    }
+
+    feats <- oargs$features %||% NULL
+    if (!is.null(feats)) {
+      de <- de[de$internal_feature %in% as.integer(feats), , drop = FALSE]
+    }
+
+    obj_alias <- .pa_active_objective_alias(x) %||% "maximizeBenefits"
+
+    if (!.has_rows(de)) {
+
+      feature_msg <- ""
+      if (!is.null(feats)) {
+        feature_names <- .pa_feature_names_from_internal_ids(x, as.integer(feats))
+        feature_msg <- paste0(
+          "\nSelected feature(s): ",
+          paste(feature_names, collapse = ", "),
+          "."
+        )
+      }
+
+      action_msg <- ""
+      if (!is.null(acts)) {
+        action_names <- .pa_action_names_from_internal_ids(x, as.integer(acts))
+        action_msg <- paste0(
+          "\nSelected action(s): ",
+          paste(action_names, collapse = ", "),
+          "."
+        )
+      }
+
+      .pa_abort(
+        "Objective '", obj_alias, "' has no matching effect rows after applying ",
+        "the selected action/feature filters.",
+        feature_msg,
+        action_msg,
+        "\nBenefit objectives are based on action effects, not directly on baseline feature values.",
+        "\nCheck that the selected feature(s) appear in add_effects() with positive non-zero effects."
+      )
+    }
+
+    bb <- as.numeric(de[[bcol]])
+
+    if (!any(is.finite(bb) & bb > .Machine$double.eps, na.rm = TRUE)) {
+
+      feature_msg <- ""
+      if (!is.null(feats)) {
+        feature_names <- .pa_feature_names_from_internal_ids(x, as.integer(feats))
+        feature_msg <- paste0(
+          "\nSelected feature(s): ",
+          paste(feature_names, collapse = ", "),
+          "."
+        )
+      }
+
+      action_msg <- ""
+      if (!is.null(acts)) {
+        action_names <- .pa_action_names_from_internal_ids(x, as.integer(acts))
+        action_msg <- paste0(
+          "\nSelected action(s): ",
+          paste(action_names, collapse = ", "),
+          "."
+        )
+      }
+
+      .pa_abort(
+        "Objective '", obj_alias, "' has no positive non-zero benefit coefficients.",
+        feature_msg,
+        action_msg,
+        "\nThis objective cannot be used as a benefit objective because all selected effects are zero, missing, or non-positive.",
+        "\nFor add_objective_max_benefit(), the selected feature(s) must have positive action effects in add_effects()."
       )
     }
   }
@@ -919,9 +1003,25 @@
       tag = as.character(oargs$tag %||% "")[1]
     )
 
+    coef_x <- as.numeric(prep$coef_x)
+
+    if (is.null(coef_x) ||
+        length(coef_x) == 0L ||
+        !any(is.finite(coef_x) & abs(coef_x) > .Machine$double.eps, na.rm = TRUE)) {
+
+      obj_alias <- .pa_active_objective_alias(x) %||% "maximizeBenefits"
+
+      .pa_abort(
+        "Objective '", obj_alias, "' produced an empty or zero objective vector.",
+        "\nThis usually means that the selected feature(s) have no positive non-zero effects ",
+        "for the feasible action set.",
+        "\nCheck add_effects(), especially the `feature` column and the selected `features=` argument."
+      )
+    }
+
     res <- rcpp_add_objective_max_benefit(
       op,
-      coef_x = as.numeric(prep$coef_x),
+      coef_x = coef_x,
       weight = 1.0,
       block_name = "objective_max_benefit",
       tag = as.character(oargs$tag %||% "")[1]
