@@ -12,7 +12,8 @@ add_constraint_group_area(
   actions = NULL,
   relative = TRUE,
   tolerance = 0,
-  name = NULL
+  name = NULL,
+  dist_group_actions = NULL
 )
 }
 \arguments{
@@ -32,6 +33,13 @@ available to each group.}
 \item{tolerance}{Equality tolerance.}
 
 \item{name}{Optional constraint-name prefix.}
+
+\item{dist_group_actions}{Optional precomputed group-action area table.
+If supplied, it must contain columns \code{pu}, \code{group}, \code{action}, and \code{area},
+where \code{area} is the exact area of the intersection
+\verb{PU ∩ action ∩ group}. This is useful when actions cover only part of a
+planning unit and the exact group-action coefficients have already been
+computed externally.}
 }
 \value{
 A modified \code{Problem} object.
@@ -51,6 +59,7 @@ is interpreted as an absolute area in the same internal units used by
 \code{dist_groups$area}.
 
 When \code{actions} is not \code{NULL}, the constraint applies only to the selected
-subset of actions. In the current formulation, the group-area coefficients are
-derived downstream when the optimization model is assembled.
+subset of actions. If \code{dist_group_actions} is supplied, the optimization model
+will use these precomputed exact group-action coefficients instead of deriving
+them spatially downstream.
 }

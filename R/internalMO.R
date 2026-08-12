@@ -611,6 +611,26 @@
     ))
   }
 
+  if (identical(id, "min_group_mean")) {
+    return(list(
+      sense = "min",
+      terms = list(list(type = "group_mean")),
+      objective_id = id,
+      objective_args = a
+    ))
+  }
+
+  if (identical(id, "min_group_gini_numerator")) {
+    normalize <- .l1(a$normalize, FALSE)
+    a$normalize <- normalize
+    return(list(
+      sense = "min",
+      terms = list(list(type = "group_gini_numerator", normalize = normalize)),
+      objective_id = id,
+      objective_args = a
+    ))
+  }
+
 
   stop("Unknown objective_id in .pamo_objective_to_ir(): ", id, call. = FALSE)
 }
@@ -666,6 +686,8 @@
     min_fragmentation = "minimizeFragmentation",
     min_action_fragmentation = "minimizeActionFragmentation",
     min_intervention_impact = "minimizeInterventionImpact",
+    min_group_mean = "minimizeGroupMean",
+    min_group_gini_numerator = "minimizeGroupGiniNumerator",
     custom = "custom"
   )
 
@@ -729,7 +751,7 @@
 
   spec <- .pamo_compile_superset_spec(base, ir_list)
 
-  # elegir un objetivo "semilla" válido para que el core del modelo se materialice.
+  # elegir un objetivo "semilla" vÃ¡lido para que el core del modelo se materialice.
   # preferimos min_cost si existe; si no, el primero.
   pick_seed_ir <- function(ir_list) {
     idx_cost <- which(vapply(
@@ -749,7 +771,7 @@
   b$data$model_args <- b$data$model_args %||% list()
   b$data$model_args$mo_mode <- TRUE
 
-  # la clave del superset: needs estructurales, independientes del método
+  # la clave del superset: needs estructurales, independientes del mÃ©todo
   b$data$model_args$needs <- utils::modifyList(
     b$data$model_args$needs %||% list(),
     spec$needs
@@ -766,7 +788,7 @@
     stop("Superset build failed: model_ptr is NULL.", call. = FALSE)
   }
 
-  # sanity check mínimo: si hay objetivos de representación, el modelo debe tener z
+  # sanity check mÃ­nimo: si hay objetivos de representaciÃ³n, el modelo debe tener z
   if (isTRUE(spec$needs$z)) {
     op_list <- .pa_model_from_ptr(
       op,
@@ -1129,6 +1151,17 @@
   gap     <- numeric(n_runs)
 
   messages <- character(n_runs)
+  warm_start_requested <- logical(n_runs)
+  warm_start_applied <- logical(n_runs)
+  warm_start_message <- character(n_runs)
+
+  use_warm_start <- isTRUE(method$warm_start %||% TRUE)
+  previous_mip_start <- if (use_warm_start) {
+    attr(design_df, "initial_mip_start", exact = TRUE)
+  } else {
+    NULL
+  }
+  attr(design_df, "initial_mip_start") <- NULL
 
   control <- method$control %||% list()
 
@@ -1175,7 +1208,8 @@
         primary = primary,
         eps = eps_r,
         gap_limit = gap_limit,
-        time_limit = time_limit
+        time_limit = time_limit,
+        mip_start = previous_mip_start
       ),
       stop_on_infeasible = stop_on_infeasible,
       stop_on_no_solution = stop_on_no_solution,
@@ -1209,9 +1243,29 @@
         constrained
       )
 
+      warm_start_requested[r] <- isTRUE(
+        solutions[[r]]$diagnostics$mip_start_requested
+      )
+      warm_start_applied[r] <- isTRUE(
+        solutions[[r]]$diagnostics$mip_start_applied
+      )
+      warm_start_message[r] <- as.character(
+        solutions[[r]]$diagnostics$mip_start_message %||% NA_character_
+      )
+
+      # Keep the last successful incumbent. Since automatic runs are ordered
+      # from restrictive to permissive, it remains feasible for later runs.
+      next_start <- .pamo_solution_vector(one)
+      if (use_warm_start && !is.null(next_start)) {
+        previous_mip_start <- next_start
+      }
+
     } else {
 
       value_mat[r, ] <- NA_real_
+      warm_start_requested[r] <- !is.null(previous_mip_start)
+      warm_start_applied[r] <- FALSE
+      warm_start_message[r] <- "run_failed_before_solution_diagnostics"
     }
 
     if (!is.null(progress_id)) {
@@ -1231,6 +1285,9 @@
     status = status,
     runtime = runtime,
     gap = gap,
+    warm_start_requested = warm_start_requested,
+    warm_start_applied = warm_start_applied,
+    warm_start_message = warm_start_message,
     message = messages,
     stringsAsFactors = FALSE
   )
@@ -1377,6 +1434,17 @@
 }
 
 
+.pamo_order_epsilon_values <- function(sec_min, sec_max, n_points,
+                                       secondary_sense = c("min", "max")) {
+  secondary_sense <- match.arg(secondary_sense)
+  if (identical(secondary_sense, "max")) {
+    seq(from = sec_max, to = sec_min, length.out = n_points)
+  } else {
+    seq(from = sec_min, to = sec_max, length.out = n_points)
+  }
+}
+
+
 .pamo_build_auto_epsilon_runs <- function(x,
                                           gap_limit = NULL,
                                           time_limit = NULL,
@@ -1461,7 +1529,18 @@
     verbose = verbose
   )
 
-  eps_vals <- seq(from = sec_min, to = sec_max, length.out = n_points)
+  secondary_spec <- .pamo_get_specs(x)[[secondary]]
+  secondary_sense <- as.character(secondary_spec$sense %||% "min")[1]
+
+  # Solve from the most restrictive epsilon bound to the least restrictive.
+  # This guarantees that a feasible solution from run r remains feasible in
+  # run r + 1 and can therefore be used as a valid sequential warm start.
+  eps_vals <- .pamo_order_epsilon_values(
+    sec_min = sec_min,
+    sec_max = sec_max,
+    n_points = n_points,
+    secondary_sense = secondary_sense
+  )
 
   if (!isTRUE(include_extremes)) {
     if (length(eps_vals) <= 2L) {
@@ -1485,9 +1564,18 @@
   )
   design_df[[eps_col]] <- as.numeric(eps_vals)
 
+  initial_mip_start <- if (isTRUE(method$warm_start %||% TRUE)) {
+    ext$warm_start_first %||% NULL
+  } else {
+    NULL
+  }
+  ext$warm_start_first <- NULL
   attr(design_df, "extremes") <- ext
+  attr(design_df, "initial_mip_start") <- initial_mip_start
   attr(design_df, "primary_alias") <- primary
   attr(design_df, "secondary_alias") <- secondary
+  attr(design_df, "secondary_sense") <- secondary_sense
+  attr(design_df, "warm_start_direction") <- "restrictive_to_permissive"
   attr(design_df, "include_extremes") <- include_extremes
   attr(design_df, "n_points_requested") <- n_points
 
@@ -1692,7 +1780,7 @@
     df[df$internal_feature %in% feat_int, , drop = FALSE]
   }
 
-  # Convención MO: motor en MIN; luego en R se invierte signo para objetivos max
+  # ConvenciÃ³n MO: motor en MIN; luego en R se invierte signo para objetivos max
   rcpp_reset_objective(op, "min")
 
   terms <- ir$terms %||% list()
@@ -1981,6 +2069,22 @@
         tag = "from=.pamo_objvec_from_ir"
       )
 
+    } else if (type %in% c("group_mean", "group_gini_numerator")) {
+
+      v_term <- .pa_group_equity_objective_vector(
+        base_superset,
+        type = if (identical(type, "group_mean")) "mean" else "gini_numerator",
+        normalize = isTRUE(t$normalize)
+      )
+      m0 <- .pa_model_from_ptr(
+        op, args = base_superset$data$model_args %||% list(), drop_triplets = TRUE
+      )
+      obj0 <- as.numeric(m0$obj)
+      if (length(obj0) != length(v_term)) {
+        stop("Group-equity objective vector does not match the model dimension.", call. = FALSE)
+      }
+      rcpp_model_set_objective_vector(op, obj = obj0 + v_term, model_sense = "min")
+
     } else if (identical(type, "custom")) {
       stop("custom objectives are not supported in weighted yet.", call. = FALSE)
 
@@ -2020,8 +2124,8 @@
   for (i in seq_along(ir_list)) {
     v <- .pamo_objvec_from_ir(base2, ir_list[[i]])
 
-    # convención: todo se resuelve como MIN en el motor;
-    # si IR es "max", flipa signo acá.
+    # convenciÃ³n: todo se resuelve como MIN en el motor;
+    # si IR es "max", flipa signo acÃ¡.
     if (identical(ir_list[[i]]$sense, "max")) v <- -v
 
     objvecs[[i]] <- v
@@ -2054,7 +2158,7 @@
   # 4) combinar pesos -> objetivo final
   obj_w <- Reduce(`+`, Map(`*`, objvecs, as.list(weights)))
 
-  # 5) IMPORTANTÍSIMO: inyectar runtime update para que multiscape lo use en solve()
+  # 5) IMPORTANTÃSIMO: inyectar runtime update para que multiscape lo use en solve()
   base2$data$runtime_updates <- list(
     obj = obj_w,
     modelsense = "min"
@@ -2064,7 +2168,7 @@
   base2$data$meta$model_dirty <- FALSE
   base2$data$has_model <- TRUE
 
-  # 7) guarda cache para evaluación posterior (opcional pero muy útil)
+  # 7) guarda cache para evaluaciÃ³n posterior (opcional pero muy Ãºtil)
   base2$data$mo_cache <- list(
     ir_list = ir_list,
     weights = weights,
@@ -2137,11 +2241,18 @@
         stop("epsilon_constraint: eps_tol for '", a, "' must be finite and >= 0.", call. = FALSE)
       }
 
+      sec_sense <- as.character(sp_sec$sense %||% "min")[1]
+      eps_relaxed <- if (identical(sec_sense, "max")) {
+        eps_val - tol_a
+      } else {
+        eps_val + tol_a
+      }
+
       base <- .pamo_apply_epsilon_constraint(
         base = base,
         ir = ir_sec,
-        eps = eps_val + tol_a,
-        sense = as.character(sp_sec$sense %||% "min")[1],
+        eps = eps_relaxed,
+        sense = sec_sense,
         name = paste0("eps_", a),
         block_name = "epsilon_constraint"
       )
@@ -2255,6 +2366,7 @@
 
   gap_limit  <- spec$gap_limit %||% NULL
   time_limit <- spec$time_limit %||% NULL
+  mip_start  <- spec$mip_start %||% NULL
 
   # base$data$method <- NULL
   # base$data$results <- NULL
@@ -2263,7 +2375,8 @@
   out <- .pa_solve_single_problem(
     base,
     gap_limit = gap_limit,
-    time_limit = time_limit
+    time_limit = time_limit,
+    mip_start = mip_start
   )
 
   .pamo_extract_solution(out)
@@ -2756,7 +2869,7 @@
   #   return(as.numeric(val))
   # }
 
-  # resto de objetivos: evaluación por objvec
+  # resto de objetivos: evaluaciÃ³n por objvec
   base_eval <- .pamo_prepare_superset_model(x, list(ir))
 
   obj_vec <- .pamo_objvec_from_ir(base_eval, ir)
@@ -2848,11 +2961,33 @@
 # - secondary_min
 # - secondary_max
 # -------------------------------------------------------------------------
+.pamo_solution_vector <- function(result) {
+  vector <- tryCatch({
+    if (inherits(result, "Solution")) {
+      result$solution$vector
+    } else if (inherits(result$solution, "Solution")) {
+      result$solution$solution$vector
+    } else {
+      result$solution$solution$vector %||% result$solution$vector
+    }
+  }, error = function(e) NULL)
+  if (is.null(vector)) {
+    return(NULL)
+  }
+  vector <- as.numeric(vector)
+  if (length(vector) == 0L || any(!is.finite(vector))) {
+    return(NULL)
+  }
+  vector
+}
+
+
 .pamo_compute_epsilon_extremes_2obj <- function(x, primary, secondary, gap_limit = NULL, time_limit = NULL) {
   stopifnot(inherits(x, "Problem"))
 
   method <- x$data$method %||% list()
   do_lexi <- isTRUE(method$lexicographic)
+  use_warm_start <- isTRUE(method$warm_start %||% TRUE)
   lexi_tol <- as.numeric(method$lexicographic_tol %||% 0)[1]
   if (!is.finite(lexi_tol) || lexi_tol < 0) lexi_tol <- 0
 
@@ -2867,7 +3002,7 @@
   }
 
   # ------------------------------------------------------------
-  # Caso simple (no lexicográfico)
+  # Caso simple (no lexicogrÃ¡fico)
   # ------------------------------------------------------------
   if (!isTRUE(do_lexi)) {
 
@@ -2876,8 +3011,8 @@
       x = x,
       spec = list(
         type = "weighted",
-        aliases = primary,
-        weights = 1,
+        aliases = c(primary, secondary),
+        weights = c(1, 0),
         objective_scaling = FALSE,
         scales = NULL
       )
@@ -2891,11 +3026,12 @@
       x = x,
       spec = list(
         type = "weighted",
-        aliases = secondary,
-        weights = 1,
+        aliases = c(primary, secondary),
+        weights = c(0, 1),
         normalize = FALSE,
         gap_limit = gap_limit,
-        time_limit = time_limit
+        time_limit = time_limit,
+        mip_start = if (use_warm_start) .pamo_solution_vector(sol_primary) else NULL
       )
     )
 
@@ -2926,6 +3062,7 @@
       secondary_min = min(vals_secondary),
       secondary_max = max(vals_secondary),
       vals_secondary = vals_secondary,
+      warm_start_first = if (use_warm_start) .pamo_solution_vector(sol_secondary) else NULL,
 
       meta = list(
         lexicographic = FALSE,
@@ -2935,7 +3072,7 @@
   }
 
   # ------------------------------------------------------------
-  # Caso lexicográfico
+  # Caso lexicogrÃ¡fico
   # ------------------------------------------------------------
 
   # 1) resolver primary puro
@@ -2943,8 +3080,8 @@
     x = x,
     spec = list(
       type = "weighted",
-      aliases = primary,
-      weights = 1,
+      aliases = c(primary, secondary),
+      weights = c(1, 0),
       normalize = FALSE,
       gap_limit = gap_limit,
       time_limit = time_limit
@@ -2962,7 +3099,8 @@
       eps = stats::setNames(list(primary_star), primary),
       gap_limit = gap_limit,
       time_limit = time_limit,
-      eps_tol = stats::setNames(list(lexi_tol), primary)
+      eps_tol = stats::setNames(list(lexi_tol), primary),
+      mip_start = if (use_warm_start) .pamo_solution_vector(sol_primary_stage1) else NULL
     )
   )
 
@@ -2974,11 +3112,12 @@
     x = x,
     spec = list(
       type = "weighted",
-      aliases = secondary,
-      weights = 1,
+      aliases = c(primary, secondary),
+      weights = c(0, 1),
       normalize = FALSE,
       gap_limit = gap_limit,
-      time_limit = time_limit
+      time_limit = time_limit,
+      mip_start = if (use_warm_start) .pamo_solution_vector(sol_primary_lexi) else NULL
     )
   )
 
@@ -2993,7 +3132,8 @@
       eps = stats::setNames(list(secondary_star), secondary),
       gap_limit = gap_limit,
       time_limit = time_limit,
-      eps_tol = stats::setNames(list(lexi_tol), secondary)
+      eps_tol = stats::setNames(list(lexi_tol), secondary),
+      mip_start = if (use_warm_start) .pamo_solution_vector(sol_secondary_stage1) else NULL
     )
   )
 
@@ -3024,6 +3164,7 @@
     secondary_min = min(vals_secondary),
     secondary_max = max(vals_secondary),
     vals_secondary = vals_secondary,
+    warm_start_first = if (use_warm_start) .pamo_solution_vector(sol_secondary_lexi) else NULL,
 
     meta = list(
       lexicographic = TRUE,
@@ -3049,6 +3190,7 @@
   need_y_act <- "action_boundary_cut" %in% all_types
   need_y_int <- "intervention_boundary_cut" %in% all_types
   need_u_int <- "intervention_impact" %in% all_types
+  need_group_gini <- "group_gini_numerator" %in% all_types
 
   if (isTRUE(need_y_int)) {
     stop(
@@ -3140,7 +3282,8 @@
       y_action = isTRUE(need_y_act),
       y_intervention = FALSE,
       u_intervention = isTRUE(need_u_int),
-      u_intervention_actions = u_int_actions
+      u_intervention_actions = u_int_actions,
+      group_gini = isTRUE(need_group_gini)
     ),
     relation_name = if (length(rel_names) == 1L) rel_names[1] else NULL
   )
@@ -3157,14 +3300,14 @@
 
   v <- .pamo_objvec_from_ir(base, ir)
 
-  # El motor trabaja siempre en minimización
+  # El motor trabaja siempre en minimizaciÃ³n
   if (identical(sense, "max")) {
     v <- -as.numeric(v)
   } else {
     v <- as.numeric(v)
   }
 
-  # Si existe un setter C++ del objetivo, úsalo
+  # Si existe un setter C++ del objetivo, Ãºsalo
   if (exists("rcpp_model_set_objective_vector", mode = "function")) {
     rcpp_model_set_objective_vector(
       x = base$data$model_ptr,
@@ -3172,7 +3315,7 @@
       model_sense = "min"
     )
   } else {
-    # fallback temporal: deja la actualización pendiente
+    # fallback temporal: deja la actualizaciÃ³n pendiente
     base$data$runtime_updates <- list(
       obj = v,
       modelsense = "min"
@@ -3435,7 +3578,7 @@
 
   act_ids <- unique(as.character(act_subset$id))
 
-  # tabla de acciones de la solución
+  # tabla de acciones de la soluciÃ³n
   act_tbl <- solution$summary$actions %||% NULL
   if (is.null(act_tbl) || !inherits(act_tbl, "data.frame")) {
     stop("No actions table found in solution while evaluating intervention_impact.", call. = FALSE)
@@ -4583,7 +4726,7 @@
 
   k <- length(secondary_aliases)
 
-  # necesitamos una helper de bajo nivel para añadir columnas al modelo ya construido
+  # necesitamos una helper de bajo nivel para aÃ±adir columnas al modelo ya construido
   if (!exists("rcpp_model_add_columns", mode = "function")) {
     stop(
       "AUGMECON with explicit slacks requires a low-level helper `rcpp_model_add_columns()`.\n",
@@ -4594,8 +4737,8 @@
 
   slack_names <- paste0(prefix, "_", secondary_aliases)
 
-  # Añadir k columnas continuas:
-  # obj = 0 por ahora (el objetivo aumentado se define después)
+  # AÃ±adir k columnas continuas:
+  # obj = 0 por ahora (el objetivo aumentado se define despuÃ©s)
   # lb = 0
   # ub = ub
   # vtype = "C"
@@ -4603,7 +4746,7 @@
   # Se asume que rcpp_model_add_columns():
   # - modifica el modelo en sitio
   # - acepta vectores de obj/lb/ub/vtype/names
-  # - deja el modelo consistente para luego añadir restricciones
+  # - deja el modelo consistente para luego aÃ±adir restricciones
   rcpp_model_add_columns(
     x = base$data$model_ptr,
     obj = rep(0, k),
@@ -4613,7 +4756,7 @@
     names = slack_names
   )
 
-  # refrescar snapshot/model_list tras añadir columnas
+  # refrescar snapshot/model_list tras aÃ±adir columnas
   base <- .pa_refresh_model_snapshot(base)
 
   m1 <- .pa_model_from_ptr(
@@ -4631,11 +4774,11 @@
     )
   }
 
-  # columnas nuevas en índice 0-based
+  # columnas nuevas en Ã­ndice 0-based
   slack_cols_0based <- seq.int(from = n_old, length.out = k)
   names(slack_cols_0based) <- secondary_aliases
 
-  # guardar metadata útil
+  # guardar metadata Ãºtil
   base$data$mo_cache <- base$data$mo_cache %||% list()
   base$data$mo_cache$augmecon <- utils::modifyList(
     base$data$mo_cache$augmecon %||% list(),

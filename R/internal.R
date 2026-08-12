@@ -61,9 +61,8 @@ pproto <- function(`_class` = NULL, `_inherit` = NULL, ...) {
   # proto::proto() defaults to envir = new.env(parent = parent.frame()),
   # which can capture large temporary objects from pproto()/assign_fields().
   #
-  # We use the multiscape namespace as parent instead of baseenv(), so methods
-  # stored in proto objects can still find internal helpers such as
-  # .pa_cli_box_chars(), .pa_format_num(), etc.
+  # Use the package namespace as the parent environment so proto methods can
+  # still find internal helpers such as .pa_cli_box_chars().
   new_proto <- function(...) {
     ns <- parent.env(environment())
 
@@ -947,7 +946,29 @@ available_to_solve <- function(package = ""){
   }
 
   # ------------------------------------------------------------------
-  # 4) Apply each row as a separate constraint
+  # 4) Map external feature ids in targets to internal feature ids
+  # ------------------------------------------------------------------
+  feature_map <- x$data$features[, c("id", "internal_id"), drop = FALSE]
+  feature_map$id <- as.integer(feature_map$id)
+  feature_map$internal_id <- as.integer(feature_map$internal_id)
+
+  t$internal_feature <- feature_map$internal_id[
+    match(as.integer(t$feature), feature_map$id)
+  ]
+
+  if (anyNA(t$internal_feature)) {
+    missing_features <- unique(t$feature[is.na(t$internal_feature)])
+
+    stop(
+      "Some target features could not be mapped to internal feature ids: ",
+      paste(missing_features, collapse = ", "),
+      ".",
+      call. = FALSE
+    )
+  }
+
+  # ------------------------------------------------------------------
+  # 5) Apply each row as a separate constraint
   # ------------------------------------------------------------------
   n_applied <- 0L
 
@@ -958,22 +979,37 @@ available_to_solve <- function(package = ""){
     dbm_sub <- .filter_effects_by_actions(dbm, actions_string)
 
     if (nrow(dbm_sub) == 0) {
-      actions_lab <- if (is.na(actions_string) || !nzchar(actions_string)) "ALL actions" else actions_string
+      actions_lab <- if (is.na(actions_string) || !nzchar(actions_string)) {
+        "ALL actions"
+      } else {
+        actions_string
+      }
+
       stop(
-        "Target for feature ", tt$feature[1], " and actions subset '", actions_lab,
+        "Target for feature ", tt$feature[1],
+        " and actions subset '", actions_lab,
         "' cannot be applied because no matching effect rows remain after filtering.",
         call. = FALSE
       )
     }
 
-    .check_feature_present_in_df(tt$feature, dbm_sub, "feature", what = "actions")
+    .check_feature_present_in_df(
+      tt$internal_feature,
+      dbm_sub,
+      "internal_feature",
+      what = "actions"
+    )
 
     rcpp_add_target_recovery(
       op,
-      features_data     = .mk_targets_df(tt$feature, tt$target_value, "target_actions"),
+      features_data = .mk_targets_df(
+        tt$internal_feature,
+        tt$target_value,
+        "target_actions"
+      ),
       dist_actions_data = x$data$dist_actions_model,
       dist_benefit_data = dbm_sub,
-      target_col        = "target_actions"
+      target_col = "target_actions"
     )
 
     n_applied <- n_applied + 1L
@@ -1779,7 +1815,8 @@ available_to_solve <- function(package = ""){
                                verbose = NULL,
                                name_output_file = NULL,
                                output_file = NULL,
-                               solver_params = NULL) {
+                               solver_params = NULL,
+                               mip_start = NULL) {
 
   stopifnot(inherits(x, "Problem"))
 
@@ -1792,7 +1829,8 @@ available_to_solve <- function(package = ""){
     verbose = TRUE,
     name_output_file = "output",
     output_file = TRUE,
-    solver_params = list()
+    solver_params = list(),
+    mip_start = NULL
   )
 
   stored <- x$data$solve_args %||% list()
@@ -1808,6 +1846,7 @@ available_to_solve <- function(package = ""){
   if (!is.null(verbose)) out$verbose <- verbose
   if (!is.null(name_output_file)) out$name_output_file <- name_output_file
   if (!is.null(output_file)) out$output_file <- output_file
+  if (!is.null(mip_start)) out$mip_start <- mip_start
 
   # solver override (NULL = not specified)
   if (!is.null(solver)) {
@@ -1857,6 +1896,15 @@ available_to_solve <- function(package = ""){
   if (!nzchar(out$name_output_file)) out$name_output_file <- "output"
 
   if (is.null(out$solver_params) || !is.list(out$solver_params)) out$solver_params <- list()
+
+  if (!is.null(out$mip_start)) {
+    out$mip_start <- as.numeric(out$mip_start)
+    if (length(out$mip_start) == 0L || any(!is.finite(out$mip_start))) {
+      warning("Ignoring invalid `mip_start`: expected a non-empty finite numeric vector.",
+              call. = FALSE)
+      out$mip_start <- NULL
+    }
+  }
 
   out
 }
@@ -4111,6 +4159,42 @@ NULL
 
 
 
+.pa_prepare_gurobi_mip_start <- function(model, mip_start) {
+  if (is.null(mip_start)) {
+    return(list(start = NULL, applied = FALSE, message = "not_requested"))
+  }
+
+  n_model_vars <- length(model$obj)
+  if (length(mip_start) != n_model_vars) {
+    return(list(
+      start = NULL,
+      applied = FALSE,
+      message = paste0(
+        "ignored_length_mismatch:start=", length(mip_start),
+        ",model=", n_model_vars
+      )
+    ))
+  }
+
+  start <- as.numeric(mip_start)
+  if (any(!is.finite(start))) {
+    return(list(start = NULL, applied = FALSE, message = "ignored_non_finite"))
+  }
+
+  start <- pmax(model$lb, pmin(model$ub, start))
+  integer_vars <- which(model$vtype %in% c("B", "I"))
+  if (length(integer_vars) > 0L) {
+    start[integer_vars] <- round(start[integer_vars])
+    start[integer_vars] <- pmax(
+      model$lb[integer_vars],
+      pmin(model$ub[integer_vars], start[integer_vars])
+    )
+  }
+
+  list(start = start, applied = TRUE, message = "applied")
+}
+
+
 .pa_solve_single_problem <- function(x, ...) {
   assertthat::assert_that(inherits(x, "Problem"))
 
@@ -4133,6 +4217,7 @@ NULL
   name_output_file <- sa$name_output_file
   output_file    <- sa$output_file
   solver_params_user <- sa$solver_params %||% list()
+  mip_start      <- sa$mip_start %||% NULL
 
   # ---- autodetect solver if requested
   if (identical(solver, "auto") || identical(solver, "") || is.null(solver)) {
@@ -4227,12 +4312,31 @@ NULL
   gap    <- NA_real_
   status_code <- 999L
   runtime <- NA_real_
+  mip_start_requested <- !is.null(mip_start)
+  mip_start_applied <- FALSE
+  mip_start_message <- if (mip_start_requested) "pending" else "not_requested"
+
+  if (mip_start_requested && !identical(solver, "gurobi")) {
+    mip_start_message <- paste0("ignored_unsupported_solver:", solver)
+  }
 
   if (solver == "gurobi") {
 
     model$sense <- replace(model$sense, model$sense == "==", "=")
     model$lb <- model$bounds$lower$val
     model$ub <- model$bounds$upper$val
+
+    if (mip_start_requested) {
+      prepared_start <- .pa_prepare_gurobi_mip_start(model, mip_start)
+      mip_start_applied <- isTRUE(prepared_start$applied)
+      mip_start_message <- prepared_start$message
+      if (!mip_start_applied) {
+        warning("Gurobi MIP start ignored: ", mip_start_message, call. = FALSE)
+      } else {
+        model$start <- prepared_start$start
+      }
+      rm(prepared_start)
+    }
 
     params <- list(
       Threads = cores,
@@ -4587,7 +4691,10 @@ NULL
       solution_limit = solve_args$solution_limit,
       name_output_file = solve_args$name_output_file,
       output_file = solve_args$output_file,
-      solver_args = solve_args
+      solver_args = solve_args,
+      mip_start_requested = mip_start_requested,
+      mip_start_applied = mip_start_applied,
+      mip_start_message = mip_start_message
     ),
     method = list(
       type = "single"
@@ -5046,8 +5153,6 @@ NULL
 
   specs <- x$data$constraints$group_area %||% NULL
 
-  skipped_group_area_constraints <- list()
-
   if (is.null(specs) || nrow(specs) == 0L) {
     return(x)
   }
@@ -5065,39 +5170,7 @@ NULL
       !is.data.frame(dist_groups) ||
       nrow(dist_groups) == 0L) {
     stop(
-      "Group-area distribution data are missing or empty.",
-      call. = FALSE
-    )
-  }
-
-  required_dg_cols <- c(
-    "pu",
-    "group",
-    "area",
-    "internal_pu",
-    "internal_group"
-  )
-
-  missing_dg_cols <- setdiff(
-    required_dg_cols,
-    names(dist_groups)
-  )
-
-  if (length(missing_dg_cols) > 0L) {
-    stop(
-      "`x$data$dist_groups` is missing required columns: ",
-      paste(missing_dg_cols, collapse = ", "),
-      ".",
-      call. = FALSE
-    )
-  }
-
-  if (!is.numeric(dist_groups$area) ||
-      anyNA(dist_groups$area) ||
-      any(!is.finite(dist_groups$area)) ||
-      any(dist_groups$area < 0)) {
-    stop(
-      "`x$data$dist_groups$area` must contain finite, non-negative values.",
+      "Group-distribution data are missing or empty.",
       call. = FALSE
     )
   }
@@ -5109,57 +5182,14 @@ NULL
 
   da <- x$data$dist_actions_model
 
-  if (is.null(da) ||
-      !is.data.frame(da) ||
-      nrow(da) == 0L) {
-    stop(
-      "Group-area constraints require `x$data$dist_actions_model`.",
-      call. = FALSE
-    )
-  }
-
-  required_da_cols <- c(
-    "action",
-    "internal_pu",
-    "internal_row"
-  )
-
-  missing_da_cols <- setdiff(
-    required_da_cols,
-    names(da)
-  )
-
-  if (length(missing_da_cols) > 0L) {
-    stop(
-      "`x$data$dist_actions_model` is missing required columns: ",
-      paste(missing_da_cols, collapse = ", "),
-      ".",
-      call. = FALSE
-    )
-  }
-
   for (k in seq_len(nrow(specs))) {
 
     spec <- specs[k, , drop = FALSE]
 
-    group_id <- as.character(spec$group)[1]
-    target <- as.numeric(spec$value)[1]
+    group_id <- spec$group
+    target <- as.numeric(spec$value)
     relative <- isTRUE(spec$relative)
-    actions_txt <- as.character(spec$actions)[1]
-
-    if (is.na(group_id) || !nzchar(group_id)) {
-      stop(
-        "Stored group-area constraint has an invalid group id.",
-        call. = FALSE
-      )
-    }
-
-    if (!is.finite(target) || is.na(target) || target < 0) {
-      stop(
-        "Stored group-area constraint has an invalid target value.",
-        call. = FALSE
-      )
-    }
+    actions_txt <- spec$actions
 
     dg <- dist_groups[
       dist_groups$group == group_id,
@@ -5169,20 +5199,22 @@ NULL
 
     if (nrow(dg) == 0L) {
       stop(
-        "No group-area distribution rows were found for group `",
+        "No group-distribution rows were found for group `",
         group_id,
         "`.",
         call. = FALSE
       )
     }
 
-    available_area <- sum(dg$area)
+    available_amount <- sum(dg$amount)
 
     rhs <- if (relative) {
-      target * available_area
+      target * available_amount
     } else {
       target
     }
+
+    actions_txt <- as.character(actions_txt)[1]
 
     use_all_actions <- (
       length(actions_txt) == 0L ||
@@ -5191,24 +5223,15 @@ NULL
         identical(trimws(actions_txt), "NA")
     )
 
-    # ------------------------------------------------------------
-    # Case 1: actions explicitly supplied.
-    # Use exact group-action areas:
-    #
-    #   area(PU_i ∩ group_g ∩ action_a) * x_ia
-    #
-    # These coefficients are prepared by
-    # .pa_build_model_prepare_group_action_areas().
-    # ------------------------------------------------------------
-    if (!isTRUE(use_all_actions)) {
-
+    if (use_all_actions) {
+      da_actions <- da
+    } else {
       actions_chr <- strsplit(
         actions_txt,
         "\\|"
       )[[1]]
 
       actions_chr <- trimws(actions_chr)
-
       actions_chr <- actions_chr[
         !is.na(actions_chr) &
           nzchar(actions_chr) &
@@ -5216,160 +5239,57 @@ NULL
       ]
 
       if (length(actions_chr) == 0L) {
-        use_all_actions <- TRUE
+        da_actions <- da
       } else {
-
         action_subset <- .pa_resolve_action_subset(
           x,
           subset = actions_chr
         )
 
-        dga <- x$data$dist_group_actions %||% NULL
-
-        if (is.null(dga) ||
-            !is.data.frame(dga) ||
-            nrow(dga) == 0L) {
-          stop(
-            "Group-area constraints with `actions` require `x$data$dist_group_actions`. ",
-            "This table is built from exact group-action spatial overlaps. ",
-            "Use spatial `include_pairs` in add_actions() and spatial groups in add_groups(), ",
-            "or ensure that the builder can use the full-planning-unit fallback.",
-            call. = FALSE
-          )
-        }
-
-        required_dga_cols <- c(
-          "pu",
-          "group",
-          "action",
-          "area",
-          "internal_pu",
-          "internal_group",
-          "internal_action",
-          "internal_row"
-        )
-
-        missing_dga_cols <- setdiff(
-          required_dga_cols,
-          names(dga)
-        )
-
-        if (length(missing_dga_cols) > 0L) {
-          stop(
-            "`x$data$dist_group_actions` is missing required columns: ",
-            paste(missing_dga_cols, collapse = ", "),
-            ".",
-            call. = FALSE
-          )
-        }
-
-        if (!is.numeric(dga$area) ||
-            anyNA(dga$area) ||
-            any(!is.finite(dga$area)) ||
-            any(dga$area < 0)) {
-          stop(
-            "`x$data$dist_group_actions$area` must contain finite, non-negative values.",
-            call. = FALSE
-          )
-        }
-
-        matched <- dga[
-          as.character(dga$group) == as.character(group_id) &
-            as.character(dga$action) %in% as.character(action_subset$id),
+        da_actions <- da[
+          da$action %in% action_subset$id,
           ,
           drop = FALSE
         ]
-
-        if (nrow(matched) == 0L) {
-          skipped_group_area_constraints[[length(skipped_group_area_constraints) + 1L]] <-
-            data.frame(
-              group = as.character(group_id),
-              actions = paste(as.character(action_subset$id), collapse = "|"),
-              sense = as.character(sense),
-              rhs = as.numeric(rhs),
-              reason = "zero eligible area for selected actions",
-              stringsAsFactors = FALSE
-            )
-
-          next
-        }
-
-        # Be robust to possible duplicated rows by aggregating coefficients
-        # per x-variable.
-        matched <- stats::aggregate(
-          area ~ internal_row,
-          data = matched,
-          FUN = sum
-        )
-
-        var_index <- x0 +
-          as.integer(matched$internal_row) -
-          1L
-
-        coeff <- as.numeric(matched$area)
       }
     }
 
-    # ------------------------------------------------------------
-    # Case 2: no explicit action subset.
-    # Preserve the previous group-area semantics:
-    #
-    #   area(PU_i ∩ group_g) * x_ia
-    #
-    # for all feasible actions in the group planning units.
-    # ------------------------------------------------------------
-    if (isTRUE(use_all_actions)) {
+    matched <- merge(
+      da_actions[
+        ,
+        c("internal_pu", "internal_row"),
+        drop = FALSE
+      ],
+      dg[
+        ,
+        c("internal_pu", "amount"),
+        drop = FALSE
+      ],
+      by = "internal_pu",
+      all = FALSE,
+      sort = FALSE
+    )
 
-      da_actions <- da
-
-      matched <- merge(
-        da_actions[
-          ,
-          c("internal_pu", "internal_row"),
-          drop = FALSE
-        ],
-        dg[
-          ,
-          c("internal_pu", "area"),
-          drop = FALSE
-        ],
-        by = "internal_pu",
-        all = FALSE,
-        sort = FALSE
-      )
-
-      if (nrow(matched) == 0L) {
-        stop(
-          "No decision variables match group `",
-          group_id,
-          "`.",
-          call. = FALSE
-        )
-      }
-
-      matched <- stats::aggregate(
-        area ~ internal_row,
-        data = matched,
-        FUN = sum
-      )
-
-      var_index <- x0 +
-        as.integer(matched$internal_row) -
-        1L
-
-      coeff <- as.numeric(matched$area)
-    }
-
-    cpp_sense <- switch(
-      as.character(spec$sense)[1],
-      min = ">=",
-      max = "<=",
-      equal = "==",
+    if (nrow(matched) == 0L) {
       stop(
-        "Unknown group-area constraint sense: ",
-        as.character(spec$sense)[1],
+        "No decision variables match group `",
+        group_id,
+        "` and the selected actions.",
         call. = FALSE
       )
+    }
+
+    var_index <- x0 +
+      as.integer(matched$internal_row) -
+      1L
+
+    coeff <- as.numeric(matched$amount)
+
+    cpp_sense <- switch(
+      spec$sense,
+      min = ">=",
+      max = "<=",
+      equal = "=="
     )
 
     x <- .pa_add_linear_constraint(
@@ -5378,29 +5298,10 @@ NULL
       coeff = coeff,
       sense = cpp_sense,
       rhs = rhs,
-      name = as.character(spec$name)[1],
+      name = spec$name,
       block_name = "group_area",
       tag = as.character(group_id),
       refresh_snapshot = FALSE
-    )
-  }
-
-  if (length(skipped_group_area_constraints) > 0L) {
-    skipped_group_area_constraints <- dplyr::bind_rows(
-      skipped_group_area_constraints
-    )
-
-    x$data$meta <- x$data$meta %||% list()
-    x$data$meta$skipped_group_area_constraints <- skipped_group_area_constraints
-
-    warning(
-      "Skipped ",
-      nrow(skipped_group_area_constraints),
-      " group-area constraint(s) because the corresponding group(s) had zero ",
-      "eligible area for the selected action(s). See ",
-      "`x$data$meta$skipped_group_area_constraints` for details.",
-      call. = FALSE,
-      immediate. = TRUE
     )
   }
 

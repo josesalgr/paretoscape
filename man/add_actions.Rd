@@ -10,7 +10,9 @@ add_actions(
   include_pairs = NULL,
   exclude_pairs = NULL,
   cost = NULL,
-  action_area = NULL
+  action_area = NULL,
+  progress = TRUE,
+  chunk_size = 5000
 )
 }
 \arguments{
@@ -40,7 +42,16 @@ action id, or a \code{data.frame} with columns \code{action, cost} or
 with columns \code{pu}, \code{action}, and \code{action_area}. If
 \code{NULL}, action areas are derived from spatial \code{include_pairs}
 when available, otherwise they default to full planning-unit areas when
-these can be derived from the problem.}
+these can be derived from the problem.
+#'}
+
+\item{progress}{Logical. If \code{TRUE}, show progress messages for large
+spatial action intersections when the \code{cli} package is available.}
+
+\item{chunk_size}{Positive integer. Number of candidate planning units to
+process per chunk when spatial action zones require partial intersections.
+Smaller values reduce peak memory use; larger values may be faster when
+enough memory is available.}
 }
 \value{
 An updated \code{Problem} object with:

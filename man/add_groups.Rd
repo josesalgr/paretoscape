@@ -14,30 +14,25 @@ add_groups(
 )
 }
 \arguments{
-\item{x}{A \code{Problem} object.}
+\item{x}{A \link{Problem} object.}
 
-\item{groups}{A data frame or \code{sf} object containing at least an \code{id} column.
-If \code{groups} is an \code{sf} object and \code{dist_groups = NULL}, group areas are
-derived from the spatial intersection between planning-unit geometries and
-group geometries.}
+\item{groups}{A data frame or \code{sf} object with a group identifier column.}
 
-\item{dist_groups}{Optional data frame containing columns \code{pu}, \code{group},
-and \code{area}. If \code{NULL}, \code{groups} must be an \code{sf} object and planning-unit
-geometries must be available in \code{x$data$pu_sf}.}
+\item{dist_groups}{Optional data frame with columns \code{pu}, \code{group}, and
+\code{area}. If omitted, \code{groups} must be an \code{sf} object and planning-unit
+geometries must be available in the problem.}
 
-\item{group_id_col}{Character. Name of the group identifier column in
-\code{groups}. Defaults to \code{"id"}.}
+\item{group_id_col}{Name of the identifier column in \code{groups}.}
 
-\item{area_unit}{Unit of \code{dist_groups$area} and \code{min_overlap}. One of
-\code{"m2"}, \code{"ha"}, or \code{"km2"}. Areas are stored internally in square metres.}
+\item{area_unit}{Unit of \code{dist_groups$area} and \code{min_overlap}.}
 
-\item{min_overlap}{Minimum overlap area used when deriving \code{dist_groups} from
-spatial group geometries. Values less than or equal to this threshold are
-discarded.}
+\item{min_overlap}{Intersections at or below this area are discarded.}
 }
 \value{
-A modified \code{Problem} object.
+A modified \link{Problem} object.
 }
 \description{
-Add groups and their area distribution among planning units
+Register a group catalogue and the area of each group in each planning unit.
+This is the canonical source of group membership and group available-area
+denominators used by group constraints and equity metrics.
 }

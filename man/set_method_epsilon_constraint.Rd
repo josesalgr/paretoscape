@@ -15,6 +15,7 @@ set_method_epsilon_constraint(
   include_extremes = NULL,
   lexicographic = TRUE,
   lexicographic_tol = 1e-08,
+  warm_start = TRUE,
   control = NULL
 )
 }
@@ -57,6 +58,12 @@ used.}
 
 \item{lexicographic_tol}{Numeric scalar \eqn{\ge 0}. Tolerance used in
 lexicographic extreme-point computation.}
+
+\item{warm_start}{Logical scalar. If \code{TRUE} (the default), pass each
+successful incumbent to the next lexicographic anchor or epsilon run as a
+MIP start when supported by the solver backend. Currently this is
+implemented for Gurobi. Set to \code{FALSE} to disable all warm starts
+without changing the mathematical formulation or run order.}
 
 \item{control}{A control object created with
 \code{\link{set_runs_control}}. It controls how infeasible runs, runs
@@ -140,6 +147,15 @@ objectives: one primary objective and one constrained objective.
 Boundary epsilon levels are always included in automatic grids. Therefore,
 the lower and upper bounds of the automatically derived epsilon range are
 part of the generated run design.
+
+Automatic grids are ordered from the most restrictive epsilon bound to the
+least restrictive one. For a minimized constrained objective this means
+increasing epsilon values; for a maximized constrained objective it means
+decreasing epsilon values. With the Gurobi backend, feasible solution vectors
+are passed forward as MIP starts through the lexicographic anchor solves and
+successive epsilon runs. A rejected or structurally incompatible start is
+ignored without changing the mathematical formulation. Manual run designs
+retain the row order supplied by the user.
 
 \code{set_runs_manual()} allows users to provide explicit epsilon
 combinations. In manual epsilon-constraint runs, each row is one optimization
@@ -249,45 +265,23 @@ later during \code{\link{solve}}. With
 stored and then used by \code{\link{solve}}.
 }
 \examples{
-# Small toy problem
-pu_tbl <- data.frame(
-  id = 1:4,
-  cost = c(1, 2, 3, 4)
-)
-
-feat_tbl <- data.frame(
-  id = 1:2,
-  name = c("feature_1", "feature_2")
-)
-
-dist_feat_tbl <- data.frame(
-  pu = c(1, 1, 2, 3, 4),
-  feature = c(1, 2, 2, 1, 2),
-  amount = c(5, 2, 3, 4, 1)
-)
-
-actions_df <- data.frame(
-  id = c("conservation", "restoration"),
-  name = c("conservation", "restoration")
-)
-
-effects_df <- data.frame(
-  pu = c(1, 2, 3, 4, 1, 2, 3, 4),
-  action = c("conservation", "conservation", "conservation", "conservation",
-             "restoration", "restoration", "restoration", "restoration"),
-  feature = c(1, 1, 1, 1, 2, 2, 2, 2),
-  benefit = c(2, 1, 0, 1, 3, 0, 1, 2),
-  loss = c(0, 0, 1, 0, 0, 1, 0, 0)
-)
+# Load a complete simulated planning problem.
+example_data <- load_sim_multiaction()
 
 x <- create_problem(
-  pu = pu_tbl,
-  features = feat_tbl,
-  dist_features = dist_feat_tbl,
+  pu = example_data$planning_units,
+  features = example_data$features,
+  dist_features = example_data$dist_features,
   cost = "cost"
 ) |>
-  add_actions(actions_df, cost = c(conservation = 1, restoration = 2)) |>
-  add_effects(effects_df) |>
+  add_actions(
+    example_data$actions,
+    cost = example_data$action_costs
+  ) |>
+  add_effects(
+    example_data$effects,
+    effect_type = "delta"
+  ) |>
   add_objective_min_cost(alias = "cost") |>
   add_objective_max_benefit(alias = "benefit") |>
   add_objective_min_loss(alias = "loss")
