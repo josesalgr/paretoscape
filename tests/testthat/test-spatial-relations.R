@@ -1,27 +1,23 @@
-test_that("add_spatial_relations normalizes undirected duplicate edges", {
+test_that("add_spatial_relations rejects duplicated undirected edges", {
   x <- make_round3_tabular_problem()
-
-  relations <- data.frame(
-    pu1 = c(1, 2, 1),
-    pu2 = c(2, 1, 2),
-    weight = c(1, 3, 2)
+  expect_error(
+    multiscape::add_spatial_relations(
+      x,
+      relations = data.frame(pu1 = c(1, 2), pu2 = c(2, 1), weight = c(1, 3)),
+      name = "custom",
+      directed = FALSE
+    ),
+    "Duplicated undirected edge"
   )
-
   out <- multiscape::add_spatial_relations(
     x,
-    relations = relations,
-    name = "custom",
-    directed = FALSE
+    relations = data.frame(pu1 = c(1, 2), pu2 = c(2, 1), weight = c(1, 3)),
+    name = "directed",
+    directed = TRUE
   )
-
-  rel <- out$data$spatial_relations$custom
-
-  expect_s3_class(rel, "data.frame")
-  expect_equal(nrow(rel), 1L)
-  expect_equal(rel$weight, 3)
-  expect_equal(rel$relation_name, "custom")
+  expect_equal(nrow(out$data$spatial_relations$directed), 2L)
+  expect_true(all(out$data$spatial_relations$directed$directed))
 })
-
 
 test_that("add_spatial_relations validates names, ids, and self edges", {
   x <- make_round3_tabular_problem()

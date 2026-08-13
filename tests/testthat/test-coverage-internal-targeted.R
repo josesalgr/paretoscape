@@ -101,6 +101,16 @@ test_that("objective matrix handles senses, missing ids, and malformed inputs", 
   expect_error(objective_matrix(s, objectives = character()), "at least one")
   expect_error(objective_matrix(s, objectives = "unknown"), "Unknown objective")
   expect_error(objective_matrix(s, objectives = "cost"), "At least two")
+  one <- objective_matrix(
+    s,
+    objectives = "cost",
+    minimum_objectives = 1L
+  )
+  expect_equal(unname(one$matrix[, "cost"]), c(2, 4))
+  expect_error(
+    objective_matrix(s, minimum_objectives = 0),
+    "positive integer"
+  )
 
   incomplete <- make_mock_solutionset()
   incomplete$solution$runs$value_cost[1] <- NA_real_

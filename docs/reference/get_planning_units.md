@@ -26,7 +26,7 @@ get_planning_units(x, solution = NULL, ...)
 
 - solution:
 
-  Optional positive integer giving the solution index to extract. If
+  Optional positive integer giving the solution id to extract. If
   `NULL`, all solutions are returned when available.
 
 - ...:

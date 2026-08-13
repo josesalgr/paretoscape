@@ -85,12 +85,12 @@ p <- add_spatial_queen(
 )
 
 head(p$data$spatial_relations$queen)
-#>    internal_pu1 internal_pu2 weight pu1 pu2   source relation_name
-#> 33           10           11      1  10  11 queen_sf         queen
-#> 34           10           17      1  10  17 queen_sf         queen
-#> 35           10           18      1  10  18 queen_sf         queen
-#> 36           10           19      1  10  19 queen_sf         queen
-#> 37           11           12      1  11  12 queen_sf         queen
-#> 38           11           18      1  11  18 queen_sf         queen
+#>   internal_pu1 internal_pu2 weight pu1 pu2   source relation_name directed
+#> 1            1            2      1   1   2 queen_sf         queen    FALSE
+#> 2            1            9      1   1   9 queen_sf         queen    FALSE
+#> 3            1           10      1   1  10 queen_sf         queen    FALSE
+#> 4            2            3      1   2   3 queen_sf         queen    FALSE
+#> 5            2            9      1   2   9 queen_sf         queen    FALSE
+#> 6            2           10      1   2  10 queen_sf         queen    FALSE
 # }
 ```

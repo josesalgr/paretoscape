@@ -8,6 +8,7 @@ test_that("frontier_extremes identifies both bounds for each objective", {
   expect_setequal(out$bound, c("min", "max"))
   expect_true(all(out$role %in% c("best", "worst")))
   expect_true(all(!is.na(out$solution_id)))
+  expect_type(out$solution_id, "integer")
 })
 
 
@@ -36,6 +37,7 @@ test_that("frontier_distances returns normalized values and references", {
   expect_named(attr(out, "ideal"), c("cost", "benefit"))
   expect_named(attr(out, "nadir"), c("cost", "benefit"))
   expect_identical(attr(out, "metric"), "euclidean")
+  expect_type(out$solution_id, "integer")
 })
 
 
@@ -118,6 +120,8 @@ test_that("selection_similarity returns long and matrix forms", {
 
   expect_true(all(long$similarity >= 0 & long$similarity <= 1))
   expect_equal(long$distance, 1 - long$similarity)
+  expect_type(long$solution_id_1, "integer")
+  expect_type(long$solution_id_2, "integer")
 
   expect_true(is.matrix(mat))
   expect_equal(mat, t(mat))

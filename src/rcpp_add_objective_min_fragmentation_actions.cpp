@@ -150,144 +150,103 @@ Rcpp::List rcpp_add_objective_min_fragmentation_actions(
     }
   }
 
-  // canonicalize: self_w (diag) + unique undirected edges (sorted by key)
+  bool directed = false;
+  if (relation_data.containsElementNamed("directed")) {
+    Rcpp::LogicalVector dir = relation_data["directed"];
+    if (dir.size() != m) Rcpp::stop("relation_data$directed must have one value per row.");
+    for (int r = 0; r < m; ++r) {
+      if (dir[r] == NA_LOGICAL) Rcpp::stop("relation_data$directed must not contain NA.");
+      if (r == 0) directed = static_cast<bool>(dir[r]);
+      else if (static_cast<bool>(dir[r]) != directed) Rcpp::stop("A spatial relation cannot mix directed and undirected rows.");
+    }
+  }
+
   std::vector<double> self_w(n_pu + 1, 0.0);
-  std::unordered_map<std::uint64_t, double> edge_w;
-  edge_w.reserve((std::size_t)m * 2);
-
+  std::unordered_map<std::uint64_t, double> edge_support;
   int n_diag_rows = 0;
-
   for (int r = 0; r < m; ++r) {
-    const int i1 = ip1[r];
-    const int j1 = ip2[r];
+    const int i1 = ip1[r], j1 = ip2[r];
     if (i1 == NA_INTEGER || j1 == NA_INTEGER) continue;
-    if (i1 < 1 || i1 > n_pu || j1 < 1 || j1 > n_pu) {
-      Rcpp::stop("relation_data internal_pu1/internal_pu2 out of range (1..n_pu).");
-    }
-
-    const double we = (double)wgt[r];
-    if (Rcpp::NumericVector::is_na(we) || !std::isfinite(we) || we < 0.0) {
-      Rcpp::stop("relation_data weight must be finite and >= 0.");
-    }
-
+    if (i1 < 1 || i1 > n_pu || j1 < 1 || j1 > n_pu) Rcpp::stop("relation_data planning-unit index out of range.");
+    const double we = static_cast<double>(wgt[r]);
+    if (Rcpp::NumericVector::is_na(we) || !std::isfinite(we) || we < 0.0) Rcpp::stop("relation_data weight must be finite and >= 0.");
     if (i1 == j1) {
+      if (directed) Rcpp::stop("Directed spatial relations cannot contain self-arcs.");
       self_w[i1] += we;
       ++n_diag_rows;
       continue;
     }
-
     int a = i1, b = j1;
     if (a > b) std::swap(a, b);
-    const std::uint64_t k = edge_key_undirected(a, b);
-
-    auto it = edge_w.find(k);
-    if (it == edge_w.end()) edge_w.emplace(k, we);
-    else it->second = std::max(it->second, we);
+    edge_support.emplace(edge_key_undirected(a, b), 0.0);
   }
+  const int k_edges = static_cast<int>(edge_support.size());
+  if (k_edges <= 0) Rcpp::stop("No usable off-diagonal edges found for action fragmentation objective add.");
+  if (k_edges * n_actions != op->_n_y_action) Rcpp::stop("Prepared global y_action size does not match relation support.");
 
-  const int k_edges = (int)edge_w.size();
-  if (k_edges <= 0) {
-    Rcpp::stop("No usable off-diagonal edges found for action fragmentation objective add.");
-  }
+  std::vector<std::uint64_t> keys;
+  keys.reserve(edge_support.size());
+  for (const auto& kv : edge_support) keys.push_back(kv.first);
+  std::sort(keys.begin(), keys.end());
+  std::unordered_map<std::uint64_t, int> edge_index;
+  for (int e = 0; e < k_edges; ++e) edge_index.emplace(keys[static_cast<std::size_t>(e)], e);
 
-  // IMPORTANT:
-  // y_action is now assumed to be prepared as a GLOBAL block:
-  //   all canonical edges x all global actions
-  const int mA_expected = k_edges * n_actions;
-  if (mA_expected != op->_n_y_action) {
-    Rcpp::stop(
-      "Prepared global y_action size does not match expected size from canonicalization. "
-      "Existing _n_y_action=" + std::to_string(op->_n_y_action) +
-        ", expected k_edges*n_actions=" + std::to_string(mA_expected) +
-        " (k_edges=" + std::to_string(k_edges) +
-        ", n_actions=" + std::to_string(n_actions) + ")."
-    );
-  }
-
-  // sorted edges
-  std::vector<std::pair<std::uint64_t, double>> edges;
-  edges.reserve(edge_w.size());
-  for (const auto& kv : edge_w) edges.push_back(kv);
-  std::sort(edges.begin(), edges.end(),
-            [](const auto& a, const auto& b){ return a.first < b.first; });
-
-  // incident shared per PU
-  std::vector<double> incident_w(n_pu + 1, 0.0);
-  for (const auto& kv : edges) {
-    const std::uint64_t key = kv.first;
-    const double we = kv.second;
-    const int a = static_cast<int>(key >> 32);
-    const int b = static_cast<int>(key & 0xFFFFFFFFu);
-    incident_w[a] += we;
-    incident_w[b] += we;
-  }
-
-  // sparse map (ipu, act) -> x col
   std::unordered_map<long long, int> xcol;
-  xcol.reserve((std::size_t)da_n * 2);
-
+  xcol.reserve(static_cast<std::size_t>(da_n) * 2);
   for (int r = 0; r < da_n; ++r) {
-    const int row1 = dar[r];
-    const int ipu  = dap[r];
-    const int act  = daa[r];
+    const int row1 = dar[r], ipu = dap[r], act = daa[r];
     if (row1 == NA_INTEGER || ipu == NA_INTEGER || act == NA_INTEGER) continue;
-
-    const int col_x = op->_x_offset + (row1 - 1);
-    xcol[key2(ipu, act)] = col_x;
+    xcol[key2(ipu, act)] = op->_x_offset + row1 - 1;
   }
 
-  // 1) add linear term on x_{i,a}
   double sum_linear_added = 0.0;
-
+  double sum_edge_added = 0.0;
+  const int b0 = op->_y_action_offset;
   for (int kk = 0; kk < nA; ++kk) {
-    const int act = A[(std::size_t)kk];
-    const double aw = wA[(std::size_t)act];
+    const int act = A[static_cast<std::size_t>(kk)];
+    const double aw = wA[static_cast<std::size_t>(act)];
     if (aw == 0.0) continue;
-
     for (int i = 1; i <= n_pu; ++i) {
       auto itx = xcol.find(key2(i, act));
-      if (itx == xcol.end()) continue;
-
-      const double coef = weight * weight_multiplier * aw * (incident_w[i] + self_w[i]);
-      if (coef != 0.0) {
-        op->_obj[(std::size_t)itx->second] += coef;
+      if (itx != xcol.end() && self_w[i] != 0.0) {
+        const double coef = weight * weight_multiplier * aw * self_w[i];
+        op->_obj[static_cast<std::size_t>(itx->second)] += coef;
         sum_linear_added += coef;
       }
     }
-  }
-
-  // 2) add edge term on global y_action block
-  // GLOBAL prepare order assumed:
-  //   b_index = e * n_actions + (act - 1)
-  const int b0 = op->_y_action_offset;
-  double sum_edge_added = 0.0;
-
-  for (int e = 0; e < k_edges; ++e) {
-    const double we = edges[(std::size_t)e].second;
-
-    for (int kk = 0; kk < nA; ++kk) {
-      const int act = A[(std::size_t)kk];
-      const double aw = wA[(std::size_t)act];
-      if (aw == 0.0) continue;
-
-      const int act0 = act - 1; // global 0-based action slot
-      const int bcol = b0 + (e * n_actions + act0);
-      const double coef = weight * weight_multiplier * (-2.0 * we * aw);
-
-      if (coef != 0.0) {
-        op->_obj[(std::size_t)bcol] += coef;
-        sum_edge_added += coef;
+    for (int r = 0; r < m; ++r) {
+      const int i1 = ip1[r], j1 = ip2[r];
+      if (i1 == j1) continue;
+      const double we = static_cast<double>(wgt[r]);
+      int a = i1, b = j1;
+      if (a > b) std::swap(a, b);
+      const int e = edge_index.at(edge_key_undirected(a, b));
+      const double scale = weight * weight_multiplier * aw * we;
+      auto iti = xcol.find(key2(i1, act));
+      if (iti != xcol.end()) {
+        op->_obj[static_cast<std::size_t>(iti->second)] += scale;
+        sum_linear_added += scale;
       }
+      if (!directed) {
+        auto itj = xcol.find(key2(j1, act));
+        if (itj != xcol.end()) {
+          op->_obj[static_cast<std::size_t>(itj->second)] += scale;
+          sum_linear_added += scale;
+        }
+      }
+      const double ycoef = directed ? -scale : -2.0 * scale;
+      const int bcol = b0 + e * n_actions + (act - 1);
+      op->_obj[static_cast<std::size_t>(bcol)] += ycoef;
+      sum_edge_added += ycoef;
     }
   }
-
   std::string full_tag = tag;
   if (!full_tag.empty()) full_tag += ";";
   full_tag +=
     "kind=objective_add"
     ";component=min_fragmentation_actions_by_action"
-    ";form=perimeter"
-    ";weight=" + std::to_string(weight) +
+    ";form=" + std::string(directed ? "directed_dependency" : "undirected_cut") +
+      ";weight=" + std::to_string(weight) +
       ";multiplier=" + std::to_string(weight_multiplier) +
       ";k_edges=" + std::to_string(k_edges) +
       ";n_actions_global=" + std::to_string(n_actions) +

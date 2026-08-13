@@ -80,114 +80,75 @@ Rcpp::List rcpp_add_objective_min_fragmentation(
   Rcpp::IntegerVector ip2 = relation_data["internal_pu2"];
   Rcpp::NumericVector  wgt = relation_data["weight"];
 
-  // ------------------------------------------------------------------
-  // Canonicalize to match prepare:
-  //  - diagonal (i==j): accumulate into self_w[i]
-  //    IMPORTANT: self_w is assumed to already represent (external/exposed boundary * edge_factor) from R.
-  //  - off-diagonal: unique undirected edges with max(weight)
-  // ------------------------------------------------------------------
-  std::vector<double> self_w(n_pu + 1, 0.0); // 1-based
-  std::unordered_map<std::uint64_t, double> edge_w;
-  edge_w.reserve(static_cast<std::size_t>(m_in) * 2);
+  bool directed = false;
+  if (relation_data.containsElementNamed("directed")) {
+    Rcpp::LogicalVector dir = relation_data["directed"];
+    if (dir.size() != m_in) Rcpp::stop("relation_data$directed must have one value per row.");
+    for (int r = 0; r < m_in; ++r) {
+      if (dir[r] == NA_LOGICAL) Rcpp::stop("relation_data$directed must not contain NA.");
+      if (r == 0) directed = static_cast<bool>(dir[r]);
+      else if (static_cast<bool>(dir[r]) != directed) Rcpp::stop("A spatial relation cannot mix directed and undirected rows.");
+    }
+  }
 
+  std::vector<double> linear_w(n_pu + 1, 0.0);
+  std::unordered_map<std::uint64_t, double> edge_coef;
   int n_diag_rows = 0;
 
   for (int r = 0; r < m_in; ++r) {
     const int i1 = ip1[r];
     const int j1 = ip2[r];
-
     if (i1 == NA_INTEGER || j1 == NA_INTEGER) continue;
-    if (i1 < 1 || i1 > n_pu || j1 < 1 || j1 > n_pu) {
-      Rcpp::stop("relation_data internal_pu1/internal_pu2 out of range (must be 1..n_pu).");
-    }
-
-    const double we = (double)wgt[r];
-    if (Rcpp::NumericVector::is_na(we) || !std::isfinite(we)) {
-      Rcpp::stop("relation_data weight must be finite.");
-    }
-
+    if (i1 < 1 || i1 > n_pu || j1 < 1 || j1 > n_pu) Rcpp::stop("relation_data planning-unit index out of range.");
+    const double we = static_cast<double>(wgt[r]);
+    if (Rcpp::NumericVector::is_na(we) || !std::isfinite(we)) Rcpp::stop("relation_data weight must be finite.");
     if (i1 == j1) {
-      self_w[i1] += we;   // may be negative for algebraic diagonal
+      if (directed) Rcpp::stop("Directed spatial relations cannot contain self-arcs.");
+      linear_w[i1] += we;
       ++n_diag_rows;
       continue;
     }
-
-    if (we < 0.0) {
-      Rcpp::stop("relation_data off-diagonal weights must be >= 0.");
-    }
-
+    if (we < 0.0) Rcpp::stop("relation_data off-diagonal weights must be >= 0.");
     int a = i1, b = j1;
     if (a > b) std::swap(a, b);
-
-    const std::uint64_t k = edge_key_undirected(a, b);
-    auto it = edge_w.find(k);
-    if (it == edge_w.end()) edge_w.emplace(k, we);
-    else it->second = std::max(it->second, we);
+    const std::uint64_t key = edge_key_undirected(a, b);
+    if (directed) {
+      linear_w[i1] += we;
+      edge_coef[key] -= we;
+    } else {
+      linear_w[i1] += we;
+      linear_w[j1] += we;
+      edge_coef[key] -= 2.0 * we;
+    }
   }
 
-  const int k_edges = static_cast<int>(edge_w.size());
+  const int k_edges = static_cast<int>(edge_coef.size());
+  if (k_edges != n_y) Rcpp::stop("Unique support-edge count does not match existing y_pu block size.");
 
-  // Must match prepared y size (edges only; diagonal does not create y)
-  if (k_edges != n_y) {
-    Rcpp::stop(
-      "Canonical unique off-diagonal edge count does not match existing y_pu block size. "
-      "Existing _n_y_pu=" + std::to_string(n_y) +
-        ", new k_edges=" + std::to_string(k_edges) + "."
-    );
-  }
-
-  // ------------------------------------------------------------------
-  // Compute incident shared boundary per PU
-  // ------------------------------------------------------------------
-  std::vector<double> incident_w(n_pu + 1, 0.0);
-  for (const auto& kv : edge_w) {
-    const std::uint64_t key = kv.first;
-    const double we = kv.second;
-    const int a = static_cast<int>(key >> 32);
-    const int b = static_cast<int>(key & 0xFFFFFFFFu);
-    incident_w[a] += we;
-    incident_w[b] += we;
-  }
-
-  // ------------------------------------------------------------------
-  // 1) Add linear PU part onto w variables:
-  //    Perimeter form: + (incident_i + self_i) * w_i
-  // ------------------------------------------------------------------
   double sum_linear_added = 0.0;
   for (int i = 1; i <= n_pu; ++i) {
-    const double coef = weight * weight_multiplier * (incident_w[i] + self_w[i]);
+    const double coef = weight * weight_multiplier * linear_w[i];
     if (coef != 0.0) {
-      op->_obj[(std::size_t)(op->_w_offset + (i - 1))] += coef;
+      op->_obj[static_cast<std::size_t>(op->_w_offset + i - 1)] += coef;
       sum_linear_added += coef;
     }
   }
 
-  // ------------------------------------------------------------------
-  // 2) Add edge part onto y variables (AND variables), in same order as prepare:
-  //    Perimeter form: -2 * shared_ij * y_ij
-  // ------------------------------------------------------------------
-  std::vector<std::pair<std::uint64_t, double>> edges;
-  edges.reserve(edge_w.size());
-  for (const auto& kv : edge_w) edges.push_back(kv);
-
-  std::sort(edges.begin(), edges.end(),
-            [](const auto& a, const auto& b){ return a.first < b.first; });
-
+  std::vector<std::pair<std::uint64_t, double>> edges(edge_coef.begin(), edge_coef.end());
+  std::sort(edges.begin(), edges.end(), [](const auto& a, const auto& b){ return a.first < b.first; });
   double sum_edge_added = 0.0;
   for (int e = 0; e < k_edges; ++e) {
-    const double we = edges[(std::size_t)e].second;
-    const double coef = weight * weight_multiplier * (-2.0 * we);
-    op->_obj[(std::size_t)(y0 + e)] += coef;
+    const double coef = weight * weight_multiplier * edges[static_cast<std::size_t>(e)].second;
+    op->_obj[static_cast<std::size_t>(y0 + e)] += coef;
     sum_edge_added += coef;
   }
-
   std::string full_tag = tag;
   if (!full_tag.empty()) full_tag += ";";
   full_tag +=
     "kind=objective_add"
     ";component=min_fragmentation"
-    ";form=perimeter"
-    ";weight=" + std::to_string(weight) +
+    ";form=" + std::string(directed ? "directed_dependency" : "undirected_cut") +
+      ";weight=" + std::to_string(weight) +
       ";multiplier=" + std::to_string(weight_multiplier) +
       ";m_in=" + std::to_string(m_in) +
       ";k_edges=" + std::to_string(k_edges) +

@@ -1,17 +1,17 @@
 # Package index
 
-## Build and solve problems
+## Create a planning problem
 
-Core workflow to create a planning problem, configure it, and solve it.
+Create the core planning problem from planning units, features, costs,
+and optional spatial data.
 
 - [`create_problem()`](https://josesalgr.github.io/multiscape/reference/create_problem.md)
   : Create a planning problem input object
-- [`solve()`](https://josesalgr.github.io/multiscape/reference/solve.md)
-  : Solve a planning problem
 
-## Actions, effects and profits
+## Management actions and outcomes
 
-Define feasible actions, their effects, and optional profits.
+Define feasible management actions and their ecological and economic
+consequences.
 
 - [`add_actions()`](https://josesalgr.github.io/multiscape/reference/add_actions.md)
   : Add management actions to a planning problem
@@ -24,10 +24,10 @@ Define feasible actions, their effects, and optional profits.
 - [`add_profit()`](https://josesalgr.github.io/multiscape/reference/add_profit.md)
   : Add profit to a planning problem
 
-## Constraints
+## Targets and constraints
 
-Define target requirements, area limits, budgets, and locking
-constraints.
+Specify representation targets, resource limits, and fixed planning-unit
+or action decisions.
 
 - [`add_constraint_targets_absolute()`](https://josesalgr.github.io/multiscape/reference/add_constraint_targets_absolute.md)
   : Add absolute targets
@@ -42,10 +42,10 @@ constraints.
 - [`add_constraint_locked_planning_units()`](https://josesalgr.github.io/multiscape/reference/add_constraint_locked_planning_units.md)
   : Add locked planning units to a problem
 
-## Spatial relations
+## Spatial relationships
 
-Register boundary and graph-based spatial relations from tables,
-polygons, or coordinates.
+Define and store neighborhood, boundary, distance, and user-supplied
+relationships among planning units.
 
 - [`add_spatial_relations()`](https://josesalgr.github.io/multiscape/reference/add_spatial_relations.md)
   : Add spatial relations
@@ -62,8 +62,8 @@ polygons, or coordinates.
 
 ## Atomic objectives
 
-Register objectives that can be solved individually or combined in
-multi-objective workflows.
+Add ecological, economic, intervention, and spatial objectives to the
+planning problem.
 
 - [`add_objective_min_cost()`](https://josesalgr.github.io/multiscape/reference/add_objective_min_cost.md)
   : Add objective: minimize cost
@@ -75,16 +75,35 @@ multi-objective workflows.
   : Add objective: maximize profit
 - [`add_objective_max_net_profit()`](https://josesalgr.github.io/multiscape/reference/add_objective_max_net_profit.md)
   : Add objective: maximize net profit
+- [`add_objective_min_intervention_impact()`](https://josesalgr.github.io/multiscape/reference/add_objective_min_intervention_impact.md)
+  : Add objective: minimize intervention impact
 - [`add_objective_min_fragmentation_planning_units()`](https://josesalgr.github.io/multiscape/reference/add_objective_min_fragmentation_planning_units.md)
   : Add objective: minimize planning-unit fragmentation
 - [`add_objective_min_fragmentation_action()`](https://josesalgr.github.io/multiscape/reference/add_objective_min_fragmentation_action.md)
   : Add objective: minimize action fragmentation
-- [`add_objective_min_intervention_impact()`](https://josesalgr.github.io/multiscape/reference/add_objective_min_intervention_impact.md)
-  : Add objective: minimize intervention impact
 
-## Solver configuration
+## Multi-objective methods and run designs
 
-Store solver and runtime options before calling solve().
+Choose how multiple objectives are explored and define the combinations
+of weights or constraints to evaluate.
+
+- [`set_method_weighted_sum()`](https://josesalgr.github.io/multiscape/reference/set_method_weighted_sum.md)
+  : Set the weighted-sum multi-objective method
+- [`set_method_epsilon_constraint()`](https://josesalgr.github.io/multiscape/reference/set_method_epsilon_constraint.md)
+  : Set the epsilon-constraint multi-objective method
+- [`set_method_augmecon()`](https://josesalgr.github.io/multiscape/reference/set_method_augmecon.md)
+  : Set the AUGMECON multi-objective method
+- [`set_runs_grid()`](https://josesalgr.github.io/multiscape/reference/set_runs_grid.md)
+  : Define an automatic multi-objective run grid
+- [`set_runs_manual()`](https://josesalgr.github.io/multiscape/reference/set_runs_manual.md)
+  : Define a manual multi-objective run design
+- [`set_runs_control()`](https://josesalgr.github.io/multiscape/reference/set_runs_control.md)
+  : Control multi-objective run behavior
+
+## Solvers and optimization
+
+Select and configure a mixed-integer programming solver, then solve the
+planning problem.
 
 - [`set_solver()`](https://josesalgr.github.io/multiscape/reference/set_solver.md)
   : Configure solver settings
@@ -93,36 +112,16 @@ Store solver and runtime options before calling solve().
 - [`set_solver_cplex()`](https://josesalgr.github.io/multiscape/reference/set_solver_cplex.md)
   : Configure CPLEX solver settings
 - [`set_solver_cbc()`](https://josesalgr.github.io/multiscape/reference/set_solver_cbc.md)
-  : Configure CPLEX solver settings
+  : Configure CBC solver settings
 - [`set_solver_symphony()`](https://josesalgr.github.io/multiscape/reference/set_solver_symphony.md)
   : Configure SYMPHONY solver settings
+- [`solve()`](https://josesalgr.github.io/multiscape/reference/solve.md)
+  : Solve a planning problem
 
-## Multi-objective methods
+## Inspect solutions
 
-Configure weighted-sum, epsilon-constraint, and AUGMECON workflows.
-
-- [`set_method_weighted_sum()`](https://josesalgr.github.io/multiscape/reference/set_method_weighted_sum.md)
-  : Set the weighted-sum multi-objective method
-- [`set_method_epsilon_constraint()`](https://josesalgr.github.io/multiscape/reference/set_method_epsilon_constraint.md)
-  : Set the epsilon-constraint multi-objective method
-- [`set_method_augmecon()`](https://josesalgr.github.io/multiscape/reference/set_method_augmecon.md)
-  : Set the AUGMECON multi-objective method
-
-## Multi-objective run configuration
-
-Define automatic or manual run designs and execution controls for
-multi-objective workflows.
-
-- [`set_runs_grid()`](https://josesalgr.github.io/multiscape/reference/set_runs_grid.md)
-  : Define an automatic multi-objective run grid
-- [`set_runs_manual()`](https://josesalgr.github.io/multiscape/reference/set_runs_manual.md)
-  : Define a manual multi-objective run design
-- [`set_runs_control()`](https://josesalgr.github.io/multiscape/reference/set_runs_control.md)
-  : Control multi-objective run behavior
-
-## Results and extraction
-
-Extract run metadata, objective values, and solution-level results.
+Extract run metadata, objective values, spatial decisions, features, and
+target outcomes from stored solutions.
 
 - [`get_runs()`](https://josesalgr.github.io/multiscape/reference/get_runs.md)
   : Get run-level metadata from a solution set
@@ -132,15 +131,17 @@ Extract run metadata, objective values, and solution-level results.
   : Get planning-unit results from a solution set
 - [`get_actions()`](https://josesalgr.github.io/multiscape/reference/get_actions.md)
   : Get action results from a solution set
+- [`get_solution_states()`](https://josesalgr.github.io/multiscape/reference/get_solution_states.md)
+  : Get planning-unit states from stored solutions
 - [`get_features()`](https://josesalgr.github.io/multiscape/reference/get_features.md)
   : Get feature summary from a solution set
 - [`get_targets()`](https://josesalgr.github.io/multiscape/reference/get_targets.md)
   : Get target achievement summary from a solution set
 
-## Solution-set management
+## Manage solution sets
 
-Filter, combine, and remove repeated solutions while preserving
-SolutionSet consistency.
+Filter, combine, and remove duplicate alternatives before analysis or
+reporting.
 
 - [`solution_filter()`](https://josesalgr.github.io/multiscape/reference/solution_filter.md)
   : Filter solutions in a solution set
@@ -149,10 +150,10 @@ SolutionSet consistency.
 - [`solution_unique()`](https://josesalgr.github.io/multiscape/reference/solution_unique.md)
   : Keep unique solutions in a solution set
 
-## Frontier analysis
+## Objective-space analysis
 
-Characterize objective ranges and distances to observed reference
-points.
+Characterize performance trade-offs, empirical extremes, distances,
+knees, and neighboring alternatives in objective space.
 
 - [`frontier_extremes()`](https://josesalgr.github.io/multiscape/reference/frontier_extremes.md)
   : Find objective-wise extreme solutions
@@ -160,40 +161,53 @@ points.
   : Compute distances to observed ideal or nadir points
 - [`frontier_knee()`](https://josesalgr.github.io/multiscape/reference/frontier_knee.md)
   : Identify knee solutions on an observed Pareto frontier
+- [`frontier_neighbors()`](https://josesalgr.github.io/multiscape/reference/frontier_neighbors.md)
+  : Identify neighboring solutions in objective space
 
-## Selection analysis
+## Decision-space analysis
 
-Analyze the recurrence and structural similarity of planning-unit and
-action assignments.
+Quantify recurrence, similarity, and consistency in spatial decisions
+across alternative solutions.
 
 - [`selection_frequency()`](https://josesalgr.github.io/multiscape/reference/selection_frequency.md)
   : Calculate selection frequency across solutions
 - [`selection_similarity()`](https://josesalgr.github.io/multiscape/reference/selection_similarity.md)
   : Calculate structural similarity among solutions
+- [`selection_consistency()`](https://josesalgr.github.io/multiscape/reference/selection_consistency.md)
+  : Summarize consistency of planning-unit states
 
-## Plotting
+## Objective-decision linkage
 
-Visualize spatial outputs and multi-objective trade-offs.
+Relate changes in objective performance to changes in spatial
+prescriptions and identify informative solution contrasts.
 
+- [`linkage_distances()`](https://josesalgr.github.io/multiscape/reference/linkage_distances.md)
+  : Compare objective and decision distances
+- [`linkage_transition()`](https://josesalgr.github.io/multiscape/reference/linkage_transition.md)
+  : Describe the transition between two solutions
+- [`linkage_turnover()`](https://josesalgr.github.io/multiscape/reference/linkage_turnover.md)
+  : Measure decision turnover along an objective-space neighborhood
+- [`linkage_contrasts()`](https://josesalgr.github.io/multiscape/reference/linkage_contrasts.md)
+  : Select informative solution contrasts
+
+## Visualize results
+
+Plot objective trade-offs, planning-unit selections, management actions,
+and spatial feature distributions.
+
+- [`plot_tradeoff()`](https://josesalgr.github.io/multiscape/reference/plot_tradeoff.md)
+  : Plot trade-offs from a solution set
 - [`plot_spatial_planning_units()`](https://josesalgr.github.io/multiscape/reference/plot_spatial_planning_units.md)
   : Plot selected planning units in space
 - [`plot_spatial_actions()`](https://josesalgr.github.io/multiscape/reference/plot_spatial_actions.md)
   : Plot selected actions in space
 - [`plot_spatial_features()`](https://josesalgr.github.io/multiscape/reference/plot_spatial_features.md)
   : Plot spatial feature values from a solution set
-- [`plot_tradeoff()`](https://josesalgr.github.io/multiscape/reference/plot_tradeoff.md)
-  : Plot trade-offs from a solution set
 
-## Advanced functions
+## Core objects
 
-Advanced utilities for inspecting or compiling optimization models.
-
-- [`compile_model()`](https://josesalgr.github.io/multiscape/reference/compile_model.md)
-  : Compile the optimization model stored in a Problem
-
-## Classes
-
-Public classes used across the package.
+Classes used to represent planning problems and their resulting solution
+sets.
 
 - [`problem-class`](https://josesalgr.github.io/multiscape/reference/problem-class.md)
   [`Problem`](https://josesalgr.github.io/multiscape/reference/problem-class.md)
@@ -202,9 +216,17 @@ Public classes used across the package.
   [`SolutionSet`](https://josesalgr.github.io/multiscape/reference/solutionset-class.md)
   : SolutionSet class
 
-## Data
+## Advanced model inspection
 
-Simulated datasets distributed with the package.
+Compile and inspect the underlying optimization model.
+
+- [`compile_model()`](https://josesalgr.github.io/multiscape/reference/compile_model.md)
+  : Compile the optimization model stored in a Problem
+
+## Example data
+
+Simulated datasets and data loaders used in package examples and
+documentation.
 
 - [`sim_dist_features`](https://josesalgr.github.io/multiscape/reference/sim_dist_features.md)
   : Simulated feature distribution
@@ -223,7 +245,7 @@ Simulated datasets distributed with the package.
 
 ## Deprecated functions
 
-Deprecated functions kept for backwards compatibility.
+Functions retained temporarily for backward compatibility.
 
 - [`add_constraint_locked_pu()`](https://josesalgr.github.io/multiscape/reference/add_constraint_locked_pu.md)
   **\[obsoleta\]** : Add locked planning units to a problem

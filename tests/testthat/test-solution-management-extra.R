@@ -3,7 +3,7 @@ test_that("solution filtering covers feasible, status, nondominated, and top-n p
 
   feasible <- multiscape::solution_filter(s, feasible_only = TRUE)
   expect_s3_class(feasible, "SolutionSet")
-  expect_true(all(feasible$solution$runs$status %in% c("optimal", "time_limit_feasible")))
+  expect_equal(feasible$solution$runs$status, c("optimal", "time_limit_feasible"))
 
   optimal <- multiscape::solution_filter(s, status = "optimal")
   expect_equal(nrow(optimal$solution$runs), 1L)
@@ -18,6 +18,19 @@ test_that("solution filtering covers feasible, status, nondominated, and top-n p
   expect_error(multiscape::solution_filter(s, run_id = 999), "Unknown run_id")
   expect_error(multiscape::solution_filter(s, solution_id = 999), "Unknown solution_id")
   expect_error(multiscape::solution_filter(s, status = "missing"), "Unknown status")
+
+  invalid_ids <- list("1", 1.5, 0, NA_real_, Inf, TRUE)
+
+  for (bad_id in invalid_ids) {
+    expect_error(
+      multiscape::solution_filter(s, run_id = bad_id),
+      "positive integer|numeric positive integers"
+    )
+    expect_error(
+      multiscape::solution_filter(s, solution_id = bad_id),
+      "positive integer|numeric positive integers"
+    )
+  }
 })
 
 

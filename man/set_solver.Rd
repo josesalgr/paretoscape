@@ -6,12 +6,12 @@
 \usage{
 set_solver(
   x,
-  solver = c("auto", "gurobi", "cplex", "cbc", "symphony"),
+  solver = NULL,
   gap_limit = NULL,
   time_limit = NULL,
   solution_limit = NULL,
   cores = NULL,
-  verbose = FALSE,
+  verbose = NULL,
   log_file = NULL,
   write_log = NULL,
   solver_params = list(),
@@ -33,28 +33,31 @@ previously stored value is kept unchanged.}
 solving time in seconds. If \code{NULL}, the previously stored value is
 kept unchanged.}
 
-\item{solution_limit}{Optional logical flag controlling backend-specific
-early stopping after feasible solution discovery. If \code{NULL}, the
-previously stored value is kept unchanged.}
+\item{solution_limit}{Optional logical flag requesting early termination
+after a feasible solution is found. Supported by Gurobi, CBC, and
+SYMPHONY, but not by CPLEX through Rcplex. If \code{NULL}, the previously
+stored value is kept unchanged.}
 
-\item{cores}{Optional positive integer giving the number of CPU cores to use.
-If \code{NULL}, the previously stored value is kept unchanged.}
+\item{cores}{Optional positive integer giving the maximum number of solver
+threads. Currently supported by Gurobi. If \code{NULL}, the previously
+stored value is kept unchanged.}
 
 \item{verbose}{Optional logical flag indicating whether the solver should
 print log output. If \code{NULL}, the previously stored value is kept
 unchanged.}
 
-\item{log_file}{Optional character string giving the name of the
-solver log file. If \code{NULL}, the previously stored value is kept
-unchanged.}
+\item{log_file}{Optional character string giving the complete path or file
+name of the solver log. Currently supported by Gurobi. If \code{NULL}, the
+previously stored value is kept unchanged.}
 
 \item{write_log}{Optional logical flag indicating whether solver output
-should be written to a file. If \code{NULL}, the previously stored value is
-kept unchanged.}
+should be written to a file. Currently supported by Gurobi. If
+\code{NULL}, the previously stored value is kept unchanged.}
 
 \item{solver_params}{Named list of solver-specific parameters. These are
-merged with previously stored backend-specific parameters rather than
-replacing them completely.}
+merged with previously stored parameters. Rcplex parameters are validated
+against its supported control names; Rsymphony does not currently receive
+arbitrary solver-specific parameters.}
 
 \item{...}{Additional named solver-specific parameters. These are merged into
 \code{solver_params}. For example, \code{MIPFocus = 1} for Gurobi.}
@@ -134,15 +137,36 @@ behaviour supported by the chosen solver.
 
 \strong{Cores}
 
-The argument \code{cores} specifies the number of CPU cores to use. If the
-requested number exceeds the number of detected cores, it is capped to the
-detected maximum with a warning.
+The argument \code{cores} specifies the maximum number of solver threads.
+It is supported by Gurobi. Rcplex, rcbc, and Rsymphony do not reliably
+expose thread control through the interfaces used here; multiscape therefore
+warns and ignores \code{cores} for CPLEX, CBC, and SYMPHONY. If
+the requested number exceeds the number of detected logical processors, it
+is capped to the detected maximum with a warning.
 
 \strong{Verbose output and log files}
 
 The arguments \code{verbose}, \code{write_log}, and \code{log_file}
 control how solver logging is handled. These options are stored and later
-interpreted by the solving layer for the selected backend.
+interpreted by the solving layer for the selected backend. Solver log files
+are currently available only with Gurobi. A parameter that is not available
+through the selected R solver interface is reported with a warning and is
+not stored as if it had been applied.
+
+\strong{Backend capabilities}
+
+Common parameters are translated only when the selected backend supports
+them:
+\itemize{
+\item Gurobi supports \code{cores}, \code{solution_limit}, and
+\code{write_log}.
+\item CBC supports \code{solution_limit}. Thread control and CBC log
+files are not exposed reliably through the current rcbc integration.
+\item CPLEX through Rcplex does not expose \code{cores},
+\code{solution_limit}, or solver log files.
+\item SYMPHONY through Rsymphony supports \code{solution_limit}, but does
+not expose \code{cores} or solver log files.
+}
 
 \strong{Solver-specific parameters}
 

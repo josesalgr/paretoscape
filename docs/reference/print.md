@@ -10,6 +10,9 @@ print(x, ...)
 
 # S3 method for class 'SolutionSet'
 print(x, ...)
+
+# S3 method for class 'multiscape_linkage_transition'
+print(x, ...)
 ```
 
 ## Arguments

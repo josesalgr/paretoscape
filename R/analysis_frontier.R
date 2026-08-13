@@ -40,7 +40,7 @@
 #' @return A \code{data.frame} with one or more rows per objective. The returned
 #'   columns are:
 #' \itemize{
-#'   \item \code{solution_id}: solution id;
+#'   \item \code{solution_id}: integer solution id;
 #'   \item \code{objective}: objective name;
 #'   \item \code{sense}: optimization sense, either \code{"min"} or
 #'   \code{"max"};
@@ -130,7 +130,7 @@ frontier_extremes <- function(x,
   }
 
   if (!("solution_id" %in% names(vals))) {
-    vals$solution_id <- NA_character_
+    vals$solution_id <- NA_integer_
   }
 
   available <- setdiff(names(vals), c("run_id", "solution_id"))
@@ -361,7 +361,7 @@ frontier_extremes <- function(x,
 #'
 #' The table contains:
 #' \itemize{
-#'   \item \code{solution_id};
+#'   \item \code{solution_id}: integer solution id;
 #'   \item the original objective values;
 #'   \item normalized objective values prefixed with \code{norm_};
 #'   \item distance and rank columns for the requested reference points.
@@ -526,7 +526,7 @@ frontier_distances <- function(
   }
 
   if (!("solution_id" %in% names(vals))) {
-    vals$solution_id <- NA_character_
+    vals$solution_id <- NA_integer_
   }
 
   # Keep and order exactly the rows retained by .pa_get_objective_matrix().
@@ -760,7 +760,7 @@ frontier_distances <- function(
 #'
 #' The returned table includes:
 #' \itemize{
-#'   \item \code{solution_id}: solution id;
+#'   \item \code{solution_id}: integer solution id;
 #'   \item the original objective values;
 #'   \item normalized objective values prefixed with \code{norm_};
 #'   \item method-specific diagnostic columns;
@@ -1348,4 +1348,311 @@ frontier_knee <- function(x,
   }
 
   stop("Unknown distance metric.", call. = FALSE)
+}
+
+#' @title Identify neighboring solutions in objective space
+#'
+#' @description
+#' Connect nearby stored solutions in normalized objective space. The resulting
+#' pairs can be supplied directly to objective--decision linkage functions.
+#'
+#' @details
+#' Objective values are oriented to minimization and normalized using the
+#' solutions retained in the supplied \code{SolutionSet}. The function does not
+#' remove dominated or repeated solutions; use \code{\link{solution_filter}} or
+#' \code{\link{solution_unique}} beforehand when required.
+#'
+#' \code{method = "auto"} uses a sequence for one or two objectives and a
+#' minimum spanning tree for higher-dimensional objective spaces.
+#'
+#' @param x A \code{\link{solutionset-class}} object returned by
+#'   \code{\link{solve}}.
+#' @param objectives Optional character vector of objective aliases. If
+#'   \code{NULL}, all registered objectives are used.
+#' @param method Neighborhood method: \code{"auto"}, \code{"sequence"},
+#'   \code{"mst"}, or \code{"knn"}.
+#' @param metric Objective-space distance metric: \code{"euclidean"},
+#'   \code{"manhattan"}, or \code{"chebyshev"}.
+#' @param k Number of nearest neighbors used only by \code{method = "knn"}.
+#'
+#' The first selected objective orients all pairs and, for
+#' \code{method = "sequence"}, also orders the solutions. Supply the desired
+#' ordering objective first in \code{objectives}.
+#'
+#' @return A \code{data.frame} with \code{from_solution},
+#'   \code{to_solution}, \code{objective_distance}, and objective-specific
+#'   values and changes. Analysis settings are retained as attributes.
+#'
+#' @examples
+#' # Load a complete simulated multi-action problem.
+#' example_data <- load_sim_multiaction()
+#'
+#' problem <- create_problem(
+#'   pu = example_data$planning_units,
+#'   features = example_data$features,
+#'   dist_features = example_data$dist_features,
+#'   cost = "cost"
+#' ) |>
+#'   add_actions(
+#'     example_data$actions,
+#'     cost = example_data$action_costs
+#'   ) |>
+#'   add_effects(
+#'     example_data$effects,
+#'     effect_type = "delta"
+#'   ) |>
+#'   add_constraint_targets_relative(0.05) |>
+#'   add_objective_min_cost(
+#'     alias = "cost",
+#'     include_pu_cost = FALSE
+#'   ) |>
+#'   add_objective_max_benefit(
+#'     alias = "benefit"
+#'   ) |>
+#'   set_method_weighted_sum(
+#'     aliases = c("cost", "benefit"),
+#'     runs = set_runs_grid(n = 5),
+#'     normalize_weights = TRUE
+#'   )
+#'
+#' if (requireNamespace("rcbc", quietly = TRUE)) {
+#'   problem <- set_solver_cbc(problem, verbose = FALSE)
+#'   solutions <- solve(problem)
+#'
+#'   neighbors <- frontier_neighbors(
+#'     solutions,
+#'     objectives = c("benefit", "cost")
+#'   )
+#'
+#'   neighbors
+#'
+#'   frontier_neighbors(
+#'     solutions,
+#'     objectives = c("cost", "benefit"),
+#'     method = "knn",
+#'     k = 2
+#'   )
+#' }
+#'
+#' @seealso
+#' \code{\link{frontier_distances}}, \code{\link{linkage_distances}},
+#' \code{\link{linkage_turnover}}
+#' @family Objective-space analysis
+#' @export
+frontier_neighbors <- function(
+    x,
+    objectives = NULL,
+    method = c("auto", "sequence", "mst", "knn"),
+    metric = c("euclidean", "manhattan", "chebyshev"),
+    k = 1L
+) {
+  method_requested <- match.arg(method)
+  metric <- match.arg(metric)
+
+  obj <- .pa_linkage_objectives(x, objectives)
+  n <- nrow(obj$normalized)
+
+  if (n < 2L) {
+    stop("At least two stored solutions are required.", call. = FALSE)
+  }
+
+  order_objective <- obj$objectives[1L]
+  order_col <- 1L
+
+  method <- if (identical(method_requested, "auto")) {
+    if (ncol(obj$normalized) <= 2L) "sequence" else "mst"
+  } else {
+    method_requested
+  }
+
+  distances <- .pa_objective_distance_matrix(
+    obj$normalized,
+    metric = metric
+  )
+
+  ids <- obj$solution_id
+
+  if (identical(method, "sequence")) {
+    ord <- order(
+      obj$minimize[, order_col],
+      decreasing = TRUE,
+      as.integer(ids)
+    )
+
+    raw_pairs <- cbind(
+      ord[-length(ord)],
+      ord[-1L]
+    )
+  } else if (identical(method, "knn")) {
+    if (
+      length(k) != 1L || is.na(k) || !is.numeric(k) ||
+      k < 1 || k != as.integer(k)
+    ) {
+      stop("`k` must be a single positive integer.", call. = FALSE)
+    }
+
+    k <- min(as.integer(k), n - 1L)
+
+    raw_pairs <- do.call(
+      rbind,
+      lapply(seq_len(n), function(i) {
+        candidates <- setdiff(seq_len(n), i)
+
+        nearest <- candidates[
+          order(
+            distances[i, candidates],
+            as.integer(ids[candidates])
+          )
+        ]
+
+        cbind(i, nearest[seq_len(k)])
+      })
+    )
+  } else {
+    raw_pairs <- .pa_minimum_spanning_pairs(
+      distances,
+      ids
+    )
+  }
+
+  pair_key <- apply(
+    raw_pairs,
+    1L,
+    function(z) paste(sort(z), collapse = "\r")
+  )
+
+  raw_pairs <- raw_pairs[
+    !duplicated(pair_key),
+    ,
+    drop = FALSE
+  ]
+
+  oriented <- t(apply(raw_pairs, 1L, function(z) {
+    a <- z[1L]
+    b <- z[2L]
+
+    a_value <- obj$minimize[a, order_col]
+    b_value <- obj$minimize[b, order_col]
+
+    if (
+      a_value < b_value ||
+      (a_value == b_value && as.integer(ids[a]) > as.integer(ids[b]))
+    ) {
+      c(b, a)
+    } else {
+      c(a, b)
+    }
+  }))
+
+  out <- .pa_linkage_pair_objectives(
+    obj,
+    oriented[, 1L],
+    oriented[, 2L]
+  )
+
+  out$objective_distance <-
+    distances[cbind(oriented[, 1L], oriented[, 2L])]
+
+  out <- out[, c(
+    "from_solution",
+    "to_solution",
+    "objective_distance",
+    setdiff(
+      names(out),
+      c("from_solution", "to_solution", "objective_distance")
+    )
+  ), drop = FALSE]
+
+  attr(out, "method") <- method
+  attr(out, "method_requested") <- method_requested
+  attr(out, "metric") <- metric
+  attr(out, "order_objective") <- order_objective
+  attr(out, "objectives") <- obj$objectives
+  attr(out, "ideal") <- obj$ideal
+  attr(out, "nadir") <- obj$nadir
+  attr(out, "ranges") <- obj$ranges
+  attr(out, "reference_scope") <- "supplied SolutionSet"
+
+  rownames(out) <- NULL
+  out
+}
+
+
+#' Compute pairwise objective distances
+#'
+#' @noRd
+.pa_objective_distance_matrix <- function(
+    mat,
+    metric = c("euclidean", "manhattan", "chebyshev")
+) {
+  metric <- match.arg(metric)
+
+  if (!is.matrix(mat)) {
+    mat <- as.matrix(mat)
+  }
+
+  storage.mode(mat) <- "double"
+
+  n <- nrow(mat)
+  out <- matrix(0, nrow = n, ncol = n)
+
+  if (n <= 1L) {
+    return(out)
+  }
+
+  for (i in seq_len(n - 1L)) {
+    for (j in seq.int(i + 1L, n)) {
+      d <- abs(mat[i, ] - mat[j, ])
+
+      value <- switch(
+        metric,
+        euclidean = sqrt(sum(d^2)),
+        manhattan = sum(d),
+        chebyshev = max(d)
+      )
+
+      out[i, j] <- value
+      out[j, i] <- value
+    }
+  }
+
+  out
+}
+
+
+#' Build minimum-spanning-tree pairs
+#'
+#' @noRd
+.pa_minimum_spanning_pairs <- function(distances, ids) {
+  n <- nrow(distances)
+
+  selected <- rep(FALSE, n)
+  selected[1L] <- TRUE
+
+  out <- matrix(
+    integer(0),
+    ncol = 2L
+  )
+
+  while (sum(selected) < n) {
+    candidates <- which(
+      outer(selected, !selected, `&`),
+      arr.ind = TRUE
+    )
+
+    d <- distances[candidates]
+
+    ord <- order(
+      d,
+      as.integer(ids[candidates[, 1L]]),
+      as.integer(ids[candidates[, 2L]])
+    )
+
+    edge <- candidates[ord[1L], ]
+
+    out <- rbind(out, edge)
+    selected[edge[2L]] <- TRUE
+  }
+
+  out
 }

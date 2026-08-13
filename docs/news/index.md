@@ -1,5 +1,47 @@
 # Changelog
 
+## multiscape 1.2.0
+
+### Objective and decision-space analysis
+
+- Added
+  [`frontier_neighbors()`](https://josesalgr.github.io/multiscape/reference/frontier_neighbors.md),
+  [`linkage_distances()`](https://josesalgr.github.io/multiscape/reference/linkage_distances.md),
+  [`linkage_transition()`](https://josesalgr.github.io/multiscape/reference/linkage_transition.md),
+  [`linkage_turnover()`](https://josesalgr.github.io/multiscape/reference/linkage_turnover.md),
+  and
+  [`linkage_contrasts()`](https://josesalgr.github.io/multiscape/reference/linkage_contrasts.md)
+  for objective–decision linkage analysis.
+- Added
+  [`get_solution_states()`](https://josesalgr.github.io/multiscape/reference/get_solution_states.md)
+  and
+  [`selection_consistency()`](https://josesalgr.github.io/multiscape/reference/selection_consistency.md)
+  for summarizing spatial decisions across solutions.
+- Standardized public solution identifiers as positive integers.
+
+### Solver configuration
+
+- Added solver-specific validation of unsupported parameters, which are
+  now reported and ignored before solving.
+- Disabled automatic solver logs and explicit thread limits by default.
+- Fixed CPLEX thread handling, Gurobi log-file naming, CBC solution
+  limits, and preservation of `gap_limit` precision.
+
+### Spatial fragmentation
+
+- Preserved directed spatial relations during model construction.
+- Fragmentation objectives now distinguish directed arcs from undirected
+  edges and reject duplicated relations.
+
+### Documentation
+
+- Reorganized the package reference and workflow around Problem and
+  SolutionSet, with dedicated objective-space (frontier\_*()),
+  decision-space (selection\_*()), and linkage (linkage\_\*()) function
+  families.
+- Updated examples and documentation to use the common simulated
+  multi-action problem across the new analysis functions.
+
 ## multiscape 1.1.3
 
 ### Documentation and examples

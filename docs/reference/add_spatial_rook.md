@@ -81,12 +81,12 @@ p <- add_spatial_rook(
 )
 
 head(p$data$spatial_relations$rook)
-#>    internal_pu1 internal_pu2 weight pu1 pu2  source relation_name
-#> 28           10           11      1  10  11 rook_sf          rook
-#> 29           10           18      1  10  18 rook_sf          rook
-#> 32           11           12      1  11  12 rook_sf          rook
-#> 33           11           19      1  11  19 rook_sf          rook
-#> 36           12           13      1  12  13 rook_sf          rook
-#> 37           12           20      1  12  20 rook_sf          rook
+#>   internal_pu1 internal_pu2 weight pu1 pu2  source relation_name directed
+#> 1            1            2      1   1   2 rook_sf          rook    FALSE
+#> 2            1            9      1   1   9 rook_sf          rook    FALSE
+#> 3            2            3      1   2   3 rook_sf          rook    FALSE
+#> 4            2           10      1   2  10 rook_sf          rook    FALSE
+#> 5            3            4      1   3   4 rook_sf          rook    FALSE
+#> 6            3           11      1   3  11 rook_sf          rook    FALSE
 # }
 ```

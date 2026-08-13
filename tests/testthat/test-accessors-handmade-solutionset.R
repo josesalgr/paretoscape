@@ -22,6 +22,23 @@ test_that("SolutionSet accessors work without calling a solver", {
 
   expect_equal(multiscape:::get_solution_vector(s, solution = 1), c(1, 0, 0, 1))
   expect_error(multiscape::get_planning_units(s, solution = 99), "No rows")
+
+  invalid_solution_ids <- list(
+    "1",
+    1.5,
+    c(1L, 2L),
+    0,
+    NA_real_,
+    Inf,
+    TRUE
+  )
+
+  for (bad_id in invalid_solution_ids) {
+    expect_error(
+      multiscape::get_planning_units(s, solution = bad_id),
+      "positive integer|numeric positive integers"
+    )
+  }
 })
 
 test_that("accessors report clear errors for malformed SolutionSet objects", {

@@ -235,129 +235,47 @@
     stop("Invalid n_pu in .pamo_objvec_action_boundary_cut().", call. = FALSE)
   }
 
-  # ---- canonicalize relation exactly like C++
   ip1 <- as.integer(rel_model$internal_pu1)
   ip2 <- as.integer(rel_model$internal_pu2)
-  ww  <- as.numeric(rel_model$weight)
+  ww <- as.numeric(rel_model$weight)
+  directed <- if ("directed" %in% names(rel_model)) unique(as.logical(rel_model$directed)) else FALSE
+  if (length(directed) != 1L || is.na(directed)) stop("Invalid directed metadata in spatial relation.", call. = FALSE)
 
-  ok <- is.finite(ip1) & is.finite(ip2) & is.finite(ww)
-  ip1 <- ip1[ok]
-  ip2 <- ip2[ok]
-  ww  <- ww[ok]
+  support_a <- pmin(ip1[ip1 != ip2], ip2[ip1 != ip2])
+  support_b <- pmax(ip1[ip1 != ip2], ip2[ip1 != ip2])
+  support <- unique(data.frame(a = support_a, b = support_b))
+  support <- support[order(support$a, support$b), , drop = FALSE]
+  k_edges <- nrow(support)
+  if (k_edges * n_actions_global != n_y) stop("Mismatch in y_action layout.", call. = FALSE)
+  support_key <- paste(support$a, support$b, sep = "::")
+  edge_index <- stats::setNames(seq_len(k_edges), support_key)
 
-  self_w <- numeric(n_pu)
-  edge_map <- new.env(parent = emptyenv(), hash = TRUE)
-
-  make_key <- function(a, b) paste0(a, "::", b)
-
-  for (r in seq_along(ip1)) {
-    i <- ip1[r]
-    j <- ip2[r]
-    wij <- ww[r]
-
-    if (i == j) {
-      self_w[i] <- self_w[i] + wij
-    } else {
-      a <- min(i, j)
-      b <- max(i, j)
-      k <- make_key(a, b)
-
-      old <- if (exists(k, envir = edge_map, inherits = FALSE)) {
-        get(k, envir = edge_map, inherits = FALSE)
-      } else {
-        NA_real_
-      }
-
-      if (is.na(old) || wij > old) {
-        assign(k, wij, envir = edge_map)
-      }
-    }
-  }
-
-  edge_keys <- ls(edge_map, all.names = TRUE)
-  if (length(edge_keys) == 0L) {
-    return(v)
-  }
-
-  edge_df <- data.frame(
-    a = integer(length(edge_keys)),
-    b = integer(length(edge_keys)),
-    weight = numeric(length(edge_keys))
-  )
-
-  for (k in seq_along(edge_keys)) {
-    parts <- strsplit(edge_keys[k], "::", fixed = TRUE)[[1]]
-    edge_df$a[k] <- as.integer(parts[1])
-    edge_df$b[k] <- as.integer(parts[2])
-    edge_df$weight[k] <- get(edge_keys[k], envir = edge_map, inherits = FALSE)
-  }
-
-  edge_df <- edge_df[order(edge_df$a, edge_df$b), , drop = FALSE]
-  k_edges <- nrow(edge_df)
-
-  expected_n_y <- k_edges * n_actions_global
-  if (expected_n_y != n_y) {
-    stop(
-      "Mismatch in y_action layout in .pamo_objvec_action_boundary_cut().\n",
-      "expected n_y_action = k_edges * n_actions_global = ", expected_n_y,
-      ", but model snapshot reports n_y_action = ", n_y, ".",
-      call. = FALSE
-    )
-  }
-
-  incident_w <- numeric(n_pu)
-  for (r in seq_len(k_edges)) {
-    incident_w[edge_df$a[r]] <- incident_w[edge_df$a[r]] + edge_df$weight[r]
-    incident_w[edge_df$b[r]] <- incident_w[edge_df$b[r]] + edge_df$weight[r]
-  }
-
-  # ---- sparse map (pu, action) -> x column
   key2 <- function(i, a) paste0(i, "::", a)
+  x_map <- stats::setNames(x_offset + as.integer(da$internal_row) - 1L,
+                           key2(da$internal_pu, da$internal_action))
 
-  da_key <- key2(da$internal_pu, da$internal_action)
-  x_cols <- x_offset + as.integer(da$internal_row) - 1L
-  x_map <- stats::setNames(as.integer(x_cols), da_key)
-
-  # ---- linear part on x
   for (act in act_int) {
     awi <- as.numeric(aw_map[[as.character(act)]])
     if (!is.finite(awi) || awi == 0) next
-
-    for (i in seq_len(n_pu)) {
-      k <- key2(i, act)
-
-      # use [ ] instead of [[ ]] so missing keys return NA instead of error
-      col_x <- unname(x_map[k])[1]
-
-      if (!is.finite(col_x) || is.na(col_x)) next
-
-      coef <- weight_multiplier * awi * (incident_w[i] + self_w[i])
-      if (coef != 0) {
-        v[col_x + 1L] <- v[col_x + 1L] + coef
+    for (r in seq_along(ip1)) {
+      i <- ip1[r]; j <- ip2[r]; wij <- ww[r]
+      xi0 <- unname(x_map[key2(i, act)])[1]
+      if (i == j) {
+        if (directed) stop("Directed spatial relations cannot contain self-arcs.", call. = FALSE)
+        if (is.finite(xi0)) v[xi0 + 1L] <- v[xi0 + 1L] + weight_multiplier * awi * wij
+        next
       }
-    }
-  }
-
-  # ---- edge part on global y_action block
-  for (e in seq_len(k_edges)) {
-    we <- edge_df$weight[e]
-
-    for (act in act_int) {
-      awi <- as.numeric(aw_map[[as.character(act)]])
-      if (!is.finite(awi) || awi == 0) next
-
-      # global layout: e is 0-based in the formula
+      if (is.finite(xi0)) v[xi0 + 1L] <- v[xi0 + 1L] + weight_multiplier * awi * wij
+      if (!directed) {
+        xj0 <- unname(x_map[key2(j, act)])[1]
+        if (is.finite(xj0)) v[xj0 + 1L] <- v[xj0 + 1L] + weight_multiplier * awi * wij
+      }
+      e <- unname(edge_index[paste(min(i, j), max(i, j), sep = "::")])
       bcol0 <- y0 + (e - 1L) * n_actions_global + (act - 1L)
-      coef <- weight_multiplier * (-2) * we * awi
-
-      if (coef != 0) {
-        v[bcol0 + 1L] <- v[bcol0 + 1L] + coef
-      }
+      v[bcol0 + 1L] <- v[bcol0 + 1L] - weight_multiplier * awi * wij * if (directed) 1 else 2
     }
   }
-
-  v
-}
+  v}
 
 .pamo_objective_to_ir <- function(x, spec) {
   stopifnot(inherits(x, "Problem"))
@@ -704,7 +622,7 @@
   }
 
   rel <- rel[, c("internal_pu1","internal_pu2","weight",
-                 intersect(names(rel), c("distance","source","relation_name"))),
+                 intersect(names(rel), c("directed","distance","source","relation_name"))),
              drop = FALSE]
 
   rel$internal_pu1 <- as.integer(rel$internal_pu1)
@@ -2665,54 +2583,20 @@
 
   if (length(ip1) == 0L) return(0)
 
-  # self weights (diagonal rows) and canonical off-diagonal edges
-  self_w <- numeric(n_pu)
-  edge_map <- new.env(parent = emptyenv(), hash = TRUE)
-
-  make_key <- function(a, b) paste0(a, "::", b)
-
+  directed <- if ("directed" %in% names(rel)) unique(as.logical(rel$directed)) else FALSE
+  if (length(directed) != 1L || is.na(directed)) stop("Invalid directed metadata in spatial relation.", call. = FALSE)
+  val <- 0
   for (r in seq_along(ip1)) {
-    i <- ip1[r]
-    j <- ip2[r]
-    wij <- ww[r]
-
+    i <- ip1[r]; j <- ip2[r]; wij <- ww[r]
     if (i == j) {
-      self_w[i] <- self_w[i] + wij
+      if (directed) stop("Directed spatial relations cannot contain self-arcs.", call. = FALSE)
+      val <- val + wij * w_bin[i]
+    } else if (directed) {
+      val <- val + wij * w_bin[i] * (1 - w_bin[j])
     } else {
-      a <- min(i, j)
-      b <- max(i, j)
-      k <- make_key(a, b)
-      old <- if (exists(k, envir = edge_map, inherits = FALSE)) {
-        get(k, envir = edge_map, inherits = FALSE)
-      } else {
-        NA_real_
-      }
-      if (is.na(old) || wij > old) {
-        assign(k, wij, envir = edge_map)
-      }
+      val <- val + wij * abs(w_bin[i] - w_bin[j])
     }
   }
-
-  edge_keys <- ls(edge_map, all.names = TRUE)
-
-  incident <- numeric(n_pu)
-  edge_sum <- 0
-
-  for (k in edge_keys) {
-    parts <- strsplit(k, "::", fixed = TRUE)[[1]]
-    a <- as.integer(parts[1])
-    b <- as.integer(parts[2])
-    wij <- get(k, envir = edge_map, inherits = FALSE)
-
-    incident[a] <- incident[a] + wij
-    incident[b] <- incident[b] + wij
-
-    edge_sum <- edge_sum + wij * w_bin[a] * w_bin[b]
-  }
-
-  linear_sum <- sum((incident + self_w) * w_bin)
-  val <- linear_sum - 2 * edge_sum
-
   mult <- as.numeric(term$weight_multiplier %||% 1)[1]
   if (!is.finite(mult)) mult <- 1
 
@@ -3327,81 +3211,27 @@
   ip2 <- ip2[ok]
   ww  <- ww[ok]
 
-  self_w <- numeric(n_pu)
-  edge_map <- new.env(parent = emptyenv(), hash = TRUE)
-
-  make_key <- function(a, b) paste0(a, "::", b)
-
-  for (r in seq_along(ip1)) {
-    i <- ip1[r]
-    j <- ip2[r]
-    wij <- ww[r]
-
-    if (i == j) {
-      self_w[i] <- self_w[i] + wij
-    } else {
-      a <- min(i, j)
-      b <- max(i, j)
-      k <- make_key(a, b)
-      old <- if (exists(k, envir = edge_map, inherits = FALSE)) {
-        get(k, envir = edge_map, inherits = FALSE)
-      } else {
-        NA_real_
-      }
-      if (is.na(old) || wij > old) {
-        assign(k, wij, envir = edge_map)
-      }
-    }
-  }
-
-  edge_keys <- ls(edge_map, all.names = TRUE)
-  if (length(edge_keys) == 0L) return(0)
-
-  edge_df <- data.frame(
-    a = integer(length(edge_keys)),
-    b = integer(length(edge_keys)),
-    weight = numeric(length(edge_keys))
-  )
-
-  for (k in seq_along(edge_keys)) {
-    parts <- strsplit(edge_keys[k], "::", fixed = TRUE)[[1]]
-    edge_df$a[k] <- as.integer(parts[1])
-    edge_df$b[k] <- as.integer(parts[2])
-    edge_df$weight[k] <- get(edge_keys[k], envir = edge_map, inherits = FALSE)
-  }
-
-  edge_df <- edge_df[order(edge_df$a, edge_df$b), , drop = FALSE]
-
-  incident_w <- numeric(n_pu)
-  for (r in seq_len(nrow(edge_df))) {
-    incident_w[edge_df$a[r]] <- incident_w[edge_df$a[r]] + edge_df$weight[r]
-    incident_w[edge_df$b[r]] <- incident_w[edge_df$b[r]] + edge_df$weight[r]
-  }
-
+  directed <- if ("directed" %in% names(rel)) unique(as.logical(rel$directed)) else FALSE
+  if (length(directed) != 1L || is.na(directed)) stop("Invalid directed metadata in spatial relation.", call. = FALSE)
   val <- 0
-
   for (act in act_int) {
     awi <- as.numeric(aw_map[[as.character(act)]])
     if (!is.finite(awi) || awi == 0) next
-
     x_i <- numeric(n_pu)
     idx_act <- da_sub$internal_action == act
-    if (any(idx_act)) {
-      pu_act <- da_sub$internal_pu[idx_act]
-      xv_act <- x_bin[idx_act]
-      x_i[pu_act] <- xv_act
+    if (any(idx_act)) x_i[da_sub$internal_pu[idx_act]] <- x_bin[idx_act]
+    for (r in seq_along(ip1)) {
+      i <- ip1[r]; j <- ip2[r]; wij <- ww[r]
+      if (i == j) {
+        if (directed) stop("Directed spatial relations cannot contain self-arcs.", call. = FALSE)
+        val <- val + awi * wij * x_i[i]
+      } else if (directed) {
+        val <- val + awi * wij * x_i[i] * (1 - x_i[j])
+      } else {
+        val <- val + awi * wij * abs(x_i[i] - x_i[j])
+      }
     }
-
-    linear_sum <- sum((incident_w + self_w) * x_i)
-
-    edge_sum <- 0
-    for (r in seq_len(nrow(edge_df))) {
-      edge_sum <- edge_sum + edge_df$weight[r] * x_i[edge_df$a[r]] * x_i[edge_df$b[r]]
-    }
-
-    val <- val + awi * (linear_sum - 2 * edge_sum)
   }
-
   mult <- as.numeric(term$weight_multiplier %||% 1)[1]
   if (!is.finite(mult)) mult <- 1
 

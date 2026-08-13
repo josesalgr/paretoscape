@@ -115,8 +115,8 @@ NULL
 #' \eqn{E} corresponds to the rows of \code{relations}. If
 #' \code{directed = FALSE}, each edge is treated as undirected, so pairs
 #' \eqn{(i,j)} and \eqn{(j,i)} are interpreted as the same edge. In that case,
-#' duplicated undirected edges are collapsed automatically using the maximum
-#' weight observed for each unordered pair.
+#' each unordered pair must be supplied exactly once. Duplicate undirected
+#' edges are rejected, including reciprocal rows.
 #'
 #' If \code{directed = TRUE}, edges are preserved as ordered pairs, so
 #' \eqn{(i,j)} and \eqn{(j,i)} are distinct unless the user provides both.
@@ -140,9 +140,9 @@ NULL
 #'   preserved when possible.
 #' @param name Character string giving the key under which the relation is
 #'   stored.
-#' @param directed Logical. If \code{FALSE}, treat edges as undirected and
-#'   collapse duplicate unordered pairs. If \code{TRUE}, keep edges as directed
-#'   ordered pairs.
+#' @param directed Logical. If \code{FALSE}, treat rows as undirected edges;
+#'   each unordered pair must occur exactly once. If \code{TRUE}, keep rows as
+#'   directed ordered pairs; reciprocal arcs are distinct, but duplicate arcs are rejected.
 #' @param allow_self Logical. If \code{TRUE}, allow self-edges
 #'   \eqn{(i,i)}. Default is \code{FALSE}.
 #'
@@ -198,6 +198,13 @@ add_spatial_relations <- function(x,
     stop("name must be a non-empty character string.", call. = FALSE)
   }
 
+  if (!is.logical(directed) || length(directed) != 1L || is.na(directed)) {
+    stop("directed must be a single non-missing logical value.", call. = FALSE)
+  }
+  if (!is.logical(allow_self) || length(allow_self) != 1L || is.na(allow_self)) {
+    stop("allow_self must be a single non-missing logical value.", call. = FALSE)
+  }
+
   stopifnot(inherits(relations, "data.frame"), nrow(relations) > 0)
   rel <- relations
 
@@ -247,65 +254,31 @@ add_spatial_relations <- function(x,
   if (!allow_self && any(rel$internal_pu1 == rel$internal_pu2)) stop("Self-edges are not allowed.", call. = FALSE)
   #if (any(!is.finite(rel$weight)) || any(rel$weight < 0)) stop("weight must be finite and >= 0.", call. = FALSE)
 
-  if (!directed) {
-    self_edges <- rel[rel$internal_pu1 == rel$internal_pu2, , drop = FALSE]
-    off_edges  <- rel[rel$internal_pu1 != rel$internal_pu2, , drop = FALSE]
-
-    if (nrow(off_edges) > 0) {
-      a <- pmin(off_edges$internal_pu1, off_edges$internal_pu2)
-      b <- pmax(off_edges$internal_pu1, off_edges$internal_pu2)
-      off_edges$internal_pu1 <- a
-      off_edges$internal_pu2 <- b
-
-      key <- paste(off_edges$internal_pu1, off_edges$internal_pu2, sep = "_")
-      wmax <- tapply(off_edges$weight, key, max)
-
-      parts <- strsplit(names(wmax), "_", fixed = TRUE)
-      i1 <- as.integer(vapply(parts, `[`, "", 1))
-      j1 <- as.integer(vapply(parts, `[`, "", 2))
-
-      rel_u <- data.frame(
-        internal_pu1 = i1,
-        internal_pu2 = j1,
-        weight = as.numeric(wmax),
-        stringsAsFactors = FALSE
-      )
-
-      extra_cols <- intersect(names(off_edges), c("pu1","pu2","distance","source"))
-      if (length(extra_cols) > 0) {
-        rep_idx <- match(names(wmax), key)
-        extras <- off_edges[rep_idx, extra_cols, drop = FALSE]
-        rel_u <- cbind(rel_u, extras)
-      }
-    } else {
-      rel_u <- off_edges
-    }
-
-    if (nrow(self_edges) > 0) {
-      key <- as.character(self_edges$internal_pu1)
-      wself <- tapply(self_edges$weight, key, max)
-
-      self_fix <- data.frame(
-        internal_pu1 = as.integer(names(wself)),
-        internal_pu2 = as.integer(names(wself)),
-        weight = as.numeric(wself),
-        stringsAsFactors = FALSE
-      )
-
-      extra_cols <- intersect(names(self_edges), c("pu1","pu2","distance","source"))
-      if (length(extra_cols) > 0) {
-        rep_idx <- match(names(wself), as.character(self_edges$internal_pu1))
-        extras <- self_edges[rep_idx, extra_cols, drop = FALSE]
-        self_fix <- cbind(self_fix, extras)
-      }
-
-      rel <- if (nrow(rel_u) == 0) self_fix else .pa_rbind_samecols(rel_u, self_fix)
-    } else {
-      rel <- rel_u
-    }
+  if (directed && any(rel$internal_pu1 == rel$internal_pu2)) {
+    stop("Self-arcs are not allowed for directed relations.", call. = FALSE)
   }
 
+  key <- if (directed) {
+    paste(rel$internal_pu1, rel$internal_pu2, sep = "->")
+  } else {
+    paste(pmin(rel$internal_pu1, rel$internal_pu2),
+          pmax(rel$internal_pu1, rel$internal_pu2), sep = "--")
+  }
+  if (anyDuplicated(key) != 0L) {
+    dup_key <- unique(key[duplicated(key) | duplicated(key, fromLast = TRUE)])[1L]
+    dup_weights <- unique(rel$weight[key == dup_key])
+    kind <- if (directed) "directed arc" else "undirected edge"
+    detail <- if (length(dup_weights) > 1L) paste0(" Conflicting weights: ", paste(dup_weights, collapse = ", "), ".") else ""
+    stop("Duplicated ", kind, " ", dup_key, ". Each relation must be supplied exactly once.", detail, call. = FALSE)
+  }
+  if (!directed) {
+    a <- pmin(rel$internal_pu1, rel$internal_pu2)
+    b <- pmax(rel$internal_pu1, rel$internal_pu2)
+    rel$internal_pu1 <- a
+    rel$internal_pu2 <- b
+  }
   rel$relation_name <- name
+  rel$directed <- directed
   x <- .pa_store_relation(x, rel, name)
   x
 }
@@ -811,6 +784,7 @@ add_spatial_rook <- function(x,
   edges <- vector("list", length(nb))
   for (i in seq_along(nb)) {
     js <- nb[[i]]
+    js <- js[js > i]
     if (!length(js)) next
     edges[[i]] <- data.frame(
       pu1 = geometry$id[i],
@@ -1080,6 +1054,11 @@ add_spatial_knn <- function(x,
     stringsAsFactors = FALSE
   )
 
+  a <- pmin(rel$pu1, rel$pu2)
+  b <- pmax(rel$pu1, rel$pu2)
+  rel$pu1 <- a; rel$pu2 <- b
+  rel <- rel[!duplicated(paste(rel$pu1, rel$pu2, sep = "--")), , drop = FALSE]
+
   add_spatial_relations(x, rel, name = name, directed = FALSE, allow_self = FALSE)
 }
 
@@ -1189,7 +1168,7 @@ add_spatial_distance <- function(x,
 
   D <- as.matrix(stats::dist(X))
   diag(D) <- Inf
-  which_edges <- which(D <= max_distance, arr.ind = TRUE)
+  which_edges <- which(D <= max_distance & row(D) < col(D), arr.ind = TRUE)
 
   if (nrow(which_edges) == 0) stop("No edges found under max_distance. Try a larger threshold.", call. = FALSE)
 

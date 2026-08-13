@@ -71,15 +71,36 @@
 #'
 #' \strong{Cores}
 #'
-#' The argument \code{cores} specifies the number of CPU cores to use. If the
-#' requested number exceeds the number of detected cores, it is capped to the
-#' detected maximum with a warning.
+#' The argument \code{cores} specifies the maximum number of solver threads.
+#' It is supported by Gurobi. Rcplex, rcbc, and Rsymphony do not reliably
+#' expose thread control through the interfaces used here; multiscape therefore
+#' warns and ignores \code{cores} for CPLEX, CBC, and SYMPHONY. If
+#' the requested number exceeds the number of detected logical processors, it
+#' is capped to the detected maximum with a warning.
 #'
 #' \strong{Verbose output and log files}
 #'
 #' The arguments \code{verbose}, \code{write_log}, and \code{log_file}
 #' control how solver logging is handled. These options are stored and later
-#' interpreted by the solving layer for the selected backend.
+#' interpreted by the solving layer for the selected backend. Solver log files
+#' are currently available only with Gurobi. A parameter that is not available
+#' through the selected R solver interface is reported with a warning and is
+#' not stored as if it had been applied.
+#'
+#' \strong{Backend capabilities}
+#'
+#' Common parameters are translated only when the selected backend supports
+#' them:
+#' \itemize{
+#'   \item Gurobi supports \code{cores}, \code{solution_limit}, and
+#'   \code{write_log}.
+#'   \item CBC supports \code{solution_limit}. Thread control and CBC log
+#'   files are not exposed reliably through the current rcbc integration.
+#'   \item CPLEX through Rcplex does not expose \code{cores},
+#'   \code{solution_limit}, or solver log files.
+#'   \item SYMPHONY through Rsymphony supports \code{solution_limit}, but does
+#'   not expose \code{cores} or solver log files.
+#' }
 #'
 #' \strong{Solver-specific parameters}
 #'
@@ -121,23 +142,26 @@
 #' @param time_limit Optional non-negative numeric value giving the maximum
 #'   solving time in seconds. If \code{NULL}, the previously stored value is
 #'   kept unchanged.
-#' @param solution_limit Optional logical flag controlling backend-specific
-#'   early stopping after feasible solution discovery. If \code{NULL}, the
-#'   previously stored value is kept unchanged.
-#' @param cores Optional positive integer giving the number of CPU cores to use.
-#'   If \code{NULL}, the previously stored value is kept unchanged.
+#' @param solution_limit Optional logical flag requesting early termination
+#'   after a feasible solution is found. Supported by Gurobi, CBC, and
+#'   SYMPHONY, but not by CPLEX through Rcplex. If \code{NULL}, the previously
+#'   stored value is kept unchanged.
+#' @param cores Optional positive integer giving the maximum number of solver
+#'   threads. Currently supported by Gurobi. If \code{NULL}, the previously
+#'   stored value is kept unchanged.
 #' @param verbose Optional logical flag indicating whether the solver should
 #'   print log output. If \code{NULL}, the previously stored value is kept
 #'   unchanged.
-#' @param log_file Optional character string giving the name of the
-#'   solver log file. If \code{NULL}, the previously stored value is kept
-#'   unchanged.
+#' @param log_file Optional character string giving the complete path or file
+#'   name of the solver log. Currently supported by Gurobi. If \code{NULL}, the
+#'   previously stored value is kept unchanged.
 #' @param write_log Optional logical flag indicating whether solver output
-#'   should be written to a file. If \code{NULL}, the previously stored value is
-#'   kept unchanged.
+#'   should be written to a file. Currently supported by Gurobi. If
+#'   \code{NULL}, the previously stored value is kept unchanged.
 #' @param solver_params Named list of solver-specific parameters. These are
-#'   merged with previously stored backend-specific parameters rather than
-#'   replacing them completely.
+#'   merged with previously stored parameters. Rcplex parameters are validated
+#'   against its supported control names; Rsymphony does not currently receive
+#'   arbitrary solver-specific parameters.
 #' @param ... Additional named solver-specific parameters. These are merged into
 #'   \code{solver_params}. For example, \code{MIPFocus = 1} for Gurobi.
 #'
@@ -185,12 +209,12 @@
 #' @export
 set_solver <- function(
     x,
-    solver = c("auto", "gurobi", "cplex", "cbc", "symphony"),
+    solver = NULL,
     gap_limit = NULL,
     time_limit = NULL,
     solution_limit = NULL,
     cores = NULL,
-    verbose = FALSE,
+    verbose = NULL,
     log_file = NULL,
     write_log = NULL,
     solver_params = list(),
@@ -207,7 +231,14 @@ set_solver <- function(
     x <- .pa_clone_data(x)
   }
 
-  solver <- match.arg(solver)
+  solver_choices <- c("auto", "gurobi", "cplex", "cbc", "symphony")
+  stored_solver <- x$data$solve_args$solver %||% NULL
+
+  if (is.null(solver)) {
+    solver <- stored_solver %||% "auto"
+  } else {
+    solver <- match.arg(solver, solver_choices)
+  }
 
   # -----------------------------------------------------------------------
   # Solver-specific parameters
@@ -252,10 +283,7 @@ set_solver <- function(
       )
     }
 
-    gap_limit <- round(
-      as.numeric(gap_limit),
-      digits = 3
-    )
+    gap_limit <- as.numeric(gap_limit)
   }
 
   if (!is.null(time_limit)) {
@@ -382,10 +410,13 @@ set_solver <- function(
     log_file <- as.character(log_file)
   }
 
-  # It is clearer to reject contradictory log settings immediately.
+  # A file name is required only by a backend that can actually write a log.
+  # Unsupported logging requests are handled by the capability check below.
   if (
     identical(write_log, TRUE) &&
-    is.null(log_file)
+    is.null(log_file) &&
+    identical(solver, "gurobi") &&
+    is.null(x$data$solve_args$name_output_file)
   ) {
     stop(
       "`log_file` must be supplied when `write_log = TRUE`.",
@@ -449,10 +480,92 @@ set_solver <- function(
     out$name_output_file <- log_file
   }
 
-  out$solver_params <- utils::modifyList(
-    out$solver_params %||% list(),
-    solver_params
-  )
+  # Backend-specific parameters are preserved for incremental updates of the
+  # same backend, but are not carried silently when switching solvers.
+  previous_solver_params <- if (!is.null(stored_solver) &&
+                                !identical(stored_solver, solver)) {
+    list()
+  } else {
+    out$solver_params %||% list()
+  }
+  out$solver_params <- utils::modifyList(previous_solver_params, solver_params)
+
+  # Report settings that cannot be transmitted by the selected R interface.
+  unavailable <- character(0)
+
+  if (identical(solver, "cplex")) {
+    if (!is.null(out$cores)) unavailable <- c(unavailable, "cores")
+    if (isTRUE(out$solution_limit)) {
+      unavailable <- c(unavailable, "solution_limit")
+    }
+    if (isTRUE(out$output_file) ||
+        (!is.null(out$name_output_file) && !identical(out$output_file, FALSE))) {
+      unavailable <- c(unavailable, "write_log/log_file")
+    }
+
+    rcplex_parameters <- c(
+      "trace", "method", "preind", "aggind", "itlim", "epagap", "epgap",
+      "tilim", "disjcuts", "mipemphasis", "cliques", "nodesel", "probe",
+      "varsel", "flowcovers", "solnpoolagap", "solnpoolgap",
+      "solnpoolintensity", "maxcalls", "round"
+    )
+    unknown <- setdiff(names(out$solver_params), rcplex_parameters)
+    if (length(unknown) > 0L) {
+      unavailable <- c(unavailable, paste0("solver_params$", unknown))
+      out$solver_params[unknown] <- NULL
+    }
+
+    out$cores <- NULL
+    out$solution_limit <- FALSE
+    out$output_file <- FALSE
+    out$name_output_file <- NULL
+  }
+
+  if (identical(solver, "symphony")) {
+    if (!is.null(out$cores)) unavailable <- c(unavailable, "cores")
+    if (isTRUE(out$output_file) ||
+        (!is.null(out$name_output_file) && !identical(out$output_file, FALSE))) {
+      unavailable <- c(unavailable, "write_log/log_file")
+    }
+    if (length(out$solver_params) > 0L) {
+      unavailable <- c(unavailable, "solver_params")
+    }
+
+    out$cores <- NULL
+    out$output_file <- FALSE
+    out$name_output_file <- NULL
+    out$solver_params <- list()
+  }
+
+  if (identical(solver, "cbc")) {
+    if (!is.null(out$cores)) {
+      unavailable <- c(
+        unavailable,
+        "cores (thread control is not available through rcbc)"
+      )
+      out$cores <- NULL
+    }
+    if (isTRUE(out$output_file) ||
+        (!is.null(out$name_output_file) && !identical(out$output_file, FALSE))) {
+      unavailable <- c(unavailable, "write_log/log_file")
+      out$output_file <- FALSE
+      out$name_output_file <- NULL
+    }
+  }
+
+  unavailable <- unique(unavailable)
+  if (length(unavailable) > 0L) {
+    warning(
+      paste0(
+        "Parameter(s) not available for solver '", solver,
+        "' through its current R interface: ",
+        paste(unavailable, collapse = ", "),
+        ". The unsupported setting(s) will be ignored."
+      ),
+      call. = FALSE,
+      immediate. = TRUE
+    )
+  }
 
   x$data$solve_args <- out
 
@@ -500,7 +613,7 @@ set_solver <- function(
 #'
 #' @export
 set_solver_gurobi <- function(x, ..., solver_params = list(), gap_limit = NULL, time_limit = NULL,
-                              solution_limit = NULL, cores = NULL, verbose = FALSE,
+                              solution_limit = NULL, cores = NULL, verbose = NULL,
                               log_file = NULL, write_log = NULL) {
   set_solver(
     x,
@@ -517,18 +630,18 @@ set_solver_gurobi <- function(x, ..., solver_params = list(), gap_limit = NULL, 
   )
 }
 
-#' @title Configure CPLEX solver settings
+#' @title Configure CBC solver settings
 #'
 #' @description
 #' Convenience wrapper around \code{\link{set_solver}} that stores
-#' \code{solver = "cplex"} in the problem object.
+#' \code{solver = "cbc"} in the problem object.
 #'
 #' This function does not solve the model. It only updates the stored solver
 #' configuration.
 #'
 #' @inheritParams set_solver
 #'
-#' @return An updated \code{Problem} object with CPLEX solver settings stored in
+#' @return An updated \code{Problem} object with CBC solver settings stored in
 #'   \code{x$data$solve_args}.
 #'
 #' @seealso
@@ -550,14 +663,15 @@ set_solver_gurobi <- function(x, ..., solver_params = list(), gap_limit = NULL, 
 #'   x,
 #'   gap_limit = 0.01,
 #'   time_limit = 300,
-#'   cores = 2
+#'   cores = 2,
+#'   solution_limit = FALSE
 #' )
 #'
 #' x$data$solve_args
 #'
 #' @export
 set_solver_cbc <- function(x, ..., solver_params = list(), gap_limit = NULL, time_limit = NULL,
-                           solution_limit = NULL, cores = NULL, verbose = FALSE,
+                           solution_limit = NULL, cores = NULL, verbose = NULL,
                            log_file = NULL, write_log = NULL) {
   set_solver(
     x,
@@ -603,15 +717,14 @@ set_solver_cbc <- function(x, ..., solver_params = list(), gap_limit = NULL, tim
 #' x <- set_solver_cplex(
 #'   x,
 #'   gap_limit = 0.001,
-#'   time_limit = 1200,
-#'   cores = 2
+#'   time_limit = 1200
 #' )
 #'
 #' x$data$solve_args
 #'
 #' @export
 set_solver_cplex <- function(x, ..., solver_params = list(), gap_limit = NULL, time_limit = NULL,
-                             solution_limit = NULL, cores = NULL, verbose = FALSE,
+                             solution_limit = NULL, cores = NULL, verbose = NULL,
                              log_file = NULL, write_log = NULL) {
   set_solver(
     x,
@@ -667,7 +780,7 @@ set_solver_cplex <- function(x, ..., solver_params = list(), gap_limit = NULL, t
 #'
 #' @export
 set_solver_symphony <- function(x, ..., solver_params = list(), gap_limit = NULL, time_limit = NULL,
-                                solution_limit = NULL, cores = NULL, verbose = FALSE,
+                                solution_limit = NULL, cores = NULL, verbose = NULL,
                                 log_file = NULL, write_log = NULL) {
   set_solver(
     x,

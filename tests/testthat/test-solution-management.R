@@ -3,10 +3,7 @@ test_that("solution_filter returns an independent filtered SolutionSet", {
   original_runs <- multiscape::get_runs(x)
 
   solved <- original_runs[
-    !is.na(original_runs$solution_id) &
-      nzchar(original_runs$solution_id),
-    ,
-    drop = FALSE
+    !is.na(original_runs$solution_id)
   ]
 
   expect_gte(nrow(solved), 2L)
@@ -35,10 +32,7 @@ test_that("solution_filter supports solution and status filters", {
   runs <- multiscape::get_runs(x)
 
   solved <- runs[
-    !is.na(runs$solution_id) &
-      nzchar(runs$solution_id),
-    ,
-    drop = FALSE
+    !is.na(runs$solution_id)
   ]
 
   by_solution <- multiscape::solution_filter(

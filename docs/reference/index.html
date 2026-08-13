@@ -19,7 +19,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">multiscape</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -30,7 +30,7 @@
       <ul class="navbar-nav me-auto"><li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/choosing_multi_objective_method.html">Choosing a multi-objective method</a></li>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/choosing_multi_objective_method.html">Choosing a multi-objective optimisation method</a></li>
     <li><a class="dropdown-item" href="../articles/Integrated_planning.html">Multi-objective forest restoration planning in a highly productive landscape</a></li>
     <li><a class="dropdown-item" href="../articles/reserve-design-rwanda.html">From reserve selection to multi-objective conservation planning</a></li>
   </ul></li>
@@ -49,9 +49,9 @@
     </div>
 
     <div class="section level2">
-      <h2 id="build-and-solve-problems">Build and solve problems<a class="anchor" aria-label="anchor" href="#build-and-solve-problems"></a></h2>
+      <h2 id="create-a-planning-problem">Create a planning problem<a class="anchor" aria-label="anchor" href="#create-a-planning-problem"></a></h2>
 
-      <div class="section-desc"><p>Core workflow to create a planning problem, configure it, and solve it.</p></div>
+      <div class="section-desc"><p>Create the core planning problem from planning units, features, costs, and optional spatial data.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -64,17 +64,10 @@
 
         </dt>
         <dd>Create a planning problem input object</dd>
-
-        <dt>
-
-          <code><a href="solve.html">solve()</a></code>
-
-        </dt>
-        <dd>Solve a planning problem</dd>
       </dl></div><div class="section level2">
-      <h2 id="actions-effects-and-profits">Actions, effects and profits<a class="anchor" aria-label="anchor" href="#actions-effects-and-profits"></a></h2>
+      <h2 id="management-actions-and-outcomes">Management actions and outcomes<a class="anchor" aria-label="anchor" href="#management-actions-and-outcomes"></a></h2>
 
-      <div class="section-desc"><p>Define feasible actions, their effects, and optional profits.</p></div>
+      <div class="section-desc"><p>Define feasible management actions and their ecological and economic consequences.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -116,9 +109,9 @@
         </dt>
         <dd>Add profit to a planning problem</dd>
       </dl></div><div class="section level2">
-      <h2 id="constraints">Constraints<a class="anchor" aria-label="anchor" href="#constraints"></a></h2>
+      <h2 id="targets-and-constraints">Targets and constraints<a class="anchor" aria-label="anchor" href="#targets-and-constraints"></a></h2>
 
-      <div class="section-desc"><p>Define target requirements, area limits, budgets, and locking constraints.</p></div>
+      <div class="section-desc"><p>Specify representation targets, resource limits, and fixed planning-unit or action decisions.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -167,9 +160,9 @@
         </dt>
         <dd>Add locked planning units to a problem</dd>
       </dl></div><div class="section level2">
-      <h2 id="spatial-relations">Spatial relations<a class="anchor" aria-label="anchor" href="#spatial-relations"></a></h2>
+      <h2 id="spatial-relationships">Spatial relationships<a class="anchor" aria-label="anchor" href="#spatial-relationships"></a></h2>
 
-      <div class="section-desc"><p>Register boundary and graph-based spatial relations from tables, polygons, or coordinates.</p></div>
+      <div class="section-desc"><p>Define and store neighborhood, boundary, distance, and user-supplied relationships among planning units.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -220,7 +213,7 @@
       </dl></div><div class="section level2">
       <h2 id="atomic-objectives">Atomic objectives<a class="anchor" aria-label="anchor" href="#atomic-objectives"></a></h2>
 
-      <div class="section-desc"><p>Register objectives that can be solved individually or combined in multi-objective workflows.</p></div>
+      <div class="section-desc"><p>Add ecological, economic, intervention, and spatial objectives to the planning problem.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -264,6 +257,13 @@
 
         <dt>
 
+          <code><a href="add_objective_min_intervention_impact.html">add_objective_min_intervention_impact()</a></code>
+
+        </dt>
+        <dd>Add objective: minimize intervention impact</dd>
+
+        <dt>
+
           <code><a href="add_objective_min_fragmentation_planning_units.html">add_objective_min_fragmentation_planning_units()</a></code>
 
         </dt>
@@ -275,17 +275,61 @@
 
         </dt>
         <dd>Add objective: minimize action fragmentation</dd>
+      </dl></div><div class="section level2">
+      <h2 id="multi-objective-methods-and-run-designs">Multi-objective methods and run designs<a class="anchor" aria-label="anchor" href="#multi-objective-methods-and-run-designs"></a></h2>
+
+      <div class="section-desc"><p>Choose how multiple objectives are explored and define the combinations of weights or constraints to evaluate.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="set_method_weighted_sum.html">set_method_weighted_sum()</a></code>
+
+        </dt>
+        <dd>Set the weighted-sum multi-objective method</dd>
 
         <dt>
 
-          <code><a href="add_objective_min_intervention_impact.html">add_objective_min_intervention_impact()</a></code>
+          <code><a href="set_method_epsilon_constraint.html">set_method_epsilon_constraint()</a></code>
 
         </dt>
-        <dd>Add objective: minimize intervention impact</dd>
-      </dl></div><div class="section level2">
-      <h2 id="solver-configuration">Solver configuration<a class="anchor" aria-label="anchor" href="#solver-configuration"></a></h2>
+        <dd>Set the epsilon-constraint multi-objective method</dd>
 
-      <div class="section-desc"><p>Store solver and runtime options before calling solve().</p></div>
+        <dt>
+
+          <code><a href="set_method_augmecon.html">set_method_augmecon()</a></code>
+
+        </dt>
+        <dd>Set the AUGMECON multi-objective method</dd>
+
+        <dt>
+
+          <code><a href="set_runs_grid.html">set_runs_grid()</a></code>
+
+        </dt>
+        <dd>Define an automatic multi-objective run grid</dd>
+
+        <dt>
+
+          <code><a href="set_runs_manual.html">set_runs_manual()</a></code>
+
+        </dt>
+        <dd>Define a manual multi-objective run design</dd>
+
+        <dt>
+
+          <code><a href="set_runs_control.html">set_runs_control()</a></code>
+
+        </dt>
+        <dd>Control multi-objective run behavior</dd>
+      </dl></div><div class="section level2">
+      <h2 id="solvers-and-optimization">Solvers and optimization<a class="anchor" aria-label="anchor" href="#solvers-and-optimization"></a></h2>
+
+      <div class="section-desc"><p>Select and configure a mixed-integer programming solver, then solve the planning problem.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -318,7 +362,7 @@
           <code><a href="set_solver_cbc.html">set_solver_cbc()</a></code>
 
         </dt>
-        <dd>Configure CPLEX solver settings</dd>
+        <dd>Configure CBC solver settings</dd>
 
         <dt>
 
@@ -326,70 +370,17 @@
 
         </dt>
         <dd>Configure SYMPHONY solver settings</dd>
+
+        <dt>
+
+          <code><a href="solve.html">solve()</a></code>
+
+        </dt>
+        <dd>Solve a planning problem</dd>
       </dl></div><div class="section level2">
-      <h2 id="multi-objective-methods">Multi-objective methods<a class="anchor" aria-label="anchor" href="#multi-objective-methods"></a></h2>
+      <h2 id="inspect-solutions">Inspect solutions<a class="anchor" aria-label="anchor" href="#inspect-solutions"></a></h2>
 
-      <div class="section-desc"><p>Configure weighted-sum, epsilon-constraint, and AUGMECON workflows.</p></div>
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="set_method_weighted_sum.html">set_method_weighted_sum()</a></code>
-
-        </dt>
-        <dd>Set the weighted-sum multi-objective method</dd>
-
-        <dt>
-
-          <code><a href="set_method_epsilon_constraint.html">set_method_epsilon_constraint()</a></code>
-
-        </dt>
-        <dd>Set the epsilon-constraint multi-objective method</dd>
-
-        <dt>
-
-          <code><a href="set_method_augmecon.html">set_method_augmecon()</a></code>
-
-        </dt>
-        <dd>Set the AUGMECON multi-objective method</dd>
-      </dl></div><div class="section level2">
-      <h2 id="multi-objective-run-configuration">Multi-objective run configuration<a class="anchor" aria-label="anchor" href="#multi-objective-run-configuration"></a></h2>
-
-      <div class="section-desc"><p>Define automatic or manual run designs and execution controls for multi-objective workflows.</p></div>
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="set_runs_grid.html">set_runs_grid()</a></code>
-
-        </dt>
-        <dd>Define an automatic multi-objective run grid</dd>
-
-        <dt>
-
-          <code><a href="set_runs_manual.html">set_runs_manual()</a></code>
-
-        </dt>
-        <dd>Define a manual multi-objective run design</dd>
-
-        <dt>
-
-          <code><a href="set_runs_control.html">set_runs_control()</a></code>
-
-        </dt>
-        <dd>Control multi-objective run behavior</dd>
-      </dl></div><div class="section level2">
-      <h2 id="results-and-extraction">Results and extraction<a class="anchor" aria-label="anchor" href="#results-and-extraction"></a></h2>
-
-      <div class="section-desc"><p>Extract run metadata, objective values, and solution-level results.</p></div>
+      <div class="section-desc"><p>Extract run metadata, objective values, spatial decisions, features, and target outcomes from stored solutions.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -426,6 +417,13 @@
 
         <dt>
 
+          <code><a href="get_solution_states.html">get_solution_states()</a></code>
+
+        </dt>
+        <dd>Get planning-unit states from stored solutions</dd>
+
+        <dt>
+
           <code><a href="get_features.html">get_features()</a></code>
 
         </dt>
@@ -438,9 +436,9 @@
         </dt>
         <dd>Get target achievement summary from a solution set</dd>
       </dl></div><div class="section level2">
-      <h2 id="solution-set-management">Solution-set management<a class="anchor" aria-label="anchor" href="#solution-set-management"></a></h2>
+      <h2 id="manage-solution-sets">Manage solution sets<a class="anchor" aria-label="anchor" href="#manage-solution-sets"></a></h2>
 
-      <div class="section-desc"><p>Filter, combine, and remove repeated solutions while preserving SolutionSet consistency.</p></div>
+      <div class="section-desc"><p>Filter, combine, and remove duplicate alternatives before analysis or reporting.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -468,9 +466,9 @@
         </dt>
         <dd>Keep unique solutions in a solution set</dd>
       </dl></div><div class="section level2">
-      <h2 id="frontier-analysis">Frontier analysis<a class="anchor" aria-label="anchor" href="#frontier-analysis"></a></h2>
+      <h2 id="objective-space-analysis">Objective-space analysis<a class="anchor" aria-label="anchor" href="#objective-space-analysis"></a></h2>
 
-      <div class="section-desc"><p>Characterize objective ranges and distances to observed reference points.</p></div>
+      <div class="section-desc"><p>Characterize performance trade-offs, empirical extremes, distances, knees, and neighboring alternatives in objective space.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -497,10 +495,17 @@
 
         </dt>
         <dd>Identify knee solutions on an observed Pareto frontier</dd>
-      </dl></div><div class="section level2">
-      <h2 id="selection-analysis">Selection analysis<a class="anchor" aria-label="anchor" href="#selection-analysis"></a></h2>
 
-      <div class="section-desc"><p>Analyze the recurrence and structural similarity of planning-unit and action assignments.</p></div>
+        <dt>
+
+          <code><a href="frontier_neighbors.html">frontier_neighbors()</a></code>
+
+        </dt>
+        <dd>Identify neighboring solutions in objective space</dd>
+      </dl></div><div class="section level2">
+      <h2 id="decision-space-analysis">Decision-space analysis<a class="anchor" aria-label="anchor" href="#decision-space-analysis"></a></h2>
+
+      <div class="section-desc"><p>Quantify recurrence, similarity, and consistency in spatial decisions across alternative solutions.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -520,10 +525,17 @@
 
         </dt>
         <dd>Calculate structural similarity among solutions</dd>
-      </dl></div><div class="section level2">
-      <h2 id="plotting">Plotting<a class="anchor" aria-label="anchor" href="#plotting"></a></h2>
 
-      <div class="section-desc"><p>Visualize spatial outputs and multi-objective trade-offs.</p></div>
+        <dt>
+
+          <code><a href="selection_consistency.html">selection_consistency()</a></code>
+
+        </dt>
+        <dd>Summarize consistency of planning-unit states</dd>
+      </dl></div><div class="section level2">
+      <h2 id="objective-decision-linkage">Objective-decision linkage<a class="anchor" aria-label="anchor" href="#objective-decision-linkage"></a></h2>
+
+      <div class="section-desc"><p>Relate changes in objective performance to changes in spatial prescriptions and identify informative solution contrasts.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -531,6 +543,50 @@
 
 
       <dl><dt>
+
+          <code><a href="linkage_distances.html">linkage_distances()</a></code>
+
+        </dt>
+        <dd>Compare objective and decision distances</dd>
+
+        <dt>
+
+          <code><a href="linkage_transition.html">linkage_transition()</a></code>
+
+        </dt>
+        <dd>Describe the transition between two solutions</dd>
+
+        <dt>
+
+          <code><a href="linkage_turnover.html">linkage_turnover()</a></code>
+
+        </dt>
+        <dd>Measure decision turnover along an objective-space neighborhood</dd>
+
+        <dt>
+
+          <code><a href="linkage_contrasts.html">linkage_contrasts()</a></code>
+
+        </dt>
+        <dd>Select informative solution contrasts</dd>
+      </dl></div><div class="section level2">
+      <h2 id="visualize-results">Visualize results<a class="anchor" aria-label="anchor" href="#visualize-results"></a></h2>
+
+      <div class="section-desc"><p>Plot objective trade-offs, planning-unit selections, management actions, and spatial feature distributions.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="plot_tradeoff.html">plot_tradeoff()</a></code>
+
+        </dt>
+        <dd>Plot trade-offs from a solution set</dd>
+
+        <dt>
 
           <code><a href="plot_spatial_planning_units.html">plot_spatial_planning_units()</a></code>
 
@@ -550,33 +606,10 @@
 
         </dt>
         <dd>Plot spatial feature values from a solution set</dd>
-
-        <dt>
-
-          <code><a href="plot_tradeoff.html">plot_tradeoff()</a></code>
-
-        </dt>
-        <dd>Plot trade-offs from a solution set</dd>
       </dl></div><div class="section level2">
-      <h2 id="advanced-functions">Advanced functions<a class="anchor" aria-label="anchor" href="#advanced-functions"></a></h2>
+      <h2 id="core-objects">Core objects<a class="anchor" aria-label="anchor" href="#core-objects"></a></h2>
 
-      <div class="section-desc"><p>Advanced utilities for inspecting or compiling optimization models.</p></div>
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="compile_model.html">compile_model()</a></code>
-
-        </dt>
-        <dd>Compile the optimization model stored in a Problem</dd>
-      </dl></div><div class="section level2">
-      <h2 id="classes">Classes<a class="anchor" aria-label="anchor" href="#classes"></a></h2>
-
-      <div class="section-desc"><p>Public classes used across the package.</p></div>
+      <div class="section-desc"><p>Classes used to represent planning problems and their resulting solution sets.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -597,9 +630,25 @@
         </dt>
         <dd>SolutionSet class</dd>
       </dl></div><div class="section level2">
-      <h2 id="data">Data<a class="anchor" aria-label="anchor" href="#data"></a></h2>
+      <h2 id="advanced-model-inspection">Advanced model inspection<a class="anchor" aria-label="anchor" href="#advanced-model-inspection"></a></h2>
 
-      <div class="section-desc"><p>Simulated datasets distributed with the package.</p></div>
+      <div class="section-desc"><p>Compile and inspect the underlying optimization model.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="compile_model.html">compile_model()</a></code>
+
+        </dt>
+        <dd>Compile the optimization model stored in a Problem</dd>
+      </dl></div><div class="section level2">
+      <h2 id="example-data">Example data<a class="anchor" aria-label="anchor" href="#example-data"></a></h2>
+
+      <div class="section-desc"><p>Simulated datasets and data loaders used in package examples and documentation.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -657,7 +706,7 @@
       </dl></div><div class="section level2">
       <h2 id="deprecated-functions">Deprecated functions<a class="anchor" aria-label="anchor" href="#deprecated-functions"></a></h2>
 
-      <div class="section-desc"><p>Deprecated functions kept for backwards compatibility.</p></div>
+      <div class="section-desc"><p>Functions retained temporarily for backward compatibility.</p></div>
 
       <dl></dl></div><div class="section level2">
 

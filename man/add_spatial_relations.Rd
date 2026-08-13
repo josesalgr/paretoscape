@@ -23,9 +23,9 @@ preserved when possible.}
 \item{name}{Character string giving the key under which the relation is
 stored.}
 
-\item{directed}{Logical. If \code{FALSE}, treat edges as undirected and
-collapse duplicate unordered pairs. If \code{TRUE}, keep edges as directed
-ordered pairs.}
+\item{directed}{Logical. If \code{FALSE}, treat rows as undirected edges;
+each unordered pair must occur exactly once. If \code{TRUE}, keep rows as
+directed ordered pairs; reciprocal arcs are distinct, but duplicate arcs are rejected.}
 
 \item{allow_self}{Logical. If \code{TRUE}, allow self-edges
 \eqn{(i,i)}. Default is \code{FALSE}.}
@@ -64,8 +64,8 @@ Let \eqn{G = (\mathcal{I}, E, \omega)} denote the supplied relation, where
 \eqn{E} corresponds to the rows of \code{relations}. If
 \code{directed = FALSE}, each edge is treated as undirected, so pairs
 \eqn{(i,j)} and \eqn{(j,i)} are interpreted as the same edge. In that case,
-duplicated undirected edges are collapsed automatically using the maximum
-weight observed for each unordered pair.
+each unordered pair must be supplied exactly once. Duplicate undirected
+edges are rejected, including reciprocal rows.
 
 If \code{directed = TRUE}, edges are preserved as ordered pairs, so
 \eqn{(i,j)} and \eqn{(j,i)} are distinct unless the user provides both.

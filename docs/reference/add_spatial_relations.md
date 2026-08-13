@@ -46,8 +46,9 @@ add_spatial_relations(x, relations, name, directed = FALSE, allow_self = FALSE)
 
 - directed:
 
-  Logical. If `FALSE`, treat edges as undirected and collapse duplicate
-  unordered pairs. If `TRUE`, keep edges as directed ordered pairs.
+  Logical. If `FALSE`, treat rows as undirected edges; each unordered
+  pair must occur exactly once. If `TRUE`, keep rows as directed ordered
+  pairs; reciprocal arcs are distinct, but duplicate arcs are rejected.
 
 - allow_self:
 
@@ -78,9 +79,9 @@ the planning-unit identifiers stored in the problem.
 Let \\G = (\mathcal{I}, E, \omega)\\ denote the supplied relation, where
 \\E\\ corresponds to the rows of `relations`. If `directed = FALSE`,
 each edge is treated as undirected, so pairs \\(i,j)\\ and \\(j,i)\\ are
-interpreted as the same edge. In that case, duplicated undirected edges
-are collapsed automatically using the maximum weight observed for each
-unordered pair.
+interpreted as the same edge. In that case, each unordered pair must be
+supplied exactly once. Duplicate undirected edges are rejected,
+including reciprocal rows.
 
 If `directed = TRUE`, edges are preserved as ordered pairs, so \\(i,j)\\
 and \\(j,i)\\ are distinct unless the user provides both.
@@ -125,8 +126,8 @@ p <- add_spatial_relations(
 )
 
 p$data$spatial_relations$my_relation
-#>   internal_pu1 internal_pu2 weight pu1 pu2 relation_name
-#> 1            1            2      1   1   2   my_relation
-#> 2            1            3      1   1   3   my_relation
-#> 3            2            3      2   2   3   my_relation
+#>   internal_pu1 internal_pu2 weight pu1 pu2 relation_name directed
+#> 1            1            2      1   1   2   my_relation    FALSE
+#> 2            1            3      1   1   3   my_relation    FALSE
+#> 3            2            3      2   2   3   my_relation    FALSE
 ```

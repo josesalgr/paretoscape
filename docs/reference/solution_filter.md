@@ -40,8 +40,8 @@ solution_filter(
 
 - solution_id:
 
-  Optional character vector of solution ids to keep. Runs without a
-  stored solution are never matched by this filter.
+  Optional numeric vector of positive integer solution ids to keep. Runs
+  without a stored solution are never matched by this filter.
 
 - status:
 
@@ -52,8 +52,9 @@ solution_filter(
 
   Logical. If `TRUE`, keep only runs whose status is interpreted as
   having produced a usable solution. The current accepted statuses are
-  `"optimal"`, `"feasible"`, `"suboptimal"`, `"time_limit"`, and
-  `"gap_limit"`.
+  `"optimal"`, `"feasible"`, `"suboptimal"`, `"time_limit"`,
+  `"time_limit_feasible"`, `"gap_limit"`, `"gap_limit_feasible"`, and
+  `"solution_limit"`.
 
 - nondominated:
 
@@ -101,8 +102,8 @@ traceability to the original run design.
 
 If more than one filter is supplied, filters are combined using logical
 *and*. For example, setting both `status = "optimal"` and
-`solution_id = c("s1", "s3")` keeps only optimal runs whose
-`solution_id` is either `"s1"` or `"s3"`.
+`solution_id = c(1, 3)` keeps only optimal runs whose `solution_id` is
+either `1` or `3`.
 
 If `nondominated = TRUE`, the function further keeps only non-dominated
 solutions among the runs retained by the previous filters. Dominance is

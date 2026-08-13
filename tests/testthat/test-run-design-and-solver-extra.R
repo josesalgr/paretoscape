@@ -72,7 +72,7 @@ test_that("solver configuration validates logging and preserves incremental para
   expect_error(multiscape::set_solver(p, solution_limit = NA), "TRUE or FALSE")
   expect_error(multiscape::set_solver(p, cores = 0), "positive integer")
   expect_error(multiscape::set_solver(p, log_file = ""), "non-empty")
-  expect_error(multiscape::set_solver(p, write_log = TRUE), "log_file")
+  expect_error(multiscape::set_solver_gurobi(p, write_log = TRUE), "log_file")
 
   expect_warning(
     out_warn <- multiscape::set_solver(
@@ -96,7 +96,7 @@ test_that("solver configuration validates logging and preserves incremental para
     verbose = FALSE
   )
 
-  expect_equal(out$data$solve_args$gap_limit, 0.123)
+  expect_equal(out$data$solve_args$gap_limit, 0.12345)
   expect_equal(out$data$solve_args$time_limit, 12.346)
   expect_true(out$data$solve_args$solution_limit)
   expect_equal(out$data$solve_args$solver_params$alpha, 1)

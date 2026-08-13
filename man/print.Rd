@@ -4,11 +4,14 @@
 \alias{print}
 \alias{print.Problem}
 \alias{print.SolutionSet}
+\alias{print.multiscape_linkage_transition}
 \title{Print}
 \usage{
 \method{print}{Problem}(x, ...)
 
 \method{print}{SolutionSet}(x, ...)
+
+\method{print}{multiscape_linkage_transition}(x, ...)
 }
 \arguments{
 \item{x}{Any object.}

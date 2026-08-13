@@ -160,6 +160,23 @@ p <- add_spatial_boundary(
 
 p$data$spatial_relations$boundary
 #>     internal_pu1 internal_pu2 weight pu1 pu2                     source
+#> 1              1            2      1   1   2  boundary_sf_shared_length
+#> 2              1            9      1   1   9  boundary_sf_shared_length
+#> 3              2            3      1   2   3  boundary_sf_shared_length
+#> 4              2           10      1   2  10  boundary_sf_shared_length
+#> 5              3            4      1   3   4  boundary_sf_shared_length
+#> 6              3           11      1   3  11  boundary_sf_shared_length
+#> 7              4            5      1   4   5  boundary_sf_shared_length
+#> 8              4           12      1   4  12  boundary_sf_shared_length
+#> 9              5            6      1   5   6  boundary_sf_shared_length
+#> 10             5           13      1   5  13  boundary_sf_shared_length
+#> 11             6            7      1   6   7  boundary_sf_shared_length
+#> 12             6           14      1   6  14  boundary_sf_shared_length
+#> 13             7            8      1   7   8  boundary_sf_shared_length
+#> 14             7           15      1   7  15  boundary_sf_shared_length
+#> 15             8           16      1   8  16  boundary_sf_shared_length
+#> 16             9           10      1   9  10  boundary_sf_shared_length
+#> 17             9           17      1   9  17  boundary_sf_shared_length
 #> 18            10           11      1  10  11  boundary_sf_shared_length
 #> 19            10           18      1  10  18  boundary_sf_shared_length
 #> 20            11           12      1  11  12  boundary_sf_shared_length
@@ -179,8 +196,6 @@ p$data$spatial_relations$boundary
 #> 34            18           26      1  18  26  boundary_sf_shared_length
 #> 35            19           20      1  19  20  boundary_sf_shared_length
 #> 36            19           27      1  19  27  boundary_sf_shared_length
-#> 1              1            2      1   1   2  boundary_sf_shared_length
-#> 2              1            9      1   1   9  boundary_sf_shared_length
 #> 37            20           21      1  20  21  boundary_sf_shared_length
 #> 38            20           28      1  20  28  boundary_sf_shared_length
 #> 39            21           22      1  21  22  boundary_sf_shared_length
@@ -200,8 +215,6 @@ p$data$spatial_relations$boundary
 #> 53            28           36      1  28  36  boundary_sf_shared_length
 #> 54            29           30      1  29  30  boundary_sf_shared_length
 #> 55            29           37      1  29  37  boundary_sf_shared_length
-#> 4              2           10      1   2  10  boundary_sf_shared_length
-#> 3              2            3      1   2   3  boundary_sf_shared_length
 #> 56            30           31      1  30  31  boundary_sf_shared_length
 #> 57            30           38      1  30  38  boundary_sf_shared_length
 #> 58            31           32      1  31  32  boundary_sf_shared_length
@@ -221,8 +234,6 @@ p$data$spatial_relations$boundary
 #> 72            38           46      1  38  46  boundary_sf_shared_length
 #> 73            39           40      1  39  40  boundary_sf_shared_length
 #> 74            39           47      1  39  47  boundary_sf_shared_length
-#> 6              3           11      1   3  11  boundary_sf_shared_length
-#> 5              3            4      1   3   4  boundary_sf_shared_length
 #> 75            40           48      1  40  48  boundary_sf_shared_length
 #> 76            41           42      1  41  42  boundary_sf_shared_length
 #> 77            41           49      1  41  49  boundary_sf_shared_length
@@ -241,8 +252,6 @@ p$data$spatial_relations$boundary
 #> 90            48           56      1  48  56  boundary_sf_shared_length
 #> 91            49           50      1  49  50  boundary_sf_shared_length
 #> 92            49           57      1  49  57  boundary_sf_shared_length
-#> 8              4           12      1   4  12  boundary_sf_shared_length
-#> 7              4            5      1   4   5  boundary_sf_shared_length
 #> 93            50           51      1  50  51  boundary_sf_shared_length
 #> 94            50           58      1  50  58  boundary_sf_shared_length
 #> 95            51           52      1  51  52  boundary_sf_shared_length
@@ -259,20 +268,19 @@ p$data$spatial_relations$boundary
 #> 106           57           58      1  57  58  boundary_sf_shared_length
 #> 107           58           59      1  58  59  boundary_sf_shared_length
 #> 108           59           60      1  59  60  boundary_sf_shared_length
-#> 10             5           13      1   5  13  boundary_sf_shared_length
-#> 9              5            6      1   5   6  boundary_sf_shared_length
 #> 109           60           61      1  60  61  boundary_sf_shared_length
 #> 110           61           62      1  61  62  boundary_sf_shared_length
 #> 111           62           63      1  62  63  boundary_sf_shared_length
 #> 112           63           64      1  63  64  boundary_sf_shared_length
-#> 12             6           14      1   6  14  boundary_sf_shared_length
-#> 11             6            7      1   6   7  boundary_sf_shared_length
-#> 14             7           15      1   7  15  boundary_sf_shared_length
-#> 13             7            8      1   7   8  boundary_sf_shared_length
-#> 15             8           16      1   8  16  boundary_sf_shared_length
-#> 16             9           10      1   9  10  boundary_sf_shared_length
-#> 17             9           17      1   9  17  boundary_sf_shared_length
 #> 113            1            1      2   1   1 boundary_sf_diag_effective
+#> 114            2            2      1   2   2 boundary_sf_diag_effective
+#> 115            3            3      1   3   3 boundary_sf_diag_effective
+#> 116            4            4      1   4   4 boundary_sf_diag_effective
+#> 117            5            5      1   5   5 boundary_sf_diag_effective
+#> 118            6            6      1   6   6 boundary_sf_diag_effective
+#> 119            7            7      1   7   7 boundary_sf_diag_effective
+#> 120            8            8      2   8   8 boundary_sf_diag_effective
+#> 121            9            9      1   9   9 boundary_sf_diag_effective
 #> 122           10           10      0  10  10 boundary_sf_diag_effective
 #> 123           11           11      0  11  11 boundary_sf_diag_effective
 #> 124           12           12      0  12  12 boundary_sf_diag_effective
@@ -283,7 +291,6 @@ p$data$spatial_relations$boundary
 #> 129           17           17      1  17  17 boundary_sf_diag_effective
 #> 130           18           18      0  18  18 boundary_sf_diag_effective
 #> 131           19           19      0  19  19 boundary_sf_diag_effective
-#> 114            2            2      1   2   2 boundary_sf_diag_effective
 #> 132           20           20      0  20  20 boundary_sf_diag_effective
 #> 133           21           21      0  21  21 boundary_sf_diag_effective
 #> 134           22           22      0  22  22 boundary_sf_diag_effective
@@ -294,7 +301,6 @@ p$data$spatial_relations$boundary
 #> 139           27           27      0  27  27 boundary_sf_diag_effective
 #> 140           28           28      0  28  28 boundary_sf_diag_effective
 #> 141           29           29      0  29  29 boundary_sf_diag_effective
-#> 115            3            3      1   3   3 boundary_sf_diag_effective
 #> 142           30           30      0  30  30 boundary_sf_diag_effective
 #> 143           31           31      0  31  31 boundary_sf_diag_effective
 #> 144           32           32      1  32  32 boundary_sf_diag_effective
@@ -305,7 +311,6 @@ p$data$spatial_relations$boundary
 #> 149           37           37      0  37  37 boundary_sf_diag_effective
 #> 150           38           38      0  38  38 boundary_sf_diag_effective
 #> 151           39           39      0  39  39 boundary_sf_diag_effective
-#> 116            4            4      1   4   4 boundary_sf_diag_effective
 #> 152           40           40      1  40  40 boundary_sf_diag_effective
 #> 153           41           41      1  41  41 boundary_sf_diag_effective
 #> 154           42           42      0  42  42 boundary_sf_diag_effective
@@ -316,7 +321,6 @@ p$data$spatial_relations$boundary
 #> 159           47           47      0  47  47 boundary_sf_diag_effective
 #> 160           48           48      1  48  48 boundary_sf_diag_effective
 #> 161           49           49      1  49  49 boundary_sf_diag_effective
-#> 117            5            5      1   5   5 boundary_sf_diag_effective
 #> 162           50           50      0  50  50 boundary_sf_diag_effective
 #> 163           51           51      0  51  51 boundary_sf_diag_effective
 #> 164           52           52      0  52  52 boundary_sf_diag_effective
@@ -327,190 +331,186 @@ p$data$spatial_relations$boundary
 #> 169           57           57      2  57  57 boundary_sf_diag_effective
 #> 170           58           58      1  58  58 boundary_sf_diag_effective
 #> 171           59           59      1  59  59 boundary_sf_diag_effective
-#> 118            6            6      1   6   6 boundary_sf_diag_effective
 #> 172           60           60      1  60  60 boundary_sf_diag_effective
 #> 173           61           61      1  61  61 boundary_sf_diag_effective
 #> 174           62           62      1  62  62 boundary_sf_diag_effective
 #> 175           63           63      1  63  63 boundary_sf_diag_effective
 #> 176           64           64      2  64  64 boundary_sf_diag_effective
-#> 119            7            7      1   7   7 boundary_sf_diag_effective
-#> 120            8            8      2   8   8 boundary_sf_diag_effective
-#> 121            9            9      1   9   9 boundary_sf_diag_effective
-#>     relation_name
-#> 18       boundary
-#> 19       boundary
-#> 20       boundary
-#> 21       boundary
-#> 22       boundary
-#> 23       boundary
-#> 24       boundary
-#> 25       boundary
-#> 26       boundary
-#> 27       boundary
-#> 28       boundary
-#> 29       boundary
-#> 30       boundary
-#> 31       boundary
-#> 32       boundary
-#> 33       boundary
-#> 34       boundary
-#> 35       boundary
-#> 36       boundary
-#> 1        boundary
-#> 2        boundary
-#> 37       boundary
-#> 38       boundary
-#> 39       boundary
-#> 40       boundary
-#> 41       boundary
-#> 42       boundary
-#> 43       boundary
-#> 44       boundary
-#> 45       boundary
-#> 46       boundary
-#> 47       boundary
-#> 48       boundary
-#> 49       boundary
-#> 50       boundary
-#> 51       boundary
-#> 52       boundary
-#> 53       boundary
-#> 54       boundary
-#> 55       boundary
-#> 4        boundary
-#> 3        boundary
-#> 56       boundary
-#> 57       boundary
-#> 58       boundary
-#> 59       boundary
-#> 60       boundary
-#> 61       boundary
-#> 62       boundary
-#> 63       boundary
-#> 64       boundary
-#> 65       boundary
-#> 66       boundary
-#> 67       boundary
-#> 68       boundary
-#> 69       boundary
-#> 70       boundary
-#> 71       boundary
-#> 72       boundary
-#> 73       boundary
-#> 74       boundary
-#> 6        boundary
-#> 5        boundary
-#> 75       boundary
-#> 76       boundary
-#> 77       boundary
-#> 78       boundary
-#> 79       boundary
-#> 80       boundary
-#> 81       boundary
-#> 82       boundary
-#> 83       boundary
-#> 84       boundary
-#> 85       boundary
-#> 86       boundary
-#> 87       boundary
-#> 88       boundary
-#> 89       boundary
-#> 90       boundary
-#> 91       boundary
-#> 92       boundary
-#> 8        boundary
-#> 7        boundary
-#> 93       boundary
-#> 94       boundary
-#> 95       boundary
-#> 96       boundary
-#> 97       boundary
-#> 98       boundary
-#> 99       boundary
-#> 100      boundary
-#> 101      boundary
-#> 102      boundary
-#> 103      boundary
-#> 104      boundary
-#> 105      boundary
-#> 106      boundary
-#> 107      boundary
-#> 108      boundary
-#> 10       boundary
-#> 9        boundary
-#> 109      boundary
-#> 110      boundary
-#> 111      boundary
-#> 112      boundary
-#> 12       boundary
-#> 11       boundary
-#> 14       boundary
-#> 13       boundary
-#> 15       boundary
-#> 16       boundary
-#> 17       boundary
-#> 113      boundary
-#> 122      boundary
-#> 123      boundary
-#> 124      boundary
-#> 125      boundary
-#> 126      boundary
-#> 127      boundary
-#> 128      boundary
-#> 129      boundary
-#> 130      boundary
-#> 131      boundary
-#> 114      boundary
-#> 132      boundary
-#> 133      boundary
-#> 134      boundary
-#> 135      boundary
-#> 136      boundary
-#> 137      boundary
-#> 138      boundary
-#> 139      boundary
-#> 140      boundary
-#> 141      boundary
-#> 115      boundary
-#> 142      boundary
-#> 143      boundary
-#> 144      boundary
-#> 145      boundary
-#> 146      boundary
-#> 147      boundary
-#> 148      boundary
-#> 149      boundary
-#> 150      boundary
-#> 151      boundary
-#> 116      boundary
-#> 152      boundary
-#> 153      boundary
-#> 154      boundary
-#> 155      boundary
-#> 156      boundary
-#> 157      boundary
-#> 158      boundary
-#> 159      boundary
-#> 160      boundary
-#> 161      boundary
-#> 117      boundary
-#> 162      boundary
-#> 163      boundary
-#> 164      boundary
-#> 165      boundary
-#> 166      boundary
-#> 167      boundary
-#> 168      boundary
-#> 169      boundary
-#> 170      boundary
-#> 171      boundary
-#> 118      boundary
-#> 172      boundary
-#> 173      boundary
-#> 174      boundary
-#> 175      boundary
-#> 176      boundary
-#> 119      boundary
-#> 120      boundary
-#> 121      boundary
+#>     relation_name directed
+#> 1        boundary    FALSE
+#> 2        boundary    FALSE
+#> 3        boundary    FALSE
+#> 4        boundary    FALSE
+#> 5        boundary    FALSE
+#> 6        boundary    FALSE
+#> 7        boundary    FALSE
+#> 8        boundary    FALSE
+#> 9        boundary    FALSE
+#> 10       boundary    FALSE
+#> 11       boundary    FALSE
+#> 12       boundary    FALSE
+#> 13       boundary    FALSE
+#> 14       boundary    FALSE
+#> 15       boundary    FALSE
+#> 16       boundary    FALSE
+#> 17       boundary    FALSE
+#> 18       boundary    FALSE
+#> 19       boundary    FALSE
+#> 20       boundary    FALSE
+#> 21       boundary    FALSE
+#> 22       boundary    FALSE
+#> 23       boundary    FALSE
+#> 24       boundary    FALSE
+#> 25       boundary    FALSE
+#> 26       boundary    FALSE
+#> 27       boundary    FALSE
+#> 28       boundary    FALSE
+#> 29       boundary    FALSE
+#> 30       boundary    FALSE
+#> 31       boundary    FALSE
+#> 32       boundary    FALSE
+#> 33       boundary    FALSE
+#> 34       boundary    FALSE
+#> 35       boundary    FALSE
+#> 36       boundary    FALSE
+#> 37       boundary    FALSE
+#> 38       boundary    FALSE
+#> 39       boundary    FALSE
+#> 40       boundary    FALSE
+#> 41       boundary    FALSE
+#> 42       boundary    FALSE
+#> 43       boundary    FALSE
+#> 44       boundary    FALSE
+#> 45       boundary    FALSE
+#> 46       boundary    FALSE
+#> 47       boundary    FALSE
+#> 48       boundary    FALSE
+#> 49       boundary    FALSE
+#> 50       boundary    FALSE
+#> 51       boundary    FALSE
+#> 52       boundary    FALSE
+#> 53       boundary    FALSE
+#> 54       boundary    FALSE
+#> 55       boundary    FALSE
+#> 56       boundary    FALSE
+#> 57       boundary    FALSE
+#> 58       boundary    FALSE
+#> 59       boundary    FALSE
+#> 60       boundary    FALSE
+#> 61       boundary    FALSE
+#> 62       boundary    FALSE
+#> 63       boundary    FALSE
+#> 64       boundary    FALSE
+#> 65       boundary    FALSE
+#> 66       boundary    FALSE
+#> 67       boundary    FALSE
+#> 68       boundary    FALSE
+#> 69       boundary    FALSE
+#> 70       boundary    FALSE
+#> 71       boundary    FALSE
+#> 72       boundary    FALSE
+#> 73       boundary    FALSE
+#> 74       boundary    FALSE
+#> 75       boundary    FALSE
+#> 76       boundary    FALSE
+#> 77       boundary    FALSE
+#> 78       boundary    FALSE
+#> 79       boundary    FALSE
+#> 80       boundary    FALSE
+#> 81       boundary    FALSE
+#> 82       boundary    FALSE
+#> 83       boundary    FALSE
+#> 84       boundary    FALSE
+#> 85       boundary    FALSE
+#> 86       boundary    FALSE
+#> 87       boundary    FALSE
+#> 88       boundary    FALSE
+#> 89       boundary    FALSE
+#> 90       boundary    FALSE
+#> 91       boundary    FALSE
+#> 92       boundary    FALSE
+#> 93       boundary    FALSE
+#> 94       boundary    FALSE
+#> 95       boundary    FALSE
+#> 96       boundary    FALSE
+#> 97       boundary    FALSE
+#> 98       boundary    FALSE
+#> 99       boundary    FALSE
+#> 100      boundary    FALSE
+#> 101      boundary    FALSE
+#> 102      boundary    FALSE
+#> 103      boundary    FALSE
+#> 104      boundary    FALSE
+#> 105      boundary    FALSE
+#> 106      boundary    FALSE
+#> 107      boundary    FALSE
+#> 108      boundary    FALSE
+#> 109      boundary    FALSE
+#> 110      boundary    FALSE
+#> 111      boundary    FALSE
+#> 112      boundary    FALSE
+#> 113      boundary    FALSE
+#> 114      boundary    FALSE
+#> 115      boundary    FALSE
+#> 116      boundary    FALSE
+#> 117      boundary    FALSE
+#> 118      boundary    FALSE
+#> 119      boundary    FALSE
+#> 120      boundary    FALSE
+#> 121      boundary    FALSE
+#> 122      boundary    FALSE
+#> 123      boundary    FALSE
+#> 124      boundary    FALSE
+#> 125      boundary    FALSE
+#> 126      boundary    FALSE
+#> 127      boundary    FALSE
+#> 128      boundary    FALSE
+#> 129      boundary    FALSE
+#> 130      boundary    FALSE
+#> 131      boundary    FALSE
+#> 132      boundary    FALSE
+#> 133      boundary    FALSE
+#> 134      boundary    FALSE
+#> 135      boundary    FALSE
+#> 136      boundary    FALSE
+#> 137      boundary    FALSE
+#> 138      boundary    FALSE
+#> 139      boundary    FALSE
+#> 140      boundary    FALSE
+#> 141      boundary    FALSE
+#> 142      boundary    FALSE
+#> 143      boundary    FALSE
+#> 144      boundary    FALSE
+#> 145      boundary    FALSE
+#> 146      boundary    FALSE
+#> 147      boundary    FALSE
+#> 148      boundary    FALSE
+#> 149      boundary    FALSE
+#> 150      boundary    FALSE
+#> 151      boundary    FALSE
+#> 152      boundary    FALSE
+#> 153      boundary    FALSE
+#> 154      boundary    FALSE
+#> 155      boundary    FALSE
+#> 156      boundary    FALSE
+#> 157      boundary    FALSE
+#> 158      boundary    FALSE
+#> 159      boundary    FALSE
+#> 160      boundary    FALSE
+#> 161      boundary    FALSE
+#> 162      boundary    FALSE
+#> 163      boundary    FALSE
+#> 164      boundary    FALSE
+#> 165      boundary    FALSE
+#> 166      boundary    FALSE
+#> 167      boundary    FALSE
+#> 168      boundary    FALSE
+#> 169      boundary    FALSE
+#> 170      boundary    FALSE
+#> 171      boundary    FALSE
+#> 172      boundary    FALSE
+#> 173      boundary    FALSE
+#> 174      boundary    FALSE
+#> 175      boundary    FALSE
+#> 176      boundary    FALSE
 ```

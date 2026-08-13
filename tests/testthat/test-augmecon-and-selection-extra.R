@@ -173,6 +173,8 @@ test_that("selection frequency and similarity cover action and PU fallbacks", {
   expect_equal(attr(jac_long, "metric"), "jaccard")
   expect_true(all(c("solution_id_1", "solution_id_2", "similarity", "distance") %in% names(jac_long)))
   expect_equal(jac_long$distance, 1 - jac_long$similarity)
+  expect_type(jac_long$solution_id_1, "integer")
+  expect_type(jac_long$solution_id_2, "integer")
 
   ham_mat <- multiscape::selection_similarity(s, metric = "hamming", format = "matrix")
   expect_true(is.matrix(ham_mat))
@@ -194,6 +196,8 @@ test_that("selection frequency and similarity cover action and PU fallbacks", {
   one$summary$actions <- one$summary$actions[one$summary$actions$solution_id == 1, , drop = FALSE]
   one_long <- multiscape::selection_similarity(one, format = "long")
   expect_equal(nrow(one_long), 0L)
+  expect_type(one_long$solution_id_1, "integer")
+  expect_type(one_long$solution_id_2, "integer")
   one_mat <- multiscape::selection_similarity(one, format = "matrix")
   expect_equal(one_mat[1, 1], 1)
 })

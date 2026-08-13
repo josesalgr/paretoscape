@@ -1,265 +1,411 @@
-# Choosing a multi-objective method
+# Choosing a multi-objective optimisation method
 
 ## The decision comes before the method
 
-Multi-objective optimisation is useful when no plan is best in every
-respect. A plan with greater ecological benefit may also cost more, or a
-compact plan may protect less of a particular feature. An MO method does
-not make this conflict disappear: it expresses how trade-offs should be
-handled and produces solutions that decision makers can compare.
+Multi-objective optimisation is useful when no feasible spatial plan is
+best in every respect. A plan with greater ecological benefit may also
+cost more; a compact plan may protect less of a particular feature; and
+a plan that performs well for one objective may perform poorly for
+another.
 
-Before choosing a method, ask:
+A multi-objective method does not remove these conflicts. Instead, it
+determines how trade-offs are represented and which solutions are
+generated for subsequent interpretation or decision making.
 
-1.  Are preferences sufficiently clear to combine the objectives?
-2.  Are any objectives naturally expressed as limits, such as a budget?
-3.  Is the aim to select one plan now, or to learn about trade-offs
-    first?
-4.  How many optimisation runs can reasonably be solved?
+No method is universally preferable. Weighted sum, epsilon-constraint,
+and AUGMECON answer different decision questions and require different
+forms of preference information. Before choosing a method, ask:
 
-## A common mathematical view
+- Are preferences sufficiently clear to combine the objectives?
+- Are any objectives naturally expressed as limits, such as a budget or
+  a minimum ecological requirement?
+- Is the aim to select one plan now, or to learn about trade-offs before
+  selecting?
+- How many optimisation runs can reasonably be solved?
 
-Let \\\mathbf{x}\\ be a feasible spatial plan and let \\\mathcal{X}\\
-contain all plans satisfying the constraints. With \\K\\ objectives:
+This article focuses on choosing among the multi-objective methods
+implemented in **multiscape**. Practical worked examples are provided in
+separate articles, while the corresponding `set_method_*()` functions
+document the complete argument structure and implementation details.
 
-\\ \mathbf{z}(\mathbf{x}) =
-\left(z_1(\mathbf{x}),\ldots,z_K(\mathbf{x})\right), \qquad
-\mathbf{x}\in\mathcal{X}. \\
+## Choosing a method
 
-Some objectives are minimised and others maximised. Below, \\g_k\\
-denotes an objective converted conceptually to minimisation: \\g_k=z_k\\
-for minimisation and \\g_k=-z_k\\ for maximisation. `multiscape` handles
-objective senses internally.
+### Preferences before or after optimisation
 
-A plan is **Pareto efficient** if no other feasible plan is at least as
-good in every objective and strictly better in at least one. The
-objective values of these plans form the **Pareto frontier**.
+Multi-objective workflows are often described as **a priori** or **a
+posteriori**.
 
-## Preferences before or after optimisation
+- **A priori:** preferences enter before optimisation. This is
+  appropriate when relative priorities, exchange rates, acceptable
+  losses, or policy limits are already defensible.
+- **A posteriori:** efficient alternatives are generated first, and
+  stakeholders select among them after inspecting their ecological,
+  spatial, and economic consequences. This is appropriate when
+  preferences are uncertain, contested, or deliberately left open during
+  model construction.
 
-- **A priori:** preferences enter before solving. This suits priorities,
-  exchange rates, or limits that are already defensible.
-- **A posteriori:** efficient alternatives are generated first and
-  stakeholders choose after inspecting their consequences. This suits
-  uncertain or contested preferences.
+These terms describe the workflow rather than an immutable property of
+an algorithm. A single weighted-sum model with agreed weights is an a
+priori analysis, whereas a grid of weights may be used exploratorily.
+Similarly, epsilon-constraint is a priori when a fixed policy threshold
+is imposed, but becomes a posteriori when multiple epsilon levels are
+used to trace a frontier.
 
-These terms describe the *workflow*, not an immutable property of an
-algorithm. One weighted sum with agreed weights is a priori, but a grid
-of weights can be exploratory. Epsilon-constraint is a priori with a
-fixed policy threshold and a posteriori when multiple epsilon levels
-trace a frontier.
+### Quick choice
 
-## What does `lexicographic = TRUE` mean?
+The following table provides a practical starting point. It is not a
+strict rule; the appropriate method depends on how preferences can be
+expressed and on the purpose of the analysis.
+
+| Decision situation | Suggested start | Why |
+|----|----|----|
+| Relative preferences are defensible | Weighted sum | Directly represents relative trade-offs through weights |
+| One objective is primary and the others have meaningful limits | Epsilon-constraint | Keeps policy, ecological, or budget limits explicit |
+| Preferences are unsettled and a frontier is needed | AUGMECON | Generates a systematic set of strongly efficient alternatives |
+
+A useful strategy is to begin with individual-objective solutions, use a
+coarse exploration to understand the scale and conflict among
+objectives, and refine only the region that is relevant for decision
+making.
+
+## The methods
+
+### Weighted sum: state relative preferences
+
+#### Decision question
+
+Can the relative importance or exchange rate among objectives be stated
+explicitly?
+
+#### Main idea
+
+Weighted sum combines the objectives into a single scalar objective. For
+objectives transformed conceptually to minimisation, the model is
+
+\\ \min\_{x \in X} \sum\_{k=1}^{K} w_k\\\widetilde{f}\_k(x), \\
+
+where \\X\\ is the feasible set, \\\widetilde{f}\_k(x)\\ is a suitably
+scaled version of objective \\k\\, and \\w_k \geq 0\\ is its weight.
+
+The weights express relative importance after scaling. They are not
+automatically percentages of final objective performance. If objective
+scales differ substantially, a numerically large objective may dominate
+the weighted sum even when assigned a small weight.
+
+#### Use weighted sum when
+
+- stakeholders can defend relative trade-offs among objectives;
+- only a small number of preference scenarios is required;
+- computational simplicity is important;
+- the analysis aims to generate one or a few plans from explicit
+  priorities.
+
+#### Use caution when
+
+- objective scales have not been examined;
+- an objective has a legal, ecological, or physical threshold that
+  should remain explicit;
+- the efficient frontier may be non-convex;
+- weights would be chosen arbitrarily or interpreted as percentages
+  without justification.
+
+Weighted sum can recover supported efficient solutions, but it may miss
+efficient solutions in non-convex regions of the frontier. This
+limitation is especially relevant in discrete spatial optimisation
+problems.
+
+In **multiscape**, weighted-sum models are configured with
+[`set_method_weighted_sum()`](https://josesalgr.github.io/multiscape/reference/set_method_weighted_sum.md).
+See the function reference and the dedicated worked examples for
+argument details and complete workflows.
+
+### Epsilon-constraint: state acceptable limits
+
+#### Decision question
+
+Is one objective naturally primary while the remaining objectives can be
+expressed as meaningful limits?
+
+#### Main idea
+
+Epsilon-constraint optimises one objective and converts the others into
+explicit constraints. For a primary minimisation objective \\f_p(x)\\
+and secondary minimisation objectives \\f_k(x)\\, the model is
+
+\\ \begin{aligned} \min\_{x \in X} \quad & f_p(x) \\ \text{s.t.} \quad &
+f_k(x) \leq \varepsilon_k, && k \neq p. \end{aligned} \\
+
+For a secondary objective expressed as maximisation, the inequality
+reverses:
+
+\\ f_k(x) \geq \varepsilon_k. \\
+
+The epsilon values retain concrete meanings. They may represent a
+maximum budget, a minimum ecological benefit, a maximum acceptable loss,
+a fragmentation limit, or another interpretable guarantee.
+
+#### Use epsilon-constraint when
+
+- one objective is clearly primary;
+- secondary objectives have meaningful policy, ecological, or management
+  limits;
+- the analysis must retain thresholds in their original units;
+- non-convex regions of the frontier may be relevant;
+- a set of scenarios is to be generated by varying one or more limits.
+
+#### Use caution when
+
+- epsilon values are arbitrary or poorly justified;
+- combinations of epsilon levels may be infeasible;
+- a dense grid would require too many optimisation runs;
+- the selected primary objective imposes an interpretation that is not
+  appropriate for the decision context.
+
+An infeasible epsilon combination is not necessarily an error. It may
+reveal that the requested guarantees cannot be achieved simultaneously.
+
+In **multiscape**, epsilon-constraint models are configured with
+[`set_method_epsilon_constraint()`](https://josesalgr.github.io/multiscape/reference/set_method_epsilon_constraint.md).
+Automatic grids can be used for exploratory analyses, while manually
+supplied epsilon values are appropriate when policy or ecological limits
+are already known.
+
+### AUGMECON: construct a cleaner efficient frontier
+
+#### Decision question
+
+Is the aim to generate a systematic set of strongly efficient
+alternatives for later inspection and selection?
+
+#### Main idea
+
+Basic epsilon-constraint can return weakly efficient solutions. A
+solution is weakly efficient when a secondary objective could improve
+without worsening the primary objective. AUGMECON reduces this problem
+by augmenting the primary objective with normalised slack terms that
+reward improvement beyond the epsilon limits.
+
+For a primary minimisation objective and secondary minimisation
+objectives, a simplified form is
+
+\\ \begin{aligned} \min\_{x,s} \quad & f_p(x) - \rho \sum\_{k \neq
+p}\frac{s_k}{R_k} \\ \text{s.t.} \quad & f_k(x) + s_k = \varepsilon_k,
+&& k \neq p, \\ & s_k \geq 0, && k \neq p, \\ & x \in X, \end{aligned}
+\\
+
+where \\s_k\\ measures improvement beyond the epsilon limit, \\R_k\\ is
+the payoff-table range of objective \\k\\, and \\\rho \> 0\\ is a small
+augmentation coefficient. The exact signs depend on the objective
+senses; **multiscape** constructs the corresponding formulation
+internally.
+
+Normalisation by \\R_k\\ prevents measurement units from dominating the
+augmentation term. The augmentation coefficient should remain small
+enough that the primary objective retains its intended role while still
+discouraging weakly efficient solutions.
+
+#### Use AUGMECON when
+
+- preferences are not yet settled;
+- a frontier is required for later discussion or stakeholder selection;
+- strongly efficient alternatives are preferred;
+- the analysis seeks systematic coverage of the trade-off space;
+- the additional computational cost is acceptable.
+
+#### Use caution when
+
+- the number of secondary objectives is large;
+- each objective is assigned many epsilon levels;
+- the resulting Cartesian grid becomes computationally prohibitive;
+- objective ranges are poorly estimated;
+- the augmentation coefficient is chosen without considering numerical
+  scale.
+
+With \\m\\ secondary objectives and \\q\\ levels for each, a full
+Cartesian design may require up to
+
+\\ q^m \\
+
+optimisation runs, in addition to the solves required to establish
+objective ranges. A coarse grid should normally be used first, followed
+by targeted refinement in regions of interest.
+
+In **multiscape**, AUGMECON models are configured with
+[`set_method_augmecon()`](https://josesalgr.github.io/multiscape/reference/set_method_augmecon.md).
+
+## A practical workflow
+
+A robust multi-objective analysis usually follows five stages.
+
+### 1. Establish objective ranges
+
+Optimise each objective separately. These anchor solutions reveal the
+attainable range of each objective and help identify:
+
+- redundant objectives;
+- objectives with very different numerical scales;
+- strongly conflicting objectives;
+- ties or alternative optima at the extremes;
+- modelling errors or unexpectedly inactive constraints.
+
+Automatic epsilon grids use extreme-point and payoff-table information
+during
+[`solve()`](https://josesalgr.github.io/multiscape/reference/solve.md).
+
+### 2. Decide how preferences can be expressed
+
+Use:
+
+- weights for defensible relative compensation;
+- epsilon bounds for meaningful guarantees;
+- a frontier when neither weights nor limits can yet be agreed.
+
+### 3. Start coarse
+
+Avoid dense grids before the broad structure of the trade-off space is
+understood. A coarse analysis often identifies the relevant region at a
+fraction of the computational cost.
+
+### 4. Inspect both objective values and spatial plans
+
+Two solutions may be close in objective space yet spatially very
+different. Conversely, visibly different plans may have nearly identical
+objective values. Multi-objective interpretation should therefore
+consider both numerical trade-offs and the spatial configuration of the
+selected planning units or actions.
+
+### 5. Document the decision process
+
+Report:
+
+- objective definitions and senses;
+- any scaling or normalisation;
+- the source of weights or epsilon bounds;
+- the primary objective, when applicable;
+- the run design;
+- lexicographic settings;
+- solver tolerances and stopping criteria;
+- infeasible or failed runs;
+- the rule used to select any final representative solution.
+
+A visually attractive knee point is not automatically the preferred
+plan. Its relevance depends on the decision context and on whether the
+implied compromise is acceptable to stakeholders.
+
+## Mathematical background
+
+### A common mathematical view
+
+Let \\x\\ denote a feasible spatial plan and let \\X\\ contain all plans
+satisfying the model constraints. With \\K\\ objectives,
+
+\\ f(x) = \bigl(f_1(x), f_2(x), \ldots, f_K(x)\bigr). \\
+
+Some objectives are minimised and others maximised. To express them
+under a common minimisation convention, define
+
+\\ \widehat{f}\_k(x) = \begin{cases} f_k(x), & \text{if objective } k
+\text{ is minimised},\\ -f_k(x), & \text{if objective } k \text{ is
+maximised}. \end{cases} \\
+
+The multi-objective problem can then be written as
+
+\\ \min\_{x \in X} \left( \widehat{f}\_1(x), \widehat{f}\_2(x), \ldots,
+\widehat{f}\_K(x) \right). \\
+
+This notation is conceptual. **multiscape** handles objective senses
+internally, so users define each objective in its natural direction.
+
+### Pareto efficiency
+
+A feasible plan \\x^\star \in X\\ is Pareto efficient if there is no
+other feasible plan \\x \in X\\ such that
+
+\\ \widehat{f}\_k(x) \leq \widehat{f}\_k(x^\star) \qquad \text{for all }
+k, \\
+
+with strict inequality for at least one objective.
+
+Equivalently, no objective can be improved without worsening at least
+one other objective. The objective vectors associated with
+Pareto-efficient plans form the **Pareto frontier**.
+
+A plan \\x^\star\\ is weakly Pareto efficient if there is no feasible
+plan \\x\\ satisfying
+
+\\ \widehat{f}\_k(x) \< \widehat{f}\_k(x^\star) \qquad \text{for all }
+k. \\
+
+Weak efficiency is less restrictive: it permits a solution for which one
+or more objectives could improve without worsening the others. This
+distinction motivates the slack-based augmentation used by AUGMECON.
+
+### What does `lexicographic = TRUE` mean?
 
 Before an automatic epsilon grid can be constructed, the range of each
-objective must be estimated from **anchor solutions**. A simple anchor
-is found by optimising one objective alone. The difficulty is that
-several plans can have the same optimal value for that objective but
-very different values for the others. A solver may return any of these
-tied solutions, producing unstable or unnecessarily poor endpoints for
-the payoff table.
+objective must be estimated from anchor solutions. A simple anchor is
+obtained by optimising one objective alone. The difficulty is that
+several plans may share the same optimal value for that objective while
+differing substantially in the others. A solver may return any tied
+optimum, producing unstable or unnecessarily poor endpoints for the
+payoff table.
 
-Lexicographic anchoring resolves that ambiguity in two stages. For two
-minimisation objectives \\g_1\\ and \\g_2\\, the anchor associated with
-\\g_1\\ is computed as:
+Lexicographic anchoring resolves this ambiguity in two stages. For two
+minimisation objectives \\f_1\\ and \\f_2\\, the anchor associated with
+\\f_1\\ is computed by first solving
 
-\\ g_1^\*=\min\_{\mathbf{x}\in\mathcal{X}}g_1(\mathbf{x}), \\
+\\ z_1^\star = \min\_{x \in X} f_1(x), \\
 
-followed by
+and then solving
 
-\\ \begin{aligned} \min\_{\mathbf{x}\in\mathcal{X}}\quad
-&g_2(\mathbf{x})\\ \text{subject to}\quad &g_1(\mathbf{x})\leq
-g_1^\*+\tau, \end{aligned} \\
+\\ \begin{aligned} \min\_{x \in X} \quad & f_2(x) \\ \text{s.t.} \quad &
+f_1(x) \leq z_1^\star + \tau, \end{aligned} \\
 
-where \\\tau\\ is `lexicographic_tol`. The roles are then reversed to
-obtain the other anchor. For maximisation objectives, `multiscape`
-applies the equivalent bound in the appropriate direction.
+where \\\tau\\ is `lexicographic_tol`. The roles of the objectives are
+then reversed to obtain the other anchor. For maximisation objectives,
+**multiscape** applies the equivalent bound in the appropriate
+direction.
 
-Thus, the first objective keeps strict priority; the second only breaks
-ties among solutions that are optimal, or within \\\tau\\ of optimal,
-for the first. This generally produces better-defined payoff-table
-ranges and avoids choosing an arbitrarily poor secondary value at an
-extreme.
+The first objective retains strict priority; the second objective only
+breaks ties among solutions that are optimal, or within \\\tau\\ of
+optimal, for the first. This generally produces better-defined
+payoff-table ranges and avoids selecting an arbitrarily poor secondary
+value at an extreme.
 
-In `multiscape`, this option is relevant to the **automatic grid
-construction** used by epsilon-constraint and AUGMECON. It does not:
+In **multiscape**, `lexicographic = TRUE` is relevant to the automatic
+grid construction used by epsilon-constraint and AUGMECON. It does not:
 
 - change a manually supplied epsilon design;
 - turn weighted sum into a lexicographic method;
-- define a permanent stakeholder ranking for every frontier solution; or
+- define a permanent stakeholder ranking for every frontier solution;
 - replace AUGMECON’s slack-based augmentation.
 
 Set `lexicographic = TRUE` in most automatic-grid analyses, especially
 when multiple solutions tie on an objective. Set it to `FALSE` mainly to
 reduce the additional anchor solves or to reproduce non-lexicographic
-endpoints. `lexicographic_tol = 0` preserves the first optimum exactly,
-subject to solver numerics. A small positive tolerance can improve
+endpoints.
+
+With `lexicographic_tol = 0`, the first optimum is preserved exactly,
+subject to solver numerics. A small positive tolerance may improve
 numerical robustness, but it also permits the first objective to
 deteriorate by that amount while the second improves. The tolerance is
-expressed in the first objective’s original units, so it should be
-chosen relative to its scale and the solver’s feasibility tolerance. \##
-Quick choice
-
-| Decision situation | Suggested start | Why |
-|----|----|----|
-| Relative preferences are defensible | Weighted sum | Directly represents weights |
-| One objective is primary and others have meaningful limits | Epsilon-constraint | Keeps limits explicit |
-| Preferences are unsettled and a frontier is needed | AUGMECON | Generates strongly efficient alternatives |
-
-This is a starting point, not a rule. An analysis can use a coarse
-weighted-sum exploration followed by targeted epsilon-constraint or
-AUGMECON runs.
-
-## Weighted sum: state relative preferences
-
-\\ \min\_{\mathbf{x}\in\mathcal{X}}
-\sum\_{k=1}^{K}w_k\widetilde{g}\_k(\mathbf{x}), \qquad
-w_k\geq0,\quad\sum\_{k=1}^{K}w_k=1. \\
-
-Here \\w_k\\ expresses importance and \\\widetilde{g}\_k\\ is a suitably
-scaled objective. Scaling matters: an objective with numerically large
-values can dominate despite a small weight. Weights are not
-automatically percentages of final performance.
-
-Use weighted sum when stakeholders can defend relative trade-offs, a few
-preference scenarios suffice, or computational simplicity matters. Be
-cautious when scales have not been examined, limits have legal or
-physical meanings, or the frontier may be non-convex. Weighted sum can
-miss efficient solutions in non-convex regions, common in discrete
-spatial problems.
-
-``` r
-
-# Explore preferences
-p_weighted <- p |>
-  set_method_weighted_sum(
-    aliases = c("cost", "benefit"),
-    runs = set_runs_grid(n = 11)
-  )
-
-# Or enter agreed scenarios
-weight_scenarios <- data.frame(
-  weight_cost = c(0.75, 0.50, 0.25),
-  weight_benefit = c(0.25, 0.50, 0.75)
-)
-
-p_weighted <- p |>
-  set_method_weighted_sum(
-    aliases = c("cost", "benefit"),
-    runs = set_runs_manual(weight_scenarios)
-  )
-```
-
-## Epsilon-constraint: state acceptable limits
-
-\\ \begin{aligned} \min\_{\mathbf{x}\in\mathcal{X}}\quad
-&g_p(\mathbf{x})\\ \text{subject to}\quad
-&g_k(\mathbf{x})\leq\epsilon_k,\qquad k\neq p. \end{aligned} \\
-
-For a secondary objective expressed directly as maximisation, the
-inequality reverses: benefit may require
-\\z\_{\mathrm{benefit}}(\mathbf{x})\geq\epsilon\_{\mathrm{benefit}}\\.
-
-Epsilon values retain concrete meanings such as maximum cost, minimum
-benefit, or maximum loss. This is often clearer than saying “give cost
-weight 0.63”. Use this method when one objective is primary, thresholds
-have policy or ecological meaning, or non-convex frontier regions
-matter. Arbitrary or infeasible epsilon values and dense grids require
-care.
-
-``` r
-
-# A priori policy scenarios
-budgets <- data.frame(eps_cost = c(2e6, 3e6, 4e6))
-
-p_epsilon <- p |>
-  set_method_epsilon_constraint(
-    primary = "benefit",
-    aliases = c("benefit", "cost"),
-    runs = set_runs_manual(budgets)
-  )
-
-# A posteriori exploration
-p_epsilon <- p |>
-  set_method_epsilon_constraint(
-    primary = "benefit",
-    aliases = c("benefit", "cost"),
-    runs = set_runs_grid(n = 11),
-    lexicographic = TRUE
-  )
-```
-
-An infeasible epsilon combination is useful information: the requested
-guarantees cannot all be achieved simultaneously.
-
-## AUGMECON: construct a cleaner efficient frontier
-
-Basic epsilon-constraint can return a **weakly efficient** solution,
-where a secondary objective could improve without worsening the primary
-objective. AUGMECON adds slack variables to favour fuller use of epsilon
-bounds. A simplified minimisation form is:
-
-\\ \begin{aligned} \min\_{\mathbf{x},\mathbf{s}}\quad
-&g_p(\mathbf{x})-\rho\sum\_{k\neq p}\frac{s_k}{R_k}\\ \text{subject
-to}\quad &g_k(\mathbf{x})+s_k=\epsilon_k,\qquad k\neq p,\\ &s_k\geq0.
-\end{aligned} \\
-
-Here \\s_k\\ measures improvement beyond a limit, \\R_k\\ is the
-payoff-table range, and \\\rho\>0\\ is a small augmentation coefficient.
-Signs depend on the objective senses; `multiscape` constructs them
-internally. Division by \\R_k\\ prevents measurement units from driving
-the augmentation.
-
-Use AUGMECON to present strongly efficient alternatives for later
-discussion. Its cost is computational: with \\m\\ secondary objectives
-and \\n\\ levels each, a Cartesian grid can require up to \\n^m\\ runs,
-besides those needed to establish objective ranges. Start coarse and
-refine only relevant regions.
-
-``` r
-
-p_augmecon <- p |>
-  set_method_augmecon(
-    primary = "benefit",
-    aliases = c("benefit", "cost", "fragmentation"),
-    runs = set_runs_grid(n = 5),
-    lexicographic = TRUE,
-    augmentation = 1e-3
-  )
-```
-
-## A practical workflow
-
-1.  **Establish objective ranges.** Solve each objective separately. The
-    extremes expose redundant, incorrectly scaled, or strongly
-    conflicting objectives. Automatic epsilon grids use extreme-point
-    and payoff-table information during
-    [`solve()`](https://josesalgr.github.io/multiscape/reference/solve.md).
-2.  **Express preferences clearly.** Use weights for meaningful relative
-    compensation, epsilon bounds for meaningful guarantees, and a
-    frontier when neither can yet be agreed.
-3.  **Start coarse and refine.** Inspect objective values and spatial
-    plans, then add manual runs around relevant regions. A visually
-    attractive “knee” is not automatically the preferred plan.
-4.  **Document the choice.** Report objective senses, scaling, the
-    source of weights or bounds, the primary objective, run design,
-    solver tolerances, failed runs, and the final selection rule.
-
-``` r
-
-solutions <- solve(p_augmecon)
-get_objectives(solutions)
-plot_tradeoff(solutions)
-solutions <- solution_unique(solutions)
-```
+expressed in the original units of the first objective and should
+therefore be chosen relative to its scale and to the solver’s
+feasibility tolerance.
 
 ## Summary
 
-- Choose **weighted sum** for defensible relative preferences and a
-  compact, computationally simple analysis.
+- Choose **weighted sum** when relative preferences are defensible and a
+  compact, computationally simple analysis is sufficient.
 - Choose **epsilon-constraint** when one objective is primary and the
-  others can be stated as meaningful limits.
-- Choose **AUGMECON** for a systematic set of strongly efficient
-  alternatives to discuss and select from later.
+  remaining objectives can be stated as meaningful limits.
+- Choose **AUGMECON** when the aim is to generate a systematic set of
+  strongly efficient alternatives for later discussion and selection.
+- When uncertain, solve the individual objectives first, explore a
+  coarse frontier, and refine only the region that matters for the
+  decision.
 
-When uncertain, solve individual objectives, explore a coarse frontier,
-and only then invest in finer preference elicitation or grid design.
+The purpose of multi-objective optimisation is not to identify a
+universally best plan. It is to make trade-offs explicit, generate
+defensible alternatives, and support transparent decisions about the
+consequences of different priorities.

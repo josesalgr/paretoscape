@@ -116,6 +116,7 @@
 #'
 #' @seealso
 #' \code{\link{selection_similarity}},
+#' \code{\link{selection_consistency}},
 #' \code{\link{solution_filter}},
 #' \code{\link{solution_unique}},
 #' \code{\link{get_actions}},
@@ -260,6 +261,8 @@ selection_frequency <- function(x) {
 #'   matrix with solution ids as row and column names.
 #'
 #' @return
+#' The two solution-id columns are returned as integers.
+#'
 #' If \code{format = "long"}, a \code{data.frame} with columns:
 #' \itemize{
 #'   \item \code{solution_id_1};
@@ -345,6 +348,7 @@ selection_frequency <- function(x) {
 #'
 #' @seealso
 #' \code{\link{selection_frequency}},
+#' \code{\link{selection_consistency}},
 #' \code{\link{solution_filter}},
 #' \code{\link{solution_unique}},
 #' \code{\link{get_actions}},
@@ -432,12 +436,21 @@ selection_similarity <- function(
     return(similarity_matrix)
   }
 
-  solution_ids <- rownames(similarity_matrix)
+  solution_ids_chr <- rownames(similarity_matrix)
+  solution_ids <- suppressWarnings(as.integer(solution_ids_chr))
+
+  if (
+    anyNA(solution_ids) ||
+    any(solution_ids < 1L) ||
+    any(as.character(solution_ids) != solution_ids_chr)
+  ) {
+    stop("Stored solution ids must be positive integers.", call. = FALSE)
+  }
 
   if (length(solution_ids) < 2L) {
     out <- data.frame(
-      solution_id_1 = character(0),
-      solution_id_2 = character(0),
+      solution_id_1 = integer(0),
+      solution_id_2 = integer(0),
       similarity = numeric(0),
       distance = numeric(0),
       stringsAsFactors = FALSE
@@ -829,4 +842,341 @@ selection_similarity <- function(
   }
 
   found[1L]
+}
+
+#' @title Summarize consistency of planning-unit states
+#'
+#' @description
+#' Summarize recurrence and disagreement of canonical planning-unit states
+#' across stored solutions.
+#'
+#' @details
+#' States are obtained from \code{\link{get_solution_states}}. All stored
+#' solutions contribute equally, and all planning units are returned.
+#' \code{solution_groups} can partition the stored solutions into named groups;
+#' consistency is then summarized separately within each group.
+#'
+#' Frequencies describe the proportion of stored solutions in the corresponding
+#' group. They are conditional summaries of the supplied \code{SolutionSet}, not
+#' probabilities or formal measures of uncertainty. \code{variable} is
+#' \code{TRUE} when more than one state occurs for a planning unit within a
+#' solution group.
+#'
+#' @param x A \code{\link{solutionset-class}} object returned by
+#'   \code{\link{solve}}.
+#' @param solution_groups Optional named list assigning every stored numeric
+#'   solution id to exactly one group. If \code{NULL}, all solutions form the
+#'   group \code{"all"}.
+#'
+#' @return A \code{data.frame} with one row per planning unit and solution
+#'   group, including selection, managed and unmanaged frequencies, dominant
+#'   state and frequency, number of observed states, whether the unit is
+#'   variable within the group, Shannon entropy, and normalized entropy.
+#'
+#' @examples
+#' # Load a complete simulated multi-action problem.
+#' example_data <- load_sim_multiaction()
+#'
+#' problem <- create_problem(
+#'   pu = example_data$planning_units,
+#'   features = example_data$features,
+#'   dist_features = example_data$dist_features,
+#'   cost = "cost"
+#' ) |>
+#'   add_actions(
+#'     example_data$actions,
+#'     cost = example_data$action_costs
+#'   ) |>
+#'   add_effects(
+#'     example_data$effects,
+#'     effect_type = "delta"
+#'   ) |>
+#'   add_constraint_targets_relative(0.05) |>
+#'   add_objective_min_cost(
+#'     alias = "cost",
+#'     include_pu_cost = FALSE
+#'   ) |>
+#'   add_objective_max_benefit(
+#'     alias = "benefit"
+#'   ) |>
+#'   set_method_weighted_sum(
+#'     aliases = c("cost", "benefit"),
+#'     runs = set_runs_grid(n = 5),
+#'     normalize_weights = TRUE
+#'   )
+#'
+#' if (requireNamespace("rcbc", quietly = TRUE)) {
+#'   problem <- set_solver_cbc(problem, verbose = FALSE)
+#'   solutions <- solve(problem)
+#'
+#'   consistency <- selection_consistency(solutions)
+#'   head(consistency)
+#'
+#'   solution_ids <- get_runs(solutions)$solution_id
+#'   solution_ids <- solution_ids[!is.na(solution_ids)]
+#'
+#'   if (length(solution_ids) >= 2L) {
+#'     cut <- ceiling(length(solution_ids) / 2)
+#'     groups <- list(
+#'       first = solution_ids[seq_len(cut)],
+#'       second = solution_ids[seq.int(cut + 1L, length(solution_ids))]
+#'     )
+#'
+#'     selection_consistency(
+#'       solutions,
+#'       solution_groups = groups
+#'     )
+#'   }
+#' }
+#'
+#' @seealso
+#' \code{\link{get_solution_states}}, \code{\link{selection_frequency}},
+#' \code{\link{selection_similarity}}, \code{\link{solution_filter}}
+#' @family Decision-space analysis
+#' @export
+selection_consistency <- function(
+    x,
+    solution_groups = NULL
+) {
+  if (!inherits(x, "SolutionSet")) {
+    stop("x must be a SolutionSet object returned by solve().", call. = FALSE)
+  }
+
+  states <- get_solution_states(x)
+  solution_ids <- sort(unique(states$solution_id))
+
+  group_data <- .pa_prepare_solution_groups(
+    solution_ids,
+    solution_groups
+  )
+
+  states$solution_group <- group_data$solution_group[
+    match(states$solution_id, group_data$solution_id)
+  ]
+
+  all_states <- split(
+    states$state,
+    as.character(states$pu)
+  )
+
+  split_key <- paste(
+    states$solution_group,
+    states$pu,
+    sep = "\r"
+  )
+
+  out <- lapply(unique(split_key), function(z) {
+    idx <- which(split_key == z)
+
+    values <- states$state[idx]
+    n_solutions <- length(values)
+    frequencies <- rep(1 / n_solutions, n_solutions)
+
+    state_frequencies <- tapply(
+      frequencies,
+      values,
+      sum
+    )
+
+    state_frequencies <- state_frequencies[
+      state_frequencies > 0
+    ]
+
+    entropy <- -sum(
+      state_frequencies * log(state_frequencies)
+    )
+
+    dominant_frequency <- max(state_frequencies)
+
+    dominant_states <- sort(
+      names(state_frequencies)[
+        abs(state_frequencies - dominant_frequency) <=
+          sqrt(.Machine$double.eps)
+      ]
+    )
+
+    available <- length(unique(
+      all_states[[as.character(states$pu[idx[1L]])]]
+    ))
+
+    selected_values <- states$selected[idx]
+
+    selected_frequency <- if (anyNA(selected_values)) {
+      NA_real_
+    } else {
+      mean(selected_values > 0L)
+    }
+
+    n_states <- length(state_frequencies)
+
+    data.frame(
+      pu = states$pu[idx[1L]],
+      solution_group = states$solution_group[idx[1L]],
+      n_solutions = as.integer(n_solutions),
+      selected_frequency = selected_frequency,
+      managed_frequency = mean(states$managed[idx]),
+      unmanaged_frequency = mean(!states$managed[idx]),
+      dominant_state = dominant_states[1L],
+      dominant_frequency = as.numeric(dominant_frequency),
+      dominant_tie = length(dominant_states) > 1L,
+      n_states = as.integer(n_states),
+      variable = n_states > 1L,
+      entropy = as.numeric(entropy),
+      normalized_entropy = if (available <= 1L) {
+        0
+      } else {
+        as.numeric(entropy / log(available))
+      },
+      stringsAsFactors = FALSE
+    )
+  })
+
+  out <- do.call(rbind, out)
+
+  group_levels <- if (is.null(solution_groups)) {
+    "all"
+  } else {
+    names(solution_groups)
+  }
+
+  out <- out[
+    order(
+      as.character(out$pu),
+      match(out$solution_group, group_levels)
+    ),
+    ,
+    drop = FALSE
+  ]
+
+  rownames(out) <- NULL
+  out
+}
+
+
+#' Prepare solution groups
+#'
+#' @noRd
+.pa_prepare_solution_groups <- function(
+    solution_ids,
+    solution_groups = NULL
+) {
+  if (
+    !is.numeric(solution_ids) ||
+    anyNA(solution_ids) ||
+    any(!is.finite(solution_ids)) ||
+    any(solution_ids < 1) ||
+    any(solution_ids != floor(solution_ids)) ||
+    any(solution_ids > .Machine$integer.max)
+  ) {
+    stop(
+      "Stored solution ids must be positive integers.",
+      call. = FALSE
+    )
+  }
+
+  solution_ids <- as.integer(solution_ids)
+
+  if (is.null(solution_groups)) {
+    return(data.frame(
+      solution_id = solution_ids,
+      solution_group = rep("all", length(solution_ids)),
+      stringsAsFactors = FALSE
+    ))
+  }
+
+  if (!is.list(solution_groups) || inherits(solution_groups, "data.frame")) {
+    stop(
+      "`solution_groups` must be NULL or a named list of numeric solution ids.",
+      call. = FALSE
+    )
+  }
+
+  group_names <- names(solution_groups)
+
+  if (
+    length(solution_groups) == 0L ||
+    is.null(group_names) ||
+    anyNA(group_names) ||
+    any(!nzchar(group_names)) ||
+    anyDuplicated(group_names)
+  ) {
+    stop(
+      "`solution_groups` must have unique, non-empty group names.",
+      call. = FALSE
+    )
+  }
+
+  rows <- lapply(seq_along(solution_groups), function(i) {
+    ids <- solution_groups[[i]]
+
+    if (length(ids) == 0L) {
+      stop(
+        "Each solution group must contain at least one solution id.",
+        call. = FALSE
+      )
+    }
+
+    if (!is.numeric(ids)) {
+      stop(
+        "Each solution group must contain numeric solution ids.",
+        call. = FALSE
+      )
+    }
+
+    if (
+      anyNA(ids) ||
+      any(!is.finite(ids)) ||
+      any(ids < 1) ||
+      any(ids != floor(ids)) ||
+      any(ids > .Machine$integer.max)
+    ) {
+      stop(
+        "Each solution group must contain positive integer solution ids.",
+        call. = FALSE
+      )
+    }
+
+    data.frame(
+      solution_id = as.integer(ids),
+      solution_group = rep(group_names[i], length(ids)),
+      stringsAsFactors = FALSE
+    )
+  })
+
+  out <- do.call(rbind, rows)
+  rownames(out) <- NULL
+
+  if (anyDuplicated(out$solution_id)) {
+    stop(
+      "Each stored solution must occur in exactly one solution group.",
+      call. = FALSE
+    )
+  }
+
+  unknown <- setdiff(out$solution_id, solution_ids)
+  missing <- setdiff(solution_ids, out$solution_id)
+
+  if (length(unknown) > 0L) {
+    stop(
+      "Unknown solution id(s) in `solution_groups`: ",
+      paste(unknown, collapse = ", "),
+      ".",
+      call. = FALSE
+    )
+  }
+
+  if (length(missing) > 0L) {
+    stop(
+      "`solution_groups` does not classify solution id(s): ",
+      paste(missing, collapse = ", "),
+      ".",
+      call. = FALSE
+    )
+  }
+
+  out[
+    match(solution_ids, out$solution_id),
+    ,
+    drop = FALSE
+  ]
 }

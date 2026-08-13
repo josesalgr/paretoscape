@@ -36,14 +36,21 @@ navbar:
 
 reference:
 
-  - title: Build and solve problems
-    desc: Core workflow to create a planning problem, configure it, and solve it.
+  # ---------------------------------------------------------------------------
+  # PROBLEM DEFINITION
+  # ---------------------------------------------------------------------------
+
+  - title: "Create a planning problem"
+    desc: >
+      Create the core planning problem from planning units, features, costs,
+      and optional spatial data.
     contents:
       - create_problem
-      - solve
 
-  - title: Actions, effects and profits
-    desc: Define feasible actions, their effects, and optional profits.
+  - title: "Management actions and outcomes"
+    desc: >
+      Define feasible management actions and their ecological and economic
+      consequences.
     contents:
       - add_actions
       - add_effects
@@ -51,8 +58,10 @@ reference:
       - add_losses
       - add_profit
 
-  - title: Constraints
-    desc: Define target requirements, area limits, budgets, and locking constraints.
+  - title: "Targets and constraints"
+    desc: >
+      Specify representation targets, resource limits, and fixed planning-unit
+      or action decisions.
     contents:
       - add_constraint_targets_absolute
       - add_constraint_targets_relative
@@ -61,8 +70,10 @@ reference:
       - add_constraint_locked_actions
       - add_constraint_locked_planning_units
 
-  - title: Spatial relations
-    desc: Register boundary and graph-based spatial relations from tables, polygons, or coordinates.
+  - title: "Spatial relationships"
+    desc: >
+      Define and store neighborhood, boundary, distance, and user-supplied
+      relationships among planning units.
     contents:
       - add_spatial_relations
       - add_spatial_boundary
@@ -71,99 +82,146 @@ reference:
       - add_spatial_knn
       - add_spatial_distance
 
-  - title: Atomic objectives
-    desc: Register objectives that can be solved individually or combined in multi-objective workflows.
+  - title: "Atomic objectives"
+    desc: >
+      Add ecological, economic, intervention, and spatial objectives to the
+      planning problem.
     contents:
       - add_objective_min_cost
       - add_objective_max_benefit
       - add_objective_min_loss
       - add_objective_max_profit
       - add_objective_max_net_profit
+      - add_objective_min_intervention_impact
       - add_objective_min_fragmentation_planning_units
       - add_objective_min_fragmentation_action
-      - add_objective_min_intervention_impact
 
-  - title: Solver configuration
-    desc: Store solver and runtime options before calling solve().
+
+  # ---------------------------------------------------------------------------
+  # OPTIMIZATION
+  # ---------------------------------------------------------------------------
+
+  - title: "Multi-objective methods and run designs"
+    desc: >
+      Choose how multiple objectives are explored and define the combinations
+      of weights or constraints to evaluate.
+    contents:
+      - set_method_weighted_sum
+      - set_method_epsilon_constraint
+      - set_method_augmecon
+      - set_runs_grid
+      - set_runs_manual
+      - set_runs_control
+
+  - title: "Solvers and optimization"
+    desc: >
+      Select and configure a mixed-integer programming solver, then solve the
+      planning problem.
     contents:
       - set_solver
       - set_solver_gurobi
       - set_solver_cplex
       - set_solver_cbc
       - set_solver_symphony
+      - solve
 
-  - title: Multi-objective methods
-    desc: Configure weighted-sum, epsilon-constraint, and AUGMECON workflows.
-    contents:
-      - set_method_weighted_sum
-      - set_method_epsilon_constraint
-      - set_method_augmecon
 
-  - title: Multi-objective run configuration
-    desc: Define automatic or manual run designs and execution controls for multi-objective workflows.
-    contents:
-      - set_runs_grid
-      - set_runs_manual
-      - set_runs_control
+  # ---------------------------------------------------------------------------
+  # SOLUTIONS AND ANALYSIS
+  # ---------------------------------------------------------------------------
 
-  - title: Results and extraction
-    desc: Extract run metadata, objective values, and solution-level results.
+  - title: "Inspect solutions"
+    desc: >
+      Extract run metadata, objective values, spatial decisions, features,
+      and target outcomes from stored solutions.
     contents:
       - get_runs
       - get_objectives
       - get_planning_units
       - get_actions
+      - get_solution_states
       - get_features
       - get_targets
 
-  - title: Solution-set management
-    desc: Filter, combine, and remove repeated solutions while preserving SolutionSet consistency.
+  - title: "Manage solution sets"
+    desc: >
+      Filter, combine, and remove duplicate alternatives before analysis or
+      reporting.
     contents:
       - solution_filter
       - solution_append
       - solution_unique
 
-  - title: Frontier analysis
-    desc: Characterize objective ranges and distances to observed reference points.
+  - title: "Objective-space analysis"
+    desc: >
+      Characterize performance trade-offs, empirical extremes, distances,
+      knees, and neighboring alternatives in objective space.
     contents:
       - frontier_extremes
       - frontier_distances
       - frontier_knee
+      - frontier_neighbors
 
-  - title: Selection analysis
-    desc: Analyze the recurrence and structural similarity of planning-unit and action assignments.
+  - title: "Decision-space analysis"
+    desc: >
+      Quantify recurrence, similarity, and consistency in spatial decisions
+      across alternative solutions.
     contents:
       - selection_frequency
       - selection_similarity
+      - selection_consistency
 
-  - title: Plotting
-    desc: Visualize spatial outputs and multi-objective trade-offs.
+  - title: "Objective-decision linkage"
+    desc: >
+      Relate changes in objective performance to changes in spatial
+      prescriptions and identify informative solution contrasts.
     contents:
+      - linkage_distances
+      - linkage_transition
+      - linkage_turnover
+      - linkage_contrasts
+
+  - title: "Visualize results"
+    desc: >
+      Plot objective trade-offs, planning-unit selections, management actions,
+      and spatial feature distributions.
+    contents:
+      - plot_tradeoff
       - plot_spatial_planning_units
       - plot_spatial_actions
       - plot_spatial_features
-      - plot_tradeoff
 
-  - title: Advanced functions
-    desc: Advanced utilities for inspecting or compiling optimization models.
-    contents:
-      - compile_model
 
-  - title: Classes
-    desc: Public classes used across the package.
+  # ---------------------------------------------------------------------------
+  # PACKAGE INFRASTRUCTURE
+  # ---------------------------------------------------------------------------
+
+  - title: "Core objects"
+    desc: >
+      Classes used to represent planning problems and their resulting solution
+      sets.
     contents:
       - problem-class
       - solutionset-class
 
-  - title: Data
-    desc: Simulated datasets distributed with the package.
+  - title: "Advanced model inspection"
+    desc: >
+      Compile and inspect the underlying optimization model.
+    contents:
+      - compile_model
+
+  - title: "Example data"
+    desc: >
+      Simulated datasets and data loaders used in package examples and
+      documentation.
     contents:
       - starts_with("sim_")
       - load_sim_features_raster
       - load_sim_multiaction
 
-  - title: Deprecated functions
-    desc: Deprecated functions kept for backwards compatibility.
+  - title: "Deprecated functions"
+    desc: >
+      Functions retained temporarily for backward compatibility.
     contents:
       - add_constraint_locked_pu
       - add_objective_min_fragmentation_pu

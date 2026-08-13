@@ -22,15 +22,15 @@ get_objectives(x, format = c("wide", "long"))
 - format:
 
   Character. Output representation, either `"long"` or `"wide"`.
-  Defaults to `"long"`.
+  Defaults to `"wide"`.
 
 ## Value
 
-If `format = "long"`, a `data.frame` with columns `run_id`,
-`solution_id`, `objective`, and `value`.
+If `format = "long"`, a `data.frame` with columns `solution_id`,
+`objective`, and `value`.
 
-If `format = "wide"`, a `data.frame` with `run_id`, `solution_id`, and
-one column per objective.
+If `format = "wide"`, a `data.frame` with integer `solution_id` and one
+column per objective.
 
 ## Details
 
@@ -38,13 +38,17 @@ Objective values are read from run-table columns named
 `value_<objective>`, where `<objective>` is the registered objective
 alias.
 
-Runs without a stored solution may contain missing objective values. Use
-`feasible_only = TRUE`, or filter the `SolutionSet` beforehand, when
-only solved runs should be included.
+Runs without a stored solution may contain missing objective values.
+Filter the `SolutionSet` beforehand with
+[`solution_filter`](https://josesalgr.github.io/multiscape/reference/solution_filter.md)
+when only solved runs should be included.
 
-In long format, every run-objective combination occupies one row. In
-wide format, every run occupies one row and every objective occupies one
-column.
+Public objective tables are keyed by integer `solution_id`. Use
+[`get_runs`](https://josesalgr.github.io/multiscape/reference/get_runs.md)
+when the relationship between attempted `run_id`s and stored solutions
+is required. In long format, every solution-objective combination
+occupies one row. In wide format, every stored solution occupies one row
+and every objective occupies one column.
 
 ## See also
 
@@ -90,7 +94,10 @@ if (requireNamespace("rcbc", quietly = TRUE)) {
   solutions <- solve(problem)
 
   # Long format
-  get_objectives(solutions)
+  get_objectives(
+    solutions,
+    format = "long"
+  )
 
   # Wide format
   get_objectives(
@@ -99,9 +106,11 @@ if (requireNamespace("rcbc", quietly = TRUE)) {
   )
 
   # Objective values from usable runs only
-  get_objectives(
-    solutions
+  usable_solutions <- solution_filter(
+    solutions,
+    feasible_only = TRUE
   )
+  get_objectives(usable_solutions)
 }
 #>   solution_id   cost    benefit
 #> 1           1   2.10  0.7616224

@@ -12,7 +12,7 @@ set_solver_cplex(
   time_limit = NULL,
   solution_limit = NULL,
   cores = NULL,
-  verbose = FALSE,
+  verbose = NULL,
   log_file = NULL,
   write_log = NULL
 )
@@ -24,8 +24,9 @@ set_solver_cplex(
 \code{solver_params}. For example, \code{MIPFocus = 1} for Gurobi.}
 
 \item{solver_params}{Named list of solver-specific parameters. These are
-merged with previously stored backend-specific parameters rather than
-replacing them completely.}
+merged with previously stored parameters. Rcplex parameters are validated
+against its supported control names; Rsymphony does not currently receive
+arbitrary solver-specific parameters.}
 
 \item{gap_limit}{Optional numeric value in \eqn{[0,1]} giving the relative
 optimality gap for mixed-integer optimization. If \code{NULL}, the
@@ -35,24 +36,26 @@ previously stored value is kept unchanged.}
 solving time in seconds. If \code{NULL}, the previously stored value is
 kept unchanged.}
 
-\item{solution_limit}{Optional logical flag controlling backend-specific
-early stopping after feasible solution discovery. If \code{NULL}, the
-previously stored value is kept unchanged.}
+\item{solution_limit}{Optional logical flag requesting early termination
+after a feasible solution is found. Supported by Gurobi, CBC, and
+SYMPHONY, but not by CPLEX through Rcplex. If \code{NULL}, the previously
+stored value is kept unchanged.}
 
-\item{cores}{Optional positive integer giving the number of CPU cores to use.
-If \code{NULL}, the previously stored value is kept unchanged.}
+\item{cores}{Optional positive integer giving the maximum number of solver
+threads. Currently supported by Gurobi. If \code{NULL}, the previously
+stored value is kept unchanged.}
 
 \item{verbose}{Optional logical flag indicating whether the solver should
 print log output. If \code{NULL}, the previously stored value is kept
 unchanged.}
 
-\item{log_file}{Optional character string giving the name of the
-solver log file. If \code{NULL}, the previously stored value is kept
-unchanged.}
+\item{log_file}{Optional character string giving the complete path or file
+name of the solver log. Currently supported by Gurobi. If \code{NULL}, the
+previously stored value is kept unchanged.}
 
 \item{write_log}{Optional logical flag indicating whether solver output
-should be written to a file. If \code{NULL}, the previously stored value is
-kept unchanged.}
+should be written to a file. Currently supported by Gurobi. If
+\code{NULL}, the previously stored value is kept unchanged.}
 }
 \value{
 An updated \code{Problem} object with CPLEX solver settings.
@@ -75,8 +78,7 @@ x <- create_problem(
 x <- set_solver_cplex(
   x,
   gap_limit = 0.001,
-  time_limit = 1200,
-  cores = 2
+  time_limit = 1200
 )
 
 x$data$solve_args

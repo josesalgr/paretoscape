@@ -8,6 +8,11 @@ test_that("new SolutionSet accessors expose run and objective identifiers", {
     format = "wide"
   )
 
+  expect_false("run_id" %in% names(objectives_long))
+  expect_false("run_id" %in% names(objectives_wide))
+  expect_type(objectives_long$solution_id, "integer")
+  expect_type(objectives_wide$solution_id, "integer")
+
   expect_s3_class(x, "SolutionSet")
   expect_s3_class(runs, "data.frame")
   expect_true(all(c("solution_id", "status") %in% names(runs)))

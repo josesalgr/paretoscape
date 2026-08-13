@@ -12,12 +12,12 @@ updates the solver configuration stored in `x$data$solve_args`.
 ``` r
 set_solver(
   x,
-  solver = c("auto", "gurobi", "cplex", "cbc", "symphony"),
+  solver = NULL,
   gap_limit = NULL,
   time_limit = NULL,
   solution_limit = NULL,
   cores = NULL,
-  verbose = FALSE,
+  verbose = NULL,
   log_file = NULL,
   write_log = NULL,
   solver_params = list(),
@@ -49,14 +49,16 @@ set_solver(
 
 - solution_limit:
 
-  Optional logical flag controlling backend-specific early stopping
-  after feasible solution discovery. If `NULL`, the previously stored
-  value is kept unchanged.
+  Optional logical flag requesting early termination after a feasible
+  solution is found. Supported by Gurobi, CBC, and SYMPHONY, but not by
+  CPLEX through Rcplex. If `NULL`, the previously stored value is kept
+  unchanged.
 
 - cores:
 
-  Optional positive integer giving the number of CPU cores to use. If
-  `NULL`, the previously stored value is kept unchanged.
+  Optional positive integer giving the maximum number of solver threads.
+  Currently supported by Gurobi. If `NULL`, the previously stored value
+  is kept unchanged.
 
 - verbose:
 
@@ -65,20 +67,22 @@ set_solver(
 
 - log_file:
 
-  Optional character string giving the name of the solver log file. If
-  `NULL`, the previously stored value is kept unchanged.
+  Optional character string giving the complete path or file name of the
+  solver log. Currently supported by Gurobi. If `NULL`, the previously
+  stored value is kept unchanged.
 
 - write_log:
 
   Optional logical flag indicating whether solver output should be
-  written to a file. If `NULL`, the previously stored value is kept
-  unchanged.
+  written to a file. Currently supported by Gurobi. If `NULL`, the
+  previously stored value is kept unchanged.
 
 - solver_params:
 
   Named list of solver-specific parameters. These are merged with
-  previously stored backend-specific parameters rather than replacing
-  them completely.
+  previously stored parameters. Rcplex parameters are validated against
+  its supported control names; Rsymphony does not currently receive
+  arbitrary solver-specific parameters.
 
 - ...:
 
@@ -163,15 +167,37 @@ according to the behaviour supported by the chosen solver.
 
 **Cores**
 
-The argument `cores` specifies the number of CPU cores to use. If the
-requested number exceeds the number of detected cores, it is capped to
-the detected maximum with a warning.
+The argument `cores` specifies the maximum number of solver threads. It
+is supported by Gurobi. Rcplex, rcbc, and Rsymphony do not reliably
+expose thread control through the interfaces used here; multiscape
+therefore warns and ignores `cores` for CPLEX, CBC, and SYMPHONY. If the
+requested number exceeds the number of detected logical processors, it
+is capped to the detected maximum with a warning.
 
 **Verbose output and log files**
 
 The arguments `verbose`, `write_log`, and `log_file` control how solver
 logging is handled. These options are stored and later interpreted by
-the solving layer for the selected backend.
+the solving layer for the selected backend. Solver log files are
+currently available only with Gurobi. A parameter that is not available
+through the selected R solver interface is reported with a warning and
+is not stored as if it had been applied.
+
+**Backend capabilities**
+
+Common parameters are translated only when the selected backend supports
+them:
+
+- Gurobi supports `cores`, `solution_limit`, and `write_log`.
+
+- CBC supports `solution_limit`. Thread control and CBC log files are
+  not exposed reliably through the current rcbc integration.
+
+- CPLEX through Rcplex does not expose `cores`, `solution_limit`, or
+  solver log files.
+
+- SYMPHONY through Rsymphony supports `solution_limit`, but does not
+  expose `cores` or solver log files.
 
 **Solver-specific parameters**
 
@@ -236,6 +262,7 @@ x1 <- set_solver(
   cores = 2,
   verbose = TRUE
 )
+#> Warning: Parameter(s) not available for solver 'cbc' through its current R interface: cores (thread control is not available through rcbc). The unsupported setting(s) will be ignored.
 
 x1$data$solve_args
 #> $solver
@@ -246,9 +273,6 @@ x1$data$solve_args
 #> 
 #> $time_limit
 #> [1] 300
-#> 
-#> $cores
-#> [1] 2
 #> 
 #> $verbose
 #> [1] TRUE
@@ -266,7 +290,7 @@ x2 <- set_solver(
 
 x2$data$solve_args
 #> $solver
-#> [1] "auto"
+#> [1] "cbc"
 #> 
 #> $gap_limit
 #> [1] 0.05
@@ -274,11 +298,8 @@ x2$data$solve_args
 #> $time_limit
 #> [1] 300
 #> 
-#> $cores
-#> [1] 2
-#> 
 #> $verbose
-#> [1] FALSE
+#> [1] TRUE
 #> 
 #> $solver_params
 #> $solver_params$randomSeed

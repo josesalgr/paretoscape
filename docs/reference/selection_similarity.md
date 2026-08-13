@@ -36,6 +36,8 @@ selection_similarity(
 
 ## Value
 
+The two solution-id columns are returned as integers.
+
 If `format = "long"`, a `data.frame` with columns:
 
 - `solution_id_1`;
@@ -101,6 +103,7 @@ or
 ## See also
 
 [`selection_frequency`](https://josesalgr.github.io/multiscape/reference/selection_frequency.md),
+[`selection_consistency`](https://josesalgr.github.io/multiscape/reference/selection_consistency.md),
 [`solution_filter`](https://josesalgr.github.io/multiscape/reference/solution_filter.md),
 [`solution_unique`](https://josesalgr.github.io/multiscape/reference/solution_unique.md),
 [`get_actions`](https://josesalgr.github.io/multiscape/reference/get_actions.md),

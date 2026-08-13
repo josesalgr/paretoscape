@@ -67,7 +67,7 @@ all candidate solutions ranked by knee score.
 
 The returned table includes:
 
-- `solution_id`: solution id;
+- `solution_id`: integer solution id;
 
 - the original objective values;
 

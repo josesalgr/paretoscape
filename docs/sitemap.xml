@@ -48,6 +48,7 @@
 <url><loc>https://josesalgr.github.io/multiscape/reference/frontier_distances.html</loc></url>
 <url><loc>https://josesalgr.github.io/multiscape/reference/frontier_extremes.html</loc></url>
 <url><loc>https://josesalgr.github.io/multiscape/reference/frontier_knee.html</loc></url>
+<url><loc>https://josesalgr.github.io/multiscape/reference/frontier_neighbors.html</loc></url>
 <url><loc>https://josesalgr.github.io/multiscape/reference/get_actions.html</loc></url>
 <url><loc>https://josesalgr.github.io/multiscape/reference/get_features.html</loc></url>
 <url><loc>https://josesalgr.github.io/multiscape/reference/get_objectives.html</loc></url>
@@ -55,9 +56,14 @@
 <url><loc>https://josesalgr.github.io/multiscape/reference/get_planning_units.html</loc></url>
 <url><loc>https://josesalgr.github.io/multiscape/reference/get_pu.html</loc></url>
 <url><loc>https://josesalgr.github.io/multiscape/reference/get_runs.html</loc></url>
+<url><loc>https://josesalgr.github.io/multiscape/reference/get_solution_states.html</loc></url>
 <url><loc>https://josesalgr.github.io/multiscape/reference/get_solution_vector.html</loc></url>
 <url><loc>https://josesalgr.github.io/multiscape/reference/get_targets.html</loc></url>
 <url><loc>https://josesalgr.github.io/multiscape/reference/index.html</loc></url>
+<url><loc>https://josesalgr.github.io/multiscape/reference/linkage_contrasts.html</loc></url>
+<url><loc>https://josesalgr.github.io/multiscape/reference/linkage_distances.html</loc></url>
+<url><loc>https://josesalgr.github.io/multiscape/reference/linkage_transition.html</loc></url>
+<url><loc>https://josesalgr.github.io/multiscape/reference/linkage_turnover.html</loc></url>
 <url><loc>https://josesalgr.github.io/multiscape/reference/load_sim_features_raster.html</loc></url>
 <url><loc>https://josesalgr.github.io/multiscape/reference/load_sim_multiaction.html</loc></url>
 <url><loc>https://josesalgr.github.io/multiscape/reference/mo_control.html</loc></url>
@@ -76,6 +82,7 @@
 <url><loc>https://josesalgr.github.io/multiscape/reference/run_grid.html</loc></url>
 <url><loc>https://josesalgr.github.io/multiscape/reference/run_manual.html</loc></url>
 <url><loc>https://josesalgr.github.io/multiscape/reference/rwanda_reserve.html</loc></url>
+<url><loc>https://josesalgr.github.io/multiscape/reference/selection_consistency.html</loc></url>
 <url><loc>https://josesalgr.github.io/multiscape/reference/selection_frequency.html</loc></url>
 <url><loc>https://josesalgr.github.io/multiscape/reference/selection_similarity.html</loc></url>
 <url><loc>https://josesalgr.github.io/multiscape/reference/set_method_augmecon.html</loc></url>

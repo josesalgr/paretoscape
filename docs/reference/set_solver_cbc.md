@@ -1,8 +1,8 @@
-# Configure CPLEX solver settings
+# Configure CBC solver settings
 
 Convenience wrapper around
 [`set_solver`](https://josesalgr.github.io/multiscape/reference/set_solver.md)
-that stores `solver = "cplex"` in the problem object.
+that stores `solver = "cbc"` in the problem object.
 
 This function does not solve the model. It only updates the stored
 solver configuration.
@@ -18,7 +18,7 @@ set_solver_cbc(
   time_limit = NULL,
   solution_limit = NULL,
   cores = NULL,
-  verbose = FALSE,
+  verbose = NULL,
   log_file = NULL,
   write_log = NULL
 )
@@ -38,8 +38,9 @@ set_solver_cbc(
 - solver_params:
 
   Named list of solver-specific parameters. These are merged with
-  previously stored backend-specific parameters rather than replacing
-  them completely.
+  previously stored parameters. Rcplex parameters are validated against
+  its supported control names; Rsymphony does not currently receive
+  arbitrary solver-specific parameters.
 
 - gap_limit:
 
@@ -54,14 +55,16 @@ set_solver_cbc(
 
 - solution_limit:
 
-  Optional logical flag controlling backend-specific early stopping
-  after feasible solution discovery. If `NULL`, the previously stored
-  value is kept unchanged.
+  Optional logical flag requesting early termination after a feasible
+  solution is found. Supported by Gurobi, CBC, and SYMPHONY, but not by
+  CPLEX through Rcplex. If `NULL`, the previously stored value is kept
+  unchanged.
 
 - cores:
 
-  Optional positive integer giving the number of CPU cores to use. If
-  `NULL`, the previously stored value is kept unchanged.
+  Optional positive integer giving the maximum number of solver threads.
+  Currently supported by Gurobi. If `NULL`, the previously stored value
+  is kept unchanged.
 
 - verbose:
 
@@ -70,18 +73,19 @@ set_solver_cbc(
 
 - log_file:
 
-  Optional character string giving the name of the solver log file. If
-  `NULL`, the previously stored value is kept unchanged.
+  Optional character string giving the complete path or file name of the
+  solver log. Currently supported by Gurobi. If `NULL`, the previously
+  stored value is kept unchanged.
 
 - write_log:
 
   Optional logical flag indicating whether solver output should be
-  written to a file. If `NULL`, the previously stored value is kept
-  unchanged.
+  written to a file. Currently supported by Gurobi. If `NULL`, the
+  previously stored value is kept unchanged.
 
 ## Value
 
-An updated `Problem` object with CPLEX solver settings stored in
+An updated `Problem` object with CBC solver settings stored in
 `x$data$solve_args`.
 
 ## See also
@@ -106,8 +110,10 @@ x <- set_solver_cbc(
   x,
   gap_limit = 0.01,
   time_limit = 300,
-  cores = 2
+  cores = 2,
+  solution_limit = FALSE
 )
+#> Warning: Parameter(s) not available for solver 'cbc' through its current R interface: cores (thread control is not available through rcbc). The unsupported setting(s) will be ignored.
 
 x$data$solve_args
 #> $solver
@@ -119,10 +125,7 @@ x$data$solve_args
 #> $time_limit
 #> [1] 300
 #> 
-#> $cores
-#> [1] 2
-#> 
-#> $verbose
+#> $solution_limit
 #> [1] FALSE
 #> 
 #> $solver_params

@@ -1824,10 +1824,10 @@ available_to_solve <- function(package = ""){
     gap_limit = 0.0,
     time_limit = .Machine$integer.max,
     solution_limit = FALSE,
-    cores = 2L,
-    verbose = TRUE,
-    name_output_file = "output",
-    output_file = TRUE,
+    cores = NULL,
+    verbose = FALSE,
+    name_output_file = NULL,
+    output_file = FALSE,
     solver_params = list()
   )
 
@@ -1864,7 +1864,7 @@ available_to_solve <- function(package = ""){
          ". Use one of: auto, gurobi, cplex, cbc, symphony.", call. = FALSE)
   }
 
-  out$gap_limit <- round(as.numeric(out$gap_limit), 3)
+  out$gap_limit <- as.numeric(out$gap_limit)
   if (!is.finite(out$gap_limit) || out$gap_limit < 0 || out$gap_limit > 1) {
     stop("gap_limit must be a finite number in [0, 1].", call. = FALSE)
   }
@@ -1874,29 +1874,130 @@ available_to_solve <- function(package = ""){
     stop("time_limit must be a finite number >= 0.", call. = FALSE)
   }
 
-  out$cores <- as.integer(out$cores)
-  if (!is.finite(out$cores) || out$cores < 1) {
-    stop("cores must be an integer >= 1.", call. = FALSE)
-  }
+  if (!is.null(out$cores)) {
+    out$cores <- as.integer(out$cores)
+    if (length(out$cores) != 1L || !is.finite(out$cores) || out$cores < 1) {
+      stop("cores must be an integer >= 1.", call. = FALSE)
+    }
 
-  # cap cores defensively (avoid hard error inside solve)
-  max_cores <- parallel::detectCores(TRUE)
-  if (is.finite(max_cores) && out$cores > max_cores) {
-    out$cores <- as.integer(max_cores)
+    # cap cores defensively (avoid hard error inside solve)
+    max_cores <- parallel::detectCores(TRUE)
+    if (length(max_cores) == 1L && is.finite(max_cores) && out$cores > max_cores) {
+      out$cores <- as.integer(max_cores)
+    }
   }
 
   out$solution_limit <- isTRUE(out$solution_limit)
   out$verbose <- isTRUE(out$verbose)
   out$output_file <- isTRUE(out$output_file)
 
-  out$name_output_file <- as.character(out$name_output_file)[1]
-  if (!nzchar(out$name_output_file)) out$name_output_file <- "output"
+  if (!is.null(out$name_output_file)) {
+    out$name_output_file <- as.character(out$name_output_file)[1]
+    if (is.na(out$name_output_file) || !nzchar(out$name_output_file)) {
+      out$name_output_file <- NULL
+    }
+  }
 
   if (is.null(out$solver_params) || !is.list(out$solver_params)) out$solver_params <- list()
 
   out
 }
 
+
+# Report and neutralize common settings that are unavailable through a
+# particular R solver interface. This also protects objects created with older
+# multiscape versions, before capability checks were performed by set_solver().
+.pa_apply_solver_capabilities <- function(solver,
+                                          cores,
+                                          solution_limit,
+                                          output_file,
+                                          name_output_file,
+                                          solver_params,
+                                          warn = TRUE) {
+  unsupported <- character(0)
+  solver_params <- solver_params %||% list()
+
+  if (identical(solver, "cplex")) {
+    if (!is.null(cores)) unsupported <- c(unsupported, "cores")
+    if (isTRUE(solution_limit)) unsupported <- c(unsupported, "solution_limit")
+    if (isTRUE(output_file) ||
+        (!is.null(name_output_file) && !identical(output_file, FALSE))) {
+      unsupported <- c(unsupported, "write_log/log_file")
+    }
+
+    rcplex_parameters <- c(
+      "trace", "method", "preind", "aggind", "itlim", "epagap", "epgap",
+      "tilim", "disjcuts", "mipemphasis", "cliques", "nodesel", "probe",
+      "varsel", "flowcovers", "solnpoolagap", "solnpoolgap",
+      "solnpoolintensity", "maxcalls", "round"
+    )
+    unknown <- setdiff(names(solver_params), rcplex_parameters)
+    if (length(unknown) > 0L) {
+      unsupported <- c(
+        unsupported,
+        paste0("solver_params$", unknown)
+      )
+      solver_params[unknown] <- NULL
+    }
+
+    cores <- NULL
+    solution_limit <- FALSE
+    output_file <- FALSE
+    name_output_file <- NULL
+  }
+
+  if (identical(solver, "symphony")) {
+    if (!is.null(cores)) unsupported <- c(unsupported, "cores")
+    if (isTRUE(output_file) ||
+        (!is.null(name_output_file) && !identical(output_file, FALSE))) {
+      unsupported <- c(unsupported, "write_log/log_file")
+    }
+    if (length(solver_params) > 0L) {
+      unsupported <- c(unsupported, "solver_params")
+    }
+
+    cores <- NULL
+    output_file <- FALSE
+    name_output_file <- NULL
+    solver_params <- list()
+  }
+
+  if (identical(solver, "cbc")) {
+    if (!is.null(cores)) {
+      unsupported <- c(unsupported, "cores (thread control is not available through rcbc)")
+      cores <- NULL
+    }
+    if (isTRUE(output_file) ||
+        (!is.null(name_output_file) && !identical(output_file, FALSE))) {
+      unsupported <- c(unsupported, "write_log/log_file")
+      output_file <- FALSE
+      name_output_file <- NULL
+    }
+  }
+
+  unsupported <- unique(unsupported)
+
+  if (isTRUE(warn) && length(unsupported) > 0L) {
+    warning(
+      paste0(
+        "Parameter(s) not available for solver '", solver,
+        "' through its current R interface: ",
+        paste(unsupported, collapse = ", "),
+        ". The unsupported setting(s) will be ignored."
+      ),
+      call. = FALSE,
+      immediate. = TRUE
+    )
+  }
+
+  list(
+    cores = cores,
+    solution_limit = isTRUE(solution_limit),
+    output_file = isTRUE(output_file),
+    name_output_file = name_output_file,
+    solver_params = solver_params %||% list()
+  )
+}
 
 # -------------------------------------------------------------------------
 # Internal helpers SOLUTIONS
@@ -3722,7 +3823,7 @@ available_to_solve <- function(package = ""){
   .pa_prepare_relation_model <- function(rel) {
     rel <- rel[, c(
       "internal_pu1","internal_pu2","weight",
-      intersect(names(rel), c("distance","source","relation_name"))
+      intersect(names(rel), c("directed","distance","source","relation_name"))
     ), drop = FALSE]
     rel$internal_pu1 <- as.integer(rel$internal_pu1)
     rel$internal_pu2 <- as.integer(rel$internal_pu2)
@@ -4225,6 +4326,27 @@ NULL
   }
 
 
+  caps <- .pa_apply_solver_capabilities(
+    solver = solver,
+    cores = cores,
+    solution_limit = solution_limit,
+    output_file = output_file,
+    name_output_file = name_output_file,
+    solver_params = solver_params_user,
+    warn = TRUE
+  )
+  cores <- caps$cores
+  solution_limit <- caps$solution_limit
+  output_file <- caps$output_file
+  name_output_file <- caps$name_output_file
+  solver_params_user <- caps$solver_params
+
+  if (identical(solver, "gurobi") &&
+      isTRUE(output_file) &&
+      is.null(name_output_file)) {
+    stop("A non-empty log_file is required when write_log = TRUE.", call. = FALSE)
+  }
+
   # ---- ensure model is built
   if (is.null(x$data$model_ptr) || isTRUE(x$data$meta$model_dirty)) {
     x <- .pa_build_model(x)
@@ -4271,13 +4393,13 @@ NULL
     model$ub <- model$bounds$upper$val
 
     params <- list(
-      Threads = cores,
       LogToConsole = as.integer(verbose),
       NodefileStart = 0.5,
       MIPGap = gap_limit,
       TimeLimit = time_limit
     )
-    if (isTRUE(output_file)) params$LogFile <- paste0(name_output_file, "_log.txt")
+    if (!is.null(cores)) params$Threads <- cores
+    if (isTRUE(output_file)) params$LogFile <- name_output_file
     if (isTRUE(solution_limit)) params$SolutionLimit <- 1
 
     if (!is.null(model$args$curve) && !is.null(model$args$segments) && model$args$curve != 1) {
@@ -4338,9 +4460,10 @@ NULL
       log = if (isTRUE(verbose)) "1" else "0",
       ratio = as.character(gap_limit),
       sec = as.character(time_limit),
-      timem = "elapsed",
-      heuristicsOnOff = "on"
+      timem = "elapsed"
     )
+    if (!is.null(cores)) cbc_args$threads <- as.character(cores)
+    if (isTRUE(solution_limit)) cbc_args$maxso <- "1"
     cbc_args <- utils::modifyList(cbc_args, solver_params_user)
 
     rt <- system.time({
@@ -4365,6 +4488,7 @@ NULL
       status_cbc == "infeasible" ~ 1L,
       (status_cbc == "timelimit" && !is.null(sol_cbc$objective_value)) ~ 2L,
       (status_cbc == "timelimit" && is.null(sol_cbc$objective_value)) ~ 3L,
+      status_cbc == "solutionlimit" ~ 4L,
       TRUE ~ 999L
     )
 
@@ -4391,36 +4515,13 @@ NULL
     params <- list(
       trace = as.integer(verbose),
       epgap = gap_limit,
-      tilim = time_limit,
-      threads = cores
+      tilim = time_limit
     )
 
     params <- utils::modifyList(
       params,
       solver_params_user
     )
-
-    unsupported <- character(0)
-
-    if (isTRUE(solution_limit)) {
-      unsupported <- c(unsupported, "solution_limit")
-    }
-
-    if (isTRUE(output_file)) {
-      unsupported <- c(unsupported, "output_file")
-    }
-
-    if (length(unsupported) > 0L) {
-      warning(
-        paste0(
-          "Option(s) not available with the CPLEX solver through Rcplex: ",
-          paste(unsupported, collapse = ", "),
-          "."
-        ),
-        call. = FALSE,
-        immediate. = TRUE
-      )
-    }
 
     rt <- system.time({
       sol_cplex <- Rcplex::Rcplex(
@@ -4469,10 +4570,6 @@ NULL
       NA_real_
     }
   } else if (solver == "symphony") {
-
-    if (isTRUE(output_file)) {
-      warning("It is not possible to export a solver log using symphony solver.", call. = FALSE, immediate. = TRUE)
-    }
 
     max_flag <- ifelse(model$modelsense == "min", FALSE, TRUE)
     verbosity <- as.integer(verbose) - 2
@@ -5571,10 +5668,27 @@ NULL
 .pa_get_objective_matrix <- function(x,
                                      objectives = NULL,
                                      minimize = TRUE,
-                                     drop_na = TRUE) {
+                                     drop_na = TRUE,
+                                     minimum_objectives = 2L) {
   if (!inherits(x, "SolutionSet")) {
     stop("x must be a SolutionSet object.", call. = FALSE)
   }
+
+  if (
+    length(minimum_objectives) != 1L ||
+    !is.numeric(minimum_objectives) ||
+    is.na(minimum_objectives) ||
+    !is.finite(minimum_objectives) ||
+    minimum_objectives < 1L ||
+    minimum_objectives != floor(minimum_objectives)
+  ) {
+    stop(
+      "Internal error: `minimum_objectives` must be a positive integer.",
+      call. = FALSE
+    )
+  }
+
+  minimum_objectives <- as.integer(minimum_objectives)
 
   vals <- .pa_get_objectives_internal(
     x,
@@ -5590,7 +5704,7 @@ NULL
   }
 
   if (!("solution_id" %in% names(vals))) {
-    vals$solution_id <- NA_character_
+    vals$solution_id <- NA_integer_
   }
 
   available <- setdiff(names(vals), c("run_id", "solution_id"))
@@ -5623,9 +5737,19 @@ NULL
     }
   }
 
-  if (length(objectives) < 2L) {
+  if (length(objectives) < minimum_objectives) {
+    objective_word <- if (minimum_objectives == 1L) {
+      "one objective is"
+    } else if (minimum_objectives == 2L) {
+      "two objectives are"
+    } else {
+      paste0(minimum_objectives, " objectives are")
+    }
+
     stop(
-      "At least two objectives are required to evaluate dominance.",
+      "At least ",
+      objective_word,
+      " required to evaluate dominance.",
       call. = FALSE
     )
   }
@@ -5688,7 +5812,7 @@ NULL
 
   row_ids <- vals$solution_id
 
-  missing_solution_id <- is.na(row_ids) | !nzchar(row_ids)
+  missing_solution_id <- is.na(row_ids)
 
   if (any(missing_solution_id)) {
     row_ids[missing_solution_id] <- paste0("run_", vals$run_id[missing_solution_id])
@@ -5762,6 +5886,41 @@ NULL
   )
 
   rownames(out) <- NULL
+  out
+}
+
+.pa_validate_positive_integer_ids <- function(
+    x,
+    argument = "id",
+    scalar = FALSE
+) {
+  if (isTRUE(scalar) && length(x) != 1L) {
+    stop("`", argument, "` must be a single positive integer.", call. = FALSE)
+  }
+
+  if (length(x) == 0L) {
+    stop("`", argument, "` must contain at least one positive integer.", call. = FALSE)
+  }
+
+  if (!is.numeric(x) || is.logical(x)) {
+    stop("`", argument, "` must contain numeric positive integers.", call. = FALSE)
+  }
+
+  invalid_missing <- is.na(x)
+  present <- !is.na(x)
+
+  if (
+    any(invalid_missing) ||
+    any(!is.finite(x[present])) ||
+    any(x[present] < 1) ||
+    any(x[present] != floor(x[present])) ||
+    any(x[present] > .Machine$integer.max)
+  ) {
+    stop("`", argument, "` must contain positive integers.", call. = FALSE)
+  }
+
+  out <- rep(NA_integer_, length(x))
+  out[present] <- as.integer(x[present])
   out
 }
 

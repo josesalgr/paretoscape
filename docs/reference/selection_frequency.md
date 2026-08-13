@@ -71,6 +71,7 @@ retained.
 ## See also
 
 [`selection_similarity`](https://josesalgr.github.io/multiscape/reference/selection_similarity.md),
+[`selection_consistency`](https://josesalgr.github.io/multiscape/reference/selection_consistency.md),
 [`solution_filter`](https://josesalgr.github.io/multiscape/reference/solution_filter.md),
 [`solution_unique`](https://josesalgr.github.io/multiscape/reference/solution_unique.md),
 [`get_actions`](https://josesalgr.github.io/multiscape/reference/get_actions.md),

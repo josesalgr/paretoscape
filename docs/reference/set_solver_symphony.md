@@ -18,7 +18,7 @@ set_solver_symphony(
   time_limit = NULL,
   solution_limit = NULL,
   cores = NULL,
-  verbose = FALSE,
+  verbose = NULL,
   log_file = NULL,
   write_log = NULL
 )
@@ -38,8 +38,9 @@ set_solver_symphony(
 - solver_params:
 
   Named list of solver-specific parameters. These are merged with
-  previously stored backend-specific parameters rather than replacing
-  them completely.
+  previously stored parameters. Rcplex parameters are validated against
+  its supported control names; Rsymphony does not currently receive
+  arbitrary solver-specific parameters.
 
 - gap_limit:
 
@@ -54,14 +55,16 @@ set_solver_symphony(
 
 - solution_limit:
 
-  Optional logical flag controlling backend-specific early stopping
-  after feasible solution discovery. If `NULL`, the previously stored
-  value is kept unchanged.
+  Optional logical flag requesting early termination after a feasible
+  solution is found. Supported by Gurobi, CBC, and SYMPHONY, but not by
+  CPLEX through Rcplex. If `NULL`, the previously stored value is kept
+  unchanged.
 
 - cores:
 
-  Optional positive integer giving the number of CPU cores to use. If
-  `NULL`, the previously stored value is kept unchanged.
+  Optional positive integer giving the maximum number of solver threads.
+  Currently supported by Gurobi. If `NULL`, the previously stored value
+  is kept unchanged.
 
 - verbose:
 
@@ -70,14 +73,15 @@ set_solver_symphony(
 
 - log_file:
 
-  Optional character string giving the name of the solver log file. If
-  `NULL`, the previously stored value is kept unchanged.
+  Optional character string giving the complete path or file name of the
+  solver log. Currently supported by Gurobi. If `NULL`, the previously
+  stored value is kept unchanged.
 
 - write_log:
 
   Optional logical flag indicating whether solver output should be
-  written to a file. If `NULL`, the previously stored value is kept
-  unchanged.
+  written to a file. Currently supported by Gurobi. If `NULL`, the
+  previously stored value is kept unchanged.
 
 ## Value
 
@@ -118,10 +122,10 @@ x$data$solve_args
 #> $time_limit
 #> [1] 300
 #> 
-#> $verbose
-#> [1] FALSE
-#> 
 #> $solver_params
 #> list()
+#> 
+#> $output_file
+#> [1] FALSE
 #> 
 ```

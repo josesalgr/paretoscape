@@ -967,7 +967,7 @@
   .pa_prepare_relation_model <- function(rel) {
     rel <- rel[, c(
       "internal_pu1","internal_pu2","weight",
-      intersect(names(rel), c("distance","source","relation_name"))
+      intersect(names(rel), c("directed","distance","source","relation_name"))
     ), drop = FALSE]
     rel$internal_pu1 <- as.integer(rel$internal_pu1)
     rel$internal_pu2 <- as.integer(rel$internal_pu2)

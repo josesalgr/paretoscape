@@ -28,7 +28,7 @@
 #'
 #' @param x A \code{\link{solutionset-class}} object returned by
 #'   \code{\link{solve}}.
-#' @param solution Optional positive integer giving the solution index to extract. If
+#' @param solution Optional positive integer giving the solution id to extract. If
 #'   \code{NULL}, all solutions are returned when available.
 #' @param ... Deprecated arguments kept for backwards compatibility. Currently
 #'   supports \code{run} and \code{solution_id}, which are redirected to
@@ -140,7 +140,7 @@ get_planning_units <- function(x, solution = NULL, ...) {
 #'
 #' @param x A \code{\link{solutionset-class}} object returned by
 #'   \code{\link{solve}}.
-#' @param solution Optional positive integer giving the solution index to extract. If
+#' @param solution Optional positive integer giving the solution id to extract. If
 #'   \code{NULL}, all solutions are returned when available.
 #' @param ... Deprecated arguments kept for backwards compatibility. Currently
 #'   supports \code{run} and \code{solution_id}, which are redirected to
@@ -193,7 +193,7 @@ get_pu <- function(x, solution = NULL, ...) {
 #'
 #' @param x A \code{\link{solutionset-class}} object returned by
 #'   \code{\link{solve}}.
-#' @param solution Optional positive integer giving the solution index to extract. If
+#' @param solution Optional positive integer giving the solution id to extract. If
 #'   \code{NULL}, all runs are returned when available.
 #' @param ... Deprecated arguments kept for backwards compatibility. Currently
 #'   supports \code{run} and \code{solution_id}, which are redirected to
@@ -369,7 +369,7 @@ get_actions <- function(x, solution = NULL, ...) {
 #'
 #' @param x A \code{\link{solutionset-class}} object returned by
 #'   \code{\link{solve}}.
-#' @param solution Optional positive integer giving the solution index to extract. If
+#' @param solution Optional positive integer giving the solution id to extract. If
 #'   \code{NULL}, all runs are returned when available.
 #' @param ... Deprecated arguments kept for backwards compatibility. Currently
 #'   supports \code{run} and \code{solution_id}, which are redirected to
@@ -641,7 +641,7 @@ get_features <- function(x, solution = NULL, ...) {
 #'
 #' @param x A \code{\link{solutionset-class}} object returned by
 #'   \code{\link{solve}}.
-#' @param solution Optional positive integer giving the solution index to extract. If
+#' @param solution Optional positive integer giving the solution id to extract. If
 #'   \code{NULL}, all runs are returned when available.
 #' @param ... Deprecated arguments kept for backwards compatibility. Currently
 #'   supports \code{run} and \code{solution_id}, which are redirected to
@@ -802,7 +802,7 @@ get_targets <- function(x, solution = NULL, ...) {
 #'
 #' @param x A \code{\link{solutionset-class}} object returned by
 #'   \code{\link{solve}}.
-#' @param solution Optional character string giving the solution id to
+#' @param solution Optional positive integer giving the solution id to
 #'   extract. If supplied, \code{run} must be \code{NULL}.
 #' @param ... Deprecated arguments kept for backwards compatibility. Currently
 #'   supports \code{run} and \code{solution_id}, which are redirected to
@@ -1035,24 +1035,27 @@ get_runs <- function(x) {
 #' \code{value_<objective>}, where \code{<objective>} is the registered
 #' objective alias.
 #'
-#' Runs without a stored solution may contain missing objective values. Use
-#' \code{feasible_only = TRUE}, or filter the \code{SolutionSet} beforehand,
-#' when only solved runs should be included.
+#' Runs without a stored solution may contain missing objective values. Filter
+#' the \code{SolutionSet} beforehand with \code{\link{solution_filter}} when
+#' only solved runs should be included.
 #'
-#' In long format, every run-objective combination occupies one row. In wide
-#' format, every run occupies one row and every objective occupies one column.
+#' Public objective tables are keyed by integer \code{solution_id}. Use
+#' \code{\link{get_runs}} when the relationship between attempted
+#' \code{run_id}s and stored solutions is required. In long format, every
+#' solution-objective combination occupies one row. In wide format, every
+#' stored solution occupies one row and every objective occupies one column.
 #'
 #' @param x A \code{\link{solutionset-class}} object returned by
 #'   \code{\link{solve}}.
 #'
 #' @param format Character. Output representation, either \code{"long"} or
-#'   \code{"wide"}. Defaults to \code{"long"}.
+#'   \code{"wide"}. Defaults to \code{"wide"}.
 #'
 #' @return If \code{format = "long"}, a \code{data.frame} with columns
-#'   \code{run_id}, \code{solution_id}, \code{objective}, and \code{value}.
+#'   \code{solution_id}, \code{objective}, and \code{value}.
 #'
-#' If \code{format = "wide"}, a \code{data.frame} with \code{run_id},
-#' \code{solution_id}, and one column per objective.
+#' If \code{format = "wide"}, a \code{data.frame} with integer
+#' \code{solution_id} and one column per objective.
 #'
 #' @examples
 #' # Load a complete simulated planning problem.
@@ -1090,7 +1093,10 @@ get_runs <- function(x) {
 #'   solutions <- solve(problem)
 #'
 #'   # Long format
-#'   get_objectives(solutions)
+#'   get_objectives(
+#'     solutions,
+#'     format = "long"
+#'   )
 #'
 #'   # Wide format
 #'   get_objectives(
@@ -1099,9 +1105,11 @@ get_runs <- function(x) {
 #'   )
 #'
 #'   # Objective values from usable runs only
-#'   get_objectives(
-#'     solutions
+#'   usable_solutions <- solution_filter(
+#'     solutions,
+#'     feasible_only = TRUE
 #'   )
+#'   get_objectives(usable_solutions)
 #' }
 #'
 #' @seealso
@@ -1325,16 +1333,11 @@ get_objective_specs <- function(x) {
     return(NULL)
   }
 
-  solution <- as.integer(solution)[1]
-
-  if (!is.finite(solution) || is.na(solution) || solution < 1L) {
-    stop(
-      "`solution` must be a positive integer solution id.",
-      call. = FALSE
-    )
-  }
-
-  solution
+  .pa_validate_positive_integer_ids(
+    solution,
+    argument = "solution",
+    scalar = TRUE
+  )
 }
 
 
@@ -1406,4 +1409,189 @@ get_objective_specs <- function(x) {
 
 .pa_drop_run_id_if_solution_id_present <- function(tab) {
   .pa_clean_solution_summary(tab)
+}
+
+#' @title Get planning-unit states from stored solutions
+#'
+#' @description
+#' Convert stored planning-unit/action decisions into one canonical action state
+#' per planning unit and solution.
+#'
+#' @details
+#' Selected action names are sorted and joined with \code{"+"}. Planning units
+#' without a selected action receive the state \code{"unmanaged"}. The
+#' \code{selected} column retains the planning-unit selection indicator when it
+#' is available in the stored planning-unit summary.
+#'
+#' @param x A \code{\link{solutionset-class}} object returned by
+#'   \code{\link{solve}}.
+
+#' @return A \code{data.frame} with columns \code{solution_id}, \code{pu},
+#'   \code{selected}, \code{state}, \code{managed}, and \code{n_actions}.
+#'   \code{solution_id} is returned as an integer.
+#'
+#' @examples
+#' # Load a complete simulated multi-action problem.
+#' example_data <- load_sim_multiaction()
+#'
+#' problem <- create_problem(
+#'   pu = example_data$planning_units,
+#'   features = example_data$features,
+#'   dist_features = example_data$dist_features,
+#'   cost = "cost"
+#' ) |>
+#'   add_actions(
+#'     example_data$actions,
+#'     cost = example_data$action_costs
+#'   ) |>
+#'   add_effects(
+#'     example_data$effects,
+#'     effect_type = "delta"
+#'   ) |>
+#'   add_constraint_targets_relative(0.05) |>
+#'   add_objective_min_cost(
+#'     alias = "cost",
+#'     include_pu_cost = FALSE
+#'   ) |>
+#'   add_objective_max_benefit(
+#'     alias = "benefit"
+#'   ) |>
+#'   set_method_weighted_sum(
+#'     aliases = c("cost", "benefit"),
+#'     runs = set_runs_grid(n = 5),
+#'     normalize_weights = TRUE
+#'   )
+#'
+#' if (requireNamespace("rcbc", quietly = TRUE)) {
+#'   problem <- set_solver_cbc(problem, verbose = FALSE)
+#'   solutions <- solve(problem)
+#'
+#'   states <- get_solution_states(solutions)
+#'   head(states)
+#'
+#'   # Inspect one solution from the returned table.
+#'   solution_ids <- unique(states$solution_id)
+#'   states[states$solution_id == solution_ids[1L], ]
+#'
+#'   # Or filter the complete SolutionSet first.
+#'   one_solution <- solution_filter(
+#'     solutions,
+#'     solution_id = solution_ids[1L]
+#'   )
+#'   get_solution_states(one_solution)
+#' }
+#'
+#' @seealso
+#' \code{\link{get_actions}}, \code{\link{get_planning_units}},
+#' \code{\link{selection_consistency}}, \code{\link{linkage_transition}}
+#' @family SolutionSet inspection
+#' @export
+get_solution_states <- function(x) {
+  if (!inherits(x, "SolutionSet")) {
+    stop("x must be a SolutionSet object returned by solve().", call. = FALSE)
+  }
+
+  stored_ids <- .pa_get_stored_solution_ids(x)
+  integer_ids <- suppressWarnings(as.integer(stored_ids))
+
+  if (
+    anyNA(integer_ids) ||
+    any(!is.finite(integer_ids)) ||
+    any(integer_ids < 1L)
+  ) {
+    stop(
+      "Stored solution ids must be positive integers.",
+      call. = FALSE
+    )
+  }
+
+  selection <- .pa_get_selection_long(x)
+
+  pu_data <- tryCatch(
+    get_planning_units(x),
+    error = function(e) NULL
+  )
+
+  if (
+    !is.null(pu_data) &&
+    inherits(pu_data, "data.frame") &&
+    nrow(pu_data) > 0L &&
+    "solution_id" %in% names(pu_data)
+  ) {
+    pu_col <- .pa_find_selection_column(
+      pu_data,
+      candidates = c("pu", "id", "planning_unit", "planning_unit_id"),
+      label = "planning-unit"
+    )
+
+    selected_col <- .pa_find_selection_column(
+      pu_data,
+      candidates = c("selected", "value"),
+      label = "selection"
+    )
+
+    base <- data.frame(
+      solution_id = as.character(pu_data$solution_id),
+      pu = pu_data[[pu_col]],
+      selected = as.integer(as.numeric(pu_data[[selected_col]]) > 0),
+      stringsAsFactors = FALSE
+    )
+
+    base <- base[
+      base$solution_id %in% stored_ids,
+      ,
+      drop = FALSE
+    ]
+  } else {
+    base <- unique(
+      selection[, c("solution_id", "pu"), drop = FALSE]
+    )
+    base$selected <- NA_integer_
+  }
+
+  if (nrow(base) == 0L) {
+    stop("No stored planning-unit results are available.", call. = FALSE)
+  }
+
+  key <- paste(selection$solution_id, selection$pu, sep = "\r")
+
+  rows <- lapply(seq_len(nrow(base)), function(i) {
+    current_key <- paste(base$solution_id[i], base$pu[i], sep = "\r")
+    idx <- which(key == current_key)
+
+    selected_actions <- if (length(idx) == 0L) {
+      character(0)
+    } else {
+      sort(unique(
+        selection$action[idx][selection$selected[idx] > 0]
+      ))
+    }
+
+    n_actions <- length(selected_actions)
+
+    data.frame(
+      solution_id = as.integer(base$solution_id[i]),
+      pu = base$pu[i],
+      selected = as.integer(base$selected[i]),
+      state = if (n_actions == 0L) {
+        "unmanaged"
+      } else {
+        paste(selected_actions, collapse = "+")
+      },
+      managed = n_actions > 0L,
+      n_actions = as.integer(n_actions),
+      stringsAsFactors = FALSE
+    )
+  })
+
+  out <- do.call(rbind, rows)
+
+  out <- out[
+    order(out$solution_id, as.character(out$pu)),
+    ,
+    drop = FALSE
+  ]
+
+  rownames(out) <- NULL
+  out
 }

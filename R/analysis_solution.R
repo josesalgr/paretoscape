@@ -37,8 +37,8 @@
 #'
 #' If more than one filter is supplied, filters are combined using logical
 #' \emph{and}. For example, setting both \code{status = "optimal"} and
-#' \code{solution_id = c("s1", "s3")} keeps only optimal runs whose
-#' \code{solution_id} is either \code{"s1"} or \code{"s3"}.
+#' \code{solution_id = c(1, 3)} keeps only optimal runs whose
+#' \code{solution_id} is either \code{1} or \code{3}.
 #'
 #' If \code{nondominated = TRUE}, the function further keeps only non-dominated
 #' solutions among the runs retained by the previous filters. Dominance is
@@ -53,7 +53,8 @@
 #'
 #' @param run_id Optional integer vector of run ids to keep.
 #'
-#' @param solution_id Optional character vector of solution ids to keep. Runs
+#' @param solution_id Optional numeric vector of positive integer solution ids
+#'   to keep. Runs
 #'   without a stored solution are never matched by this filter.
 #'
 #' @param status Optional character vector of run statuses to keep. Matching is
@@ -62,7 +63,8 @@
 #' @param feasible_only Logical. If \code{TRUE}, keep only runs whose status is
 #'   interpreted as having produced a usable solution. The current accepted
 #'   statuses are \code{"optimal"}, \code{"feasible"}, \code{"suboptimal"},
-#'   \code{"time_limit"}, and \code{"gap_limit"}.
+#'   \code{"time_limit"}, \code{"time_limit_feasible"}, \code{"gap_limit"},
+#'   \code{"gap_limit_feasible"}, and \code{"solution_limit"}.
 #'
 #' @param nondominated Logical. If \code{TRUE}, keep only non-dominated
 #'   solutions among the runs retained by the other filters. This uses
@@ -203,11 +205,10 @@ solution_filter <- function(x,
   # run_id filter
   # --------------------------------------------------------------------------
   if (!is.null(run_id)) {
-    run_id <- as.integer(run_id)
-
-    if (anyNA(run_id) || any(!is.finite(run_id)) || any(run_id < 1L)) {
-      stop("`run_id` must contain positive integers.", call. = FALSE)
-    }
+    run_id <- .pa_validate_positive_integer_ids(
+      run_id,
+      argument = "run_id"
+    )
 
     missing_run <- setdiff(run_id, runs$run_id)
 
@@ -229,19 +230,10 @@ solution_filter <- function(x,
   # solution_id filter
   # --------------------------------------------------------------------------
   if (!is.null(solution_id)) {
-    solution_id <- suppressWarnings(as.integer(solution_id))
-    solution_id <- solution_id[
-      !is.na(solution_id) &
-        is.finite(solution_id) &
-        solution_id >= 1L
-    ]
-
-    if (length(solution_id) == 0L) {
-      stop(
-        "`solution_id` must contain at least one positive integer.",
-        call. = FALSE
-      )
-    }
+    solution_id <- .pa_validate_positive_integer_ids(
+      solution_id,
+      argument = "solution_id"
+    )
 
     available_solution_ids <- runs$solution_id
     available_solution_ids <- available_solution_ids[
@@ -393,7 +385,10 @@ solution_filter <- function(x,
     "feasible",
     "suboptimal",
     "time_limit",
-    "gap_limit"
+    "time_limit_feasible",
+    "gap_limit",
+    "gap_limit_feasible",
+    "solution_limit"
   )
 }
 

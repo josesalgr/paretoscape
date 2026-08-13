@@ -25,7 +25,7 @@ configuration.'><meta property="og:image" content="https://josesalgr.github.io/m
 
     <a class="navbar-brand me-2" href="../index.html">multiscape</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -36,7 +36,7 @@ configuration.'><meta property="og:image" content="https://josesalgr.github.io/m
       <ul class="navbar-nav me-auto"><li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/choosing_multi_objective_method.html">Choosing a multi-objective method</a></li>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/choosing_multi_objective_method.html">Choosing a multi-objective optimisation method</a></li>
     <li><a class="dropdown-item" href="../articles/Integrated_planning.html">Multi-objective forest restoration planning in a highly productive landscape</a></li>
     <li><a class="dropdown-item" href="../articles/reserve-design-rwanda.html">From reserve selection to multi-objective conservation planning</a></li>
   </ul></li>
@@ -73,7 +73,7 @@ configuration.</p>
 <span>  time_limit <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  solution_limit <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  cores <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  log_file <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  write_log <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -94,8 +94,9 @@ configuration.</p>
 
 <dt id="arg-solver-params">solver_params<a class="anchor" aria-label="anchor" href="#arg-solver-params"></a></dt>
 <dd><p>Named list of solver-specific parameters. These are
-merged with previously stored backend-specific parameters rather than
-replacing them completely.</p></dd>
+merged with previously stored parameters. Rcplex parameters are validated
+against its supported control names; Rsymphony does not currently receive
+arbitrary solver-specific parameters.</p></dd>
 
 
 <dt id="arg-gap-limit">gap_limit<a class="anchor" aria-label="anchor" href="#arg-gap-limit"></a></dt>
@@ -111,14 +112,16 @@ kept unchanged.</p></dd>
 
 
 <dt id="arg-solution-limit">solution_limit<a class="anchor" aria-label="anchor" href="#arg-solution-limit"></a></dt>
-<dd><p>Optional logical flag controlling backend-specific
-early stopping after feasible solution discovery. If <code>NULL</code>, the
-previously stored value is kept unchanged.</p></dd>
+<dd><p>Optional logical flag requesting early termination
+after a feasible solution is found. Supported by Gurobi, CBC, and
+SYMPHONY, but not by CPLEX through Rcplex. If <code>NULL</code>, the previously
+stored value is kept unchanged.</p></dd>
 
 
 <dt id="arg-cores">cores<a class="anchor" aria-label="anchor" href="#arg-cores"></a></dt>
-<dd><p>Optional positive integer giving the number of CPU cores to use.
-If <code>NULL</code>, the previously stored value is kept unchanged.</p></dd>
+<dd><p>Optional positive integer giving the maximum number of solver
+threads. Currently supported by Gurobi. If <code>NULL</code>, the previously
+stored value is kept unchanged.</p></dd>
 
 
 <dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>
@@ -128,15 +131,15 @@ unchanged.</p></dd>
 
 
 <dt id="arg-log-file">log_file<a class="anchor" aria-label="anchor" href="#arg-log-file"></a></dt>
-<dd><p>Optional character string giving the name of the
-solver log file. If <code>NULL</code>, the previously stored value is kept
-unchanged.</p></dd>
+<dd><p>Optional character string giving the complete path or file
+name of the solver log. Currently supported by Gurobi. If <code>NULL</code>, the
+previously stored value is kept unchanged.</p></dd>
 
 
 <dt id="arg-write-log">write_log<a class="anchor" aria-label="anchor" href="#arg-write-log"></a></dt>
 <dd><p>Optional logical flag indicating whether solver output
-should be written to a file. If <code>NULL</code>, the previously stored value is
-kept unchanged.</p></dd>
+should be written to a file. Currently supported by Gurobi. If
+<code>NULL</code>, the previously stored value is kept unchanged.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -182,9 +185,6 @@ in <code>x$data$solve_args</code>.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $cores</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $verbose</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] FALSE</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $solver_params</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $solver_params$MIPFocus</span>

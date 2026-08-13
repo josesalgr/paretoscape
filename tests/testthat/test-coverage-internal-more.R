@@ -20,7 +20,7 @@ test_that("solve arguments merge stored settings and explicit overrides", {
   expect_true(out$solution_limit)
   expect_true(out$verbose)
   expect_false(out$output_file)
-  expect_identical(out$name_output_file, "output")
+  expect_null(out$name_output_file)
   expect_equal(out$solver_params, list(old = 1, new = 2))
 
   expect_identical(get_args(p, solver = "")$solver, "cbc")

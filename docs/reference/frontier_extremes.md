@@ -39,7 +39,7 @@ frontier_extremes(x, objectives = NULL, ties = c("all", "first"))
 A `data.frame` with one or more rows per objective. The returned columns
 are:
 
-- `solution_id`: solution id;
+- `solution_id`: integer solution id;
 
 - `objective`: objective name;
 

@@ -31,7 +31,7 @@ entry point for adding an already computed relation."><meta property="og:image" 
 
     <a class="navbar-brand me-2" href="../index.html">multiscape</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -42,7 +42,7 @@ entry point for adding an already computed relation."><meta property="og:image" 
       <ul class="navbar-nav me-auto"><li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/choosing_multi_objective_method.html">Choosing a multi-objective method</a></li>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/choosing_multi_objective_method.html">Choosing a multi-objective optimisation method</a></li>
     <li><a class="dropdown-item" href="../articles/Integrated_planning.html">Multi-objective forest restoration planning in a highly productive landscape</a></li>
     <li><a class="dropdown-item" href="../articles/reserve-design-rwanda.html">From reserve selection to multi-objective conservation planning</a></li>
   </ul></li>
@@ -101,9 +101,9 @@ stored.</p></dd>
 
 
 <dt id="arg-directed">directed<a class="anchor" aria-label="anchor" href="#arg-directed"></a></dt>
-<dd><p>Logical. If <code>FALSE</code>, treat edges as undirected and
-collapse duplicate unordered pairs. If <code>TRUE</code>, keep edges as directed
-ordered pairs.</p></dd>
+<dd><p>Logical. If <code>FALSE</code>, treat rows as undirected edges;
+each unordered pair must occur exactly once. If <code>TRUE</code>, keep rows as
+directed ordered pairs; reciprocal arcs are distinct, but duplicate arcs are rejected.</p></dd>
 
 
 <dt id="arg-allow-self">allow_self<a class="anchor" aria-label="anchor" href="#arg-allow-self"></a></dt>
@@ -130,8 +130,8 @@ planning-unit identifiers stored in the problem.</p>
 \(E\) corresponds to the rows of <code>relations</code>. If
 <code>directed = FALSE</code>, each edge is treated as undirected, so pairs
 \((i,j)\) and \((j,i)\) are interpreted as the same edge. In that case,
-duplicated undirected edges are collapsed automatically using the maximum
-weight observed for each unordered pair.</p>
+each unordered pair must be supplied exactly once. Duplicate undirected
+edges are rejected, including reciprocal rows.</p>
 <p>If <code>directed = TRUE</code>, edges are preserved as ordered pairs, so
 \((i,j)\) and \((j,i)\) are distinct unless the user provides both.</p>
 <p>Self-edges \((i,i)\) are permitted only if <code>allow_self = TRUE</code>.</p>
@@ -172,10 +172,10 @@ weight observed for each unordered pair.</p>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">p</span><span class="op">$</span><span class="va">data</span><span class="op">$</span><span class="va">spatial_relations</span><span class="op">$</span><span class="va">my_relation</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   internal_pu1 internal_pu2 weight pu1 pu2 relation_name</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1            1            2      1   1   2   my_relation</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2            1            3      1   1   3   my_relation</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3            2            3      2   2   3   my_relation</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   internal_pu1 internal_pu2 weight pu1 pu2 relation_name directed</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1            1            2      1   1   2   my_relation    FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2            1            3      1   1   3   my_relation    FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3            2            3      2   2   3   my_relation    FALSE</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

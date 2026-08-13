@@ -10,7 +10,7 @@ test_that("set_solver covers incremental updates, wrappers, warnings, and valida
   expect_error(multiscape::set_solver(p, verbose = NA), "verbose")
   expect_error(multiscape::set_solver(p, write_log = NA), "write_log")
   expect_error(multiscape::set_solver(p, log_file = ""), "log_file")
-  expect_error(multiscape::set_solver(p, write_log = TRUE), "log_file")
+  expect_error(multiscape::set_solver_gurobi(p, write_log = TRUE), "log_file")
 
   expect_warning(
     p_log <- multiscape::set_solver(p, write_log = FALSE, log_file = "solver.log"),
@@ -31,7 +31,7 @@ test_that("set_solver covers incremental updates, wrappers, warnings, and valida
   )
 
   expect_identical(p1$data$solve_args$solver, "cbc")
-  expect_equal(p1$data$solve_args$gap_limit, 0.123)
+  expect_equal(p1$data$solve_args$gap_limit, 0.12345)
   expect_equal(p1$data$solve_args$time_limit, 10.988)
   expect_true(p1$data$solve_args$solution_limit)
   expect_true(p1$data$solve_args$verbose)
@@ -40,9 +40,9 @@ test_that("set_solver covers incremental updates, wrappers, warnings, and valida
 
   p2 <- multiscape::set_solver(p1, solver = "gurobi", solver_params = list(a = 3))
   expect_identical(p2$data$solve_args$solver, "gurobi")
-  expect_equal(p2$data$solve_args$gap_limit, 0.123)
+  expect_equal(p2$data$solve_args$gap_limit, 0.12345)
   expect_equal(p2$data$solve_args$solver_params$a, 3)
-  expect_equal(p2$data$solve_args$solver_params$b, 2)
+  expect_null(p2$data$solve_args$solver_params$b)
 
   expect_identical(multiscape::set_solver_gurobi(p)$data$solve_args$solver, "gurobi")
   expect_identical(multiscape::set_solver_cbc(p)$data$solve_args$solver, "cbc")

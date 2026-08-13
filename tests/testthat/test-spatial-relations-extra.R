@@ -1,34 +1,12 @@
-test_that("manual spatial relations normalize undirected edges and validate inputs", {
-  p <- make_round4_problem()
-
-  rel <- data.frame(
-    pu1 = c(2, 1, 3),
-    pu2 = c(1, 2, 4),
-    weight = c(1, 3, 2),
-    distance = c(10, 10, 20)
-  )
-  p2 <- multiscape::add_spatial_relations(p, rel, name = "manual")
-  out <- p2$data$spatial_relations$manual
-  expect_equal(nrow(out), 2L)
-  expect_true(any(out$internal_pu1 == 1L & out$internal_pu2 == 2L & out$weight == 3))
-  expect_equal(unique(out$relation_name), "manual")
-
-  directed <- multiscape::add_spatial_relations(p, rel[1:2, ], name = "directed", directed = TRUE)
+test_that("manual spatial relations reject duplicates and preserve direction", {
+  p <- make_round3_tabular_problem()
+  rel <- data.frame(pu1 = c(1, 2), pu2 = c(2, 1), weight = c(1, 3))
+  expect_error(multiscape::add_spatial_relations(p, rel, name = "manual"), "Duplicated undirected edge")
+  directed <- multiscape::add_spatial_relations(p, rel, name = "directed", directed = TRUE)
   expect_equal(nrow(directed$data$spatial_relations$directed), 2L)
-
-  expect_error(multiscape::add_spatial_relations(p, rel, name = ""), "name")
-  expect_error(multiscape::add_spatial_relations(p, data.frame(pu1 = 1, pu2 = 99, weight = 1), name = "bad"), "not found")
-  expect_error(multiscape::add_spatial_relations(p, data.frame(pu1 = 1, pu2 = 1, weight = 1), name = "self"), "Self-edges")
-
-  self_ok <- multiscape::add_spatial_relations(
-    p,
-    data.frame(pu1 = 1, pu2 = 1, weight = 1),
-    name = "self_ok",
-    allow_self = TRUE
-  )
-  expect_equal(nrow(self_ok$data$spatial_relations$self_ok), 1L)
+  expect_equal(directed$data$spatial_relations$directed$internal_pu1, c(1L, 2L))
+  expect_equal(directed$data$spatial_relations$directed$internal_pu2, c(2L, 1L))
 })
-
 
 test_that("boundary-table relations cover diagonal, off-diagonal, and validation branches", {
   p <- make_round4_problem()

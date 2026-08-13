@@ -48,7 +48,7 @@ for the selected objectives.
 
 The table contains:
 
-- `solution_id`;
+- `solution_id`: integer solution id;
 
 - the original objective values;
 
