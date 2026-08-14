@@ -27,8 +27,10 @@ stored.}
 each unordered pair must occur exactly once. If \code{TRUE}, keep rows as
 directed ordered pairs; reciprocal arcs are distinct, but duplicate arcs are rejected.}
 
-\item{allow_self}{Logical. If \code{TRUE}, allow self-edges
-\eqn{(i,i)}. Default is \code{FALSE}.}
+\item{allow_self}{Logical. If \code{TRUE}, allow diagonal entries
+\eqn{(i,i)}. In fragmentation objectives, diagonal entries contribute
+as unary terms associated with the corresponding planning unit.
+Default is \code{FALSE}.}
 }
 \value{
 An updated \code{Problem} object with the relation stored in
@@ -70,7 +72,11 @@ edges are rejected, including reciprocal rows.
 If \code{directed = TRUE}, edges are preserved as ordered pairs, so
 \eqn{(i,j)} and \eqn{(j,i)} are distinct unless the user provides both.
 
-Self-edges \eqn{(i,i)} are permitted only if \code{allow_self = TRUE}.
+#' Self-edges \eqn{(i,i)} are permitted only if
+\code{allow_self = TRUE}. In fragmentation objectives, diagonal entries
+are interpreted as unary planning-unit terms \eqn{\omega_{ii} x_i},
+including for directed relations; they are not interpreted as directed
+self-dependencies.
 
 The final relation is stored in \code{x$data$spatial_relations[[name]]}.
 

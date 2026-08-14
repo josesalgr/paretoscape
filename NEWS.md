@@ -1,3 +1,10 @@
+# multiscape 1.2.1
+
+## Spatial relations
+
+- `add_spatial_relations()` now supports `allow_self = TRUE` together with `directed = TRUE`. Diagonal entries `(i, i)` in directed relations are interpreted as unary planning-unit terms rather than as directed self-dependencies.
+- Fragmentation objectives for planning units and actions now handle diagonal terms consistently for both directed and undirected spatial relations.
+
 # multiscape 1.2.0
 
 ## Objective and decision-space analysis

@@ -31,7 +31,7 @@ entry point for adding an already computed relation."><meta property="og:image" 
 
     <a class="navbar-brand me-2" href="../index.html">multiscape</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -107,8 +107,10 @@ directed ordered pairs; reciprocal arcs are distinct, but duplicate arcs are rej
 
 
 <dt id="arg-allow-self">allow_self<a class="anchor" aria-label="anchor" href="#arg-allow-self"></a></dt>
-<dd><p>Logical. If <code>TRUE</code>, allow self-edges
-\((i,i)\). Default is <code>FALSE</code>.</p></dd>
+<dd><p>Logical. If <code>TRUE</code>, allow diagonal entries
+\((i,i)\). In fragmentation objectives, diagonal entries contribute
+as unary terms associated with the corresponding planning unit.
+Default is <code>FALSE</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -134,7 +136,11 @@ each unordered pair must be supplied exactly once. Duplicate undirected
 edges are rejected, including reciprocal rows.</p>
 <p>If <code>directed = TRUE</code>, edges are preserved as ordered pairs, so
 \((i,j)\) and \((j,i)\) are distinct unless the user provides both.</p>
-<p>Self-edges \((i,i)\) are permitted only if <code>allow_self = TRUE</code>.</p>
+<p>#' Self-edges \((i,i)\) are permitted only if
+<code>allow_self = TRUE</code>. In fragmentation objectives, diagonal entries
+are interpreted as unary planning-unit terms \(\omega_{ii} x_i\),
+including for directed relations; they are not interpreted as directed
+self-dependencies.</p>
 <p>The final relation is stored in <code>x$data$spatial_relations[[name]]</code>.</p>
 <p>If a relation with the same <code>name</code> already exists, it is replaced.</p>
     </div>

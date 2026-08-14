@@ -103,7 +103,7 @@ Rcpp::List rcpp_add_objective_min_fragmentation(
     const double we = static_cast<double>(wgt[r]);
     if (Rcpp::NumericVector::is_na(we) || !std::isfinite(we)) Rcpp::stop("relation_data weight must be finite.");
     if (i1 == j1) {
-      if (directed) Rcpp::stop("Directed spatial relations cannot contain self-arcs.");
+      //if (directed) Rcpp::stop("Directed spatial relations cannot contain self-arcs.");
       linear_w[i1] += we;
       ++n_diag_rows;
       continue;

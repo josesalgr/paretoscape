@@ -52,7 +52,9 @@ add_spatial_relations(x, relations, name, directed = FALSE, allow_self = FALSE)
 
 - allow_self:
 
-  Logical. If `TRUE`, allow self-edges \\(i,i)\\. Default is `FALSE`.
+  Logical. If `TRUE`, allow diagonal entries \\(i,i)\\. In fragmentation
+  objectives, diagonal entries contribute as unary terms associated with
+  the corresponding planning unit. Default is `FALSE`.
 
 ## Value
 
@@ -86,7 +88,10 @@ including reciprocal rows.
 If `directed = TRUE`, edges are preserved as ordered pairs, so \\(i,j)\\
 and \\(j,i)\\ are distinct unless the user provides both.
 
-Self-edges \\(i,i)\\ are permitted only if `allow_self = TRUE`.
+\#' Self-edges \\(i,i)\\ are permitted only if `allow_self = TRUE`. In
+fragmentation objectives, diagonal entries are interpreted as unary
+planning-unit terms \\\omega\_{ii} x_i\\, including for directed
+relations; they are not interpreted as directed self-dependencies.
 
 The final relation is stored in `x$data$spatial_relations[[name]]`.
 

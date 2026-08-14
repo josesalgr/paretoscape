@@ -140,8 +140,8 @@ p1$data$targets
 #> 1       1 actions    ge    absolute          3          NA            3    <NA>
 #> 2       2 actions    ge    absolute          3          NA            3    <NA>
 #>   label                 created_at feature_name
-#> 1  <NA> 2026-08-13 09:54:07.520657     woodland
-#> 2  <NA> 2026-08-13 09:54:07.520657     riparian
+#> 1  <NA> 2026-08-14 19:53:36.179439     woodland
+#> 2  <NA> 2026-08-14 19:53:36.179439     riparian
 
 # Different targets by feature
 p2 <- add_constraint_targets_absolute(
@@ -153,8 +153,8 @@ p2$data$targets
 #> 1       1 actions    ge    absolute          4          NA            4    <NA>
 #> 2       2 actions    ge    absolute          2          NA            2    <NA>
 #>   label                 created_at feature_name
-#> 1  <NA> 2026-08-13 09:54:07.524901     woodland
-#> 2  <NA> 2026-08-13 09:54:07.524901     riparian
+#> 1  <NA> 2026-08-14 19:53:36.183372     woodland
+#> 2  <NA> 2026-08-14 19:53:36.183372     riparian
 
 # Restrict which actions count toward target achievement
 p3 <- add_constraint_targets_absolute(
@@ -167,6 +167,6 @@ p3$data$targets
 #> 1       1 actions    ge    absolute          2          NA            2 protect
 #> 2       2 actions    ge    absolute          2          NA            2 protect
 #>   label                 created_at feature_name
-#> 1  <NA> 2026-08-13 09:54:07.529305     woodland
-#> 2  <NA> 2026-08-13 09:54:07.529305     riparian
+#> 1  <NA> 2026-08-14 19:53:36.187469     woodland
+#> 2  <NA> 2026-08-14 19:53:36.187469     riparian
 ```
